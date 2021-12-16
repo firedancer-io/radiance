@@ -25,12 +25,12 @@ func GetNodeTPUPorts(ctx context.Context, rpcHost string, nodeIP net.IP) ([]uint
 		tpuAddr := *node.TPU
 		host, port, err := net.SplitHostPort(tpuAddr)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing node TPU %s: %v", tpuAddr, err)
+			return nil, fmt.Errorf("error parsing node TPU %s: %w", tpuAddr, err)
 		}
 		if host == nodeIP.String() {
 			port, err := strconv.Atoi(port)
 			if err != nil {
-				return nil, fmt.Errorf("error parsing node TPU %s: %v", tpuAddr, err)
+				return nil, fmt.Errorf("error parsing node TPU %s: %w", tpuAddr, err)
 			}
 			return []uint16{
 				uint16(port),     // TPU
