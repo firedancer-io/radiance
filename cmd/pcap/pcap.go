@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/certusone/tpuproxy/pkg/tpu"
 	"github.com/gagliardetto/solana-go"
@@ -35,7 +36,12 @@ func readPCAP(file string) chan []byte {
 }
 
 func main() {
-	packets := readPCAP("fixtures/tpu.pcap")
+	flag.Parse()
+	if flag.NArg() > 1 || flag.NArg() == 0 {
+		fmt.Println("Usage: pcap [file]")
+		return
+	}
+	packets := readPCAP(flag.Arg(0))
 
 	signerCount := make(map[solana.PublicKey]uint)
 
