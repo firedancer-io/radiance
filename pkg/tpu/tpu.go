@@ -3,6 +3,7 @@ package tpu
 import (
 	"crypto/ed25519"
 	"errors"
+	"fmt"
 	"github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 )
@@ -35,6 +36,7 @@ func VerifyTxSig(tx *solana.Transaction) (ok bool) {
 
 	for i, sig := range tx.Signatures {
 		if !ed25519.Verify(signers[i][:], msg, sig[:]) {
+			fmt.Printf("invalid signature by %s\n", signers[i].String())
 			return false
 		}
 	}

@@ -11,6 +11,10 @@ import (
 	"sort"
 )
 
+var (
+	flagSigverify = flag.Bool("sigverify", false, "Verify signatures")
+)
+
 // pkcon install libpcap-devel
 
 // readPCAP reads a PCAP file and returns a channel of packets.
@@ -52,10 +56,12 @@ func main() {
 			continue
 		}
 
-		ok := tpu.VerifyTxSig(tx)
-		if !ok {
-			fmt.Printf("bad signature on %s", tx.Signatures[0])
-			continue
+		if *flagSigverify {
+			ok := tpu.VerifyTxSig(tx)
+			if !ok {
+				fmt.Printf("bad signature on %s\n", tx.Signatures[0])
+				continue
+			}
 		}
 
 		signers := tpu.ExtractSigners(tx)
