@@ -8,6 +8,7 @@ import (
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"log"
 	"sort"
 )
 
@@ -49,7 +50,14 @@ func main() {
 
 	signerCount := make(map[solana.PublicKey]uint)
 
+	// replace by hyperloglog or similar structure if memory usage ever becomes an issue
+	signatureCount := make(map[solana.Signature]bool)
+
+	n := 0
+
 	for p := range packets {
+		n++
+
 		tx, err := tpu.ParseTx(p)
 		if err != nil {
 			fmt.Println(err)
@@ -62,6 +70,10 @@ func main() {
 				fmt.Printf("bad signature on %s\n", tx.Signatures[0])
 				continue
 			}
+		}
+
+		if len(tx.Signatures) > 0 {
+			signatureCount[tx.Signatures[0]] = true
 		}
 
 		signers := tpu.ExtractSigners(tx)
@@ -81,4 +93,9 @@ func main() {
 	for _, k := range keys {
 		fmt.Printf("%s\t%d\n", k, signerCount[k])
 	}
+
+	log.Printf("%d packets", n)
+	log.Printf("%d unique signatures", len(signatureCount))
+	log.Printf("%d unique signers", len(signerCount))
+	log.Printf("packets per signature: %.02f", float64(n)/float64(len(signatureCount)))
 }
