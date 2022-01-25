@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/certusone/tpuproxy/pkg/endpoints"
+	"github.com/certusone/tpuproxy/pkg/netlink"
 	"github.com/certusone/tpuproxy/pkg/tpu"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
@@ -65,31 +66,13 @@ var (
 	flagPorts = flag.String("ports", "", "destination ports to sniff (comma-separated), asks local RPC if empty")
 )
 
-// getInterfaceIP returns the primary IP address associated with the given interface.
-func getInterfaceIP(iface string) (net.IP, error) {
-	ifaceAddr, err := net.InterfaceByName(iface)
-	if err != nil {
-		return nil, err
-	}
-	addrs, err := ifaceAddr.Addrs()
-	if err != nil {
-		return nil, err
-	}
-	for _, addr := range addrs {
-		if ip, ok := addr.(*net.IPNet); ok && ip.IP.To4() != nil {
-			return ip.IP, nil
-		}
-	}
-	return nil, fmt.Errorf("no IP address found for interface %s", iface)
-}
-
 func main() {
 	flag.Parse()
 	if *flagIface == "" {
 		klog.Exit("-iface is required")
 	}
 
-	dst, err := getInterfaceIP(*flagIface)
+	dst, err := netlink.GetInterfaceIP(*flagIface)
 	if err != nil {
 		klog.Exit("failed to get IP: ", err)
 	}
