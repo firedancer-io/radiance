@@ -54,13 +54,21 @@ func main() {
 	signatureCount := make(map[solana.Signature]bool)
 
 	n := 0
+	invalid := 0
 
 	for p := range packets {
 		n++
 
+		// filter impossibly small packets
+		if len(p) < 10 {
+			invalid++
+			continue
+		}
+
 		tx, err := tpu.ParseTx(p)
 		if err != nil {
-			fmt.Println(err)
+			log.Printf("%d: %v %x", n, err, p)
+			invalid++
 			continue
 		}
 
@@ -105,6 +113,7 @@ func main() {
 	fmt.Printf("other signers (<10 pkts, %d total)\t%d\n", longTail, longTailCnt)
 
 	log.Printf("%d packets", n)
+	log.Printf("%d invalid packets", invalid)
 	log.Printf("%d unique signatures", len(signatureCount))
 	log.Printf("%d unique signers", len(signerCount))
 	log.Printf("packets per signature: %.02f", float64(n)/float64(len(signatureCount)))
