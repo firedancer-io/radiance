@@ -83,16 +83,26 @@ func main() {
 	}
 
 	// sort by count
+	var longTail, longTailCnt uint
+
 	var keys []solana.PublicKey
 	for k := range signerCount {
+		if signerCount[k] < 10 {
+			longTail++
+			longTailCnt += signerCount[k]
+			continue
+		}
 		keys = append(keys, k)
 	}
+
 	sort.Slice(keys, func(i, j int) bool {
 		return signerCount[keys[i]] > signerCount[keys[j]]
 	})
 	for _, k := range keys {
 		fmt.Printf("%s\t%d\n", k, signerCount[k])
 	}
+
+	fmt.Printf("other signers (<10 pkts, %d total)\t%d\n", longTail, longTailCnt)
 
 	log.Printf("%d packets", n)
 	log.Printf("%d unique signatures", len(signatureCount))
