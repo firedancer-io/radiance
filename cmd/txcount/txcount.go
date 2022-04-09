@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
 	"k8s.io/klog/v2"
+	"os"
 	"time"
 )
 
@@ -20,6 +22,12 @@ var (
 	flagAfter = flag.Uint64("after", 0, "Only print transactions after this slot")
 	voteAcc   = flag.String("voteAcc", "Certusm1sa411sMpV9FPqU5dXAYhmmhygvxJ23S6hJ24", "Vote account address")
 )
+
+type logLine struct {
+	TS    time.Time
+	Slot  uint64
+	NumTx int
+}
 
 func main() {
 	flag.Parse()
@@ -92,7 +100,8 @@ func main() {
 			}
 
 			bt := time.Unix(*block.BlockTime, 0)
-			fmt.Printf("ts=%s slot=%d numTx=%d\n", bt, slot, len(block.Transactions))
+
+			json.NewEncoder(os.Stdout).Encode(logLine{TS: bt, Slot: slot, NumTx: len(block.Transactions)})
 		} else {
 			fmt.Printf("https://explorer.solana.com/block/%d\n", slot)
 		}
