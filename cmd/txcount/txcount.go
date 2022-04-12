@@ -11,6 +11,7 @@ import (
 	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
 	"k8s.io/klog/v2"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -21,6 +22,7 @@ var (
 	flagCount = flag.Bool("count", true, "Print the number of transactions")
 	flagAfter = flag.Uint64("after", 0, "Only print transactions after this slot")
 	voteAcc   = flag.String("voteAcc", "Certusm1sa411sMpV9FPqU5dXAYhmmhygvxJ23S6hJ24", "Vote account address")
+	workers   = flag.Uint("workers", 10, "Worker threads")
 )
 
 type logLine struct {
@@ -78,6 +80,50 @@ func main() {
 
 	klog.Infof("%d slots for %s", len(slots), our)
 
+	work := make(chan uint64)
+	wg := sync.WaitGroup{}
+	out := sync.Mutex{}
+
+	for i := 0; uint(i) < *workers; i++ {
+		wg.Add(1)
+		go func() {
+			for {
+				slot := <-work
+				if slot == 0 {
+					wg.Done()
+					return
+				}
+				if *flagCount {
+					block, err := r.GetBlock(context.Background(), slot)
+					if err != nil {
+						var rpcErr *jsonrpc.RPCError
+						if errors.As(err, &rpcErr) && (rpcErr.Code == -32007 /* SLOT_SKIPPED */ || rpcErr.Code == -32004 /* BLOCK_NOT_AVAILABLE */) {
+							out.Lock()
+							fmt.Fprintf(os.Stderr, "slot=%d skipped=true\n", slot)
+							out.Unlock()
+							continue
+						}
+					}
+
+					if block == nil {
+						out.Lock()
+						fmt.Fprintf(os.Stderr, "slot=%d empty=true\n", slot)
+						out.Unlock()
+						continue
+					}
+
+					bt := time.Unix(*block.BlockTime, 0)
+
+					out.Lock()
+					json.NewEncoder(os.Stdout).Encode(logLine{TS: bt, Slot: slot, NumTx: len(block.Transactions)})
+					out.Unlock()
+				} else {
+					fmt.Printf("https://explorer.solana.com/block/%d\n", slot)
+				}
+			}
+		}()
+	}
+
 	for _, slot := range slots {
 		slot := slot + offset
 		if *flagAfter > 0 && slot < *flagAfter {
@@ -87,24 +133,9 @@ func main() {
 			break
 		}
 
-		if *flagCount {
-			block, err := r.GetBlock(context.Background(), slot)
-			if err != nil {
-				var rpcErr *jsonrpc.RPCError
-				if errors.As(err, &rpcErr) && (rpcErr.Code == -32007 /* SLOT_SKIPPED */ || rpcErr.Code == -32004 /* BLOCK_NOT_AVAILABLE */) {
-					fmt.Printf("slot=%d skipped=true\n", slot)
-					continue
-				}
-				klog.Warningf("GetBlock: %v", err)
-				continue
-			}
-
-			bt := time.Unix(*block.BlockTime, 0)
-
-			json.NewEncoder(os.Stdout).Encode(logLine{TS: bt, Slot: slot, NumTx: len(block.Transactions)})
-		} else {
-			fmt.Printf("https://explorer.solana.com/block/%d\n", slot)
-		}
-
+		work <- slot
 	}
+	close(work)
+
+	wg.Wait()
 }
