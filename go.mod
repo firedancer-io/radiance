@@ -1,4 +1,4 @@
-module github.com/certusone/tpuproxy
+module github.com/certusone/radiance
 
 go 1.16
 
