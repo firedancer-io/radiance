@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"cloud.google.com/go/bigtable"
 	"google.golang.org/protobuf/encoding/prototext"
 
 	"github.com/certusone/radiance/pkg/ledger_bigtable"
@@ -28,9 +27,9 @@ func init() {
 func main() {
 	ctx := context.Background()
 
-	btClient, err := bigtable.NewClient(ctx, "mainnet-beta", "solana-ledger")
+	btClient, err := ledger_bigtable.MainnetClient(ctx)
 	if err != nil {
-		log.Fatalf("Could not create client: %v", err)
+		log.Fatalf("Failed to create bigtable client: %v", err)
 	}
 
 	table := btClient.Open(ledger_bigtable.BlocksTable)
