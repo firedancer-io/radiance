@@ -19,12 +19,18 @@ CREATE TABLE heimdall_queue
     "timings.create_executor_load_elf_us"          UInt64,
     "timings.create_executor_verify_code_us"       UInt64,
     "timings.create_executor_jit_compile_us"       UInt64
-) ENGINE = Kafka('<...>:30036', 'certus.radiance.heimdall', 'heimdall-chdev1',
-           'Protobuf')
-SETTINGS format_schema = 'heimdall.proto:Observation';
+) ENGINE = Kafka()
+    SETTINGS
+        kafka_broker_list = '<snip>:30036',
+        kafka_topic_list = 'certus.radiance.heimdall',
+        kafka_group_name = 'heimdall-chdev1',
+        kafka_format = 'Protobuf',
+        kafka_max_block_size = 1048576,
+        format_schema = 'heimdall.proto:Observation';
 
 CREATE TABLE IF NOT EXISTS heimdall
 (
+    timestamp                                      DateTime64,
     bankSlot                                       UInt64,
     bankID                                         UInt64,
     bankParentHash                                 String,
@@ -44,9 +50,11 @@ CREATE TABLE IF NOT EXISTS heimdall
     "timings.create_executor_load_elf_us"          UInt64,
     "timings.create_executor_verify_code_us"       UInt64,
     "timings.create_executor_jit_compile_us"       UInt64
-) ENGINE = MergeTree() ORDER BY bankSlot;
+) ENGINE = MergeTree()
+    PARTITION BY toStartOfHour(timestamp)
+    ORDER BY bankSlot;
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS heimdall_view TO heimdall
 AS
-SELECT *
+SELECT _timestamp_ms AS timestamp, *
 FROM heimdall_queue;
