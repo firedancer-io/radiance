@@ -7,10 +7,11 @@ option go_package = "github.com/certusone/radiance/proto/heimdall;heimdallv1";
 message Observation{
   uint64 bankSlot = 1;
   uint64 bankID = 2;
-  string feePayer = 3;
-  bytes signature = 4;
-  string program = 5;
-  Timings timings = 6;
+  string bankParentHash = 3;
+  string feePayer = 4;
+  string signature = 5;
+  string program = 6;
+  Timings timings = 7;
 }
 
 message Timings {
