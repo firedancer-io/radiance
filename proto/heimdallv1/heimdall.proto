@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package heimdall;
+
+option go_package = "github.com/certusone/radiance/proto/heimdall;heimdallv1";
+
+message Observation{
+  uint64 bankSlot = 1;
+  uint64 bankID = 2;
+  string feePayer = 3;
+  bytes signature = 4;
+  string program = 5;
+  Timings timings = 6;
+}
+
+message Timings {
+  uint64 serialize_us = 1;
+  uint64 create_vm_us = 2;
+  uint64 execute_us = 3;
+  uint64 deserialize_us = 4;
+  uint64 get_or_create_executor_us = 5;
+  uint64 changed_account_count = 6;
+  uint64 total_account_count = 7;
+  uint64 total_data_size = 8;
+  uint64 data_size_changed = 9;
+  uint64 create_executor_register_syscalls_us = 10;
+  uint64 create_executor_load_elf_us = 11;
+  uint64 create_executor_verify_code_us = 12;
+  uint64 create_executor_jit_compile_us = 13;
+}
