@@ -6,13 +6,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/gagliardetto/solana-go"
-	"github.com/gagliardetto/solana-go/rpc"
-	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
-	"k8s.io/klog/v2"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/rpc/jsonrpc"
+
+	"k8s.io/klog/v2"
 )
 
 const localRPC = "http://localhost:8899"
@@ -75,7 +77,7 @@ func main() {
 
 	klog.Infof("Current slot: %d", current)
 
-	sched := *resp
+	sched := resp
 	slots := sched[our]
 
 	klog.Infof("%d slots for %s", len(slots), our)
@@ -112,7 +114,7 @@ func main() {
 						continue
 					}
 
-					bt := time.Unix(*block.BlockTime, 0)
+					bt := time.Unix(int64(*block.BlockTime), 0)
 
 					out.Lock()
 					json.NewEncoder(os.Stdout).Encode(logLine{TS: bt, Slot: slot, NumTx: len(block.Transactions)})
