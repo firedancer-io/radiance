@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/certusone/radiance/pkg/envfile"
@@ -16,6 +17,7 @@ import (
 var (
 	flagEnv  = flag.String("env", ".env.prototxt", "Env file (.prototxt)")
 	flagOnly = flag.String("only", "", "Only watch specified nodes (comma-separated)")
+	flagType = flag.String("type", "", "Only print specific types")
 )
 
 func init() {
@@ -72,30 +74,35 @@ func main() {
 
 	ctx := context.Background()
 
+	highest := &sync.Map{}
+
 	for _, node := range nodes {
 		node := node
 		go func() {
 			for {
-				if err := watchSlotUpdates(ctx, node); err != nil {
+				if err := watchSlotUpdates(ctx, node, highest); err != nil {
 					klog.Errorf("watchSlotUpdates on node %s, reconnecting: %v", node.Name, err)
 				}
 				time.Sleep(time.Second * 5)
 			}
 		}()
-		go func() {
-			for {
-				if err := watchSlots(ctx, node); err != nil {
-					klog.Errorf("watchSlots on node %s, reconnecting: %v", node.Name, err)
+
+		if *flagType == "" {
+			go func() {
+				for {
+					if err := watchSlots(ctx, node); err != nil {
+						klog.Errorf("watchSlots on node %s, reconnecting: %v", node.Name, err)
+					}
+					time.Sleep(time.Second * 5)
 				}
-				time.Sleep(time.Second * 5)
-			}
-		}()
+			}()
+		}
 	}
 
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -119,8 +126,34 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode) error {
 		ts := time.Unix(0, int64(*m.Timestamp)*int64(time.Millisecond))
 		delta := time.Since(ts)
 
-		klog.Infof("%s: slot=%d type=%s delta=%dms parent=%d",
-			node.Name, m.Slot, m.Type, delta.Milliseconds(), m.Parent)
+		if *flagType != "" && string(m.Type) != *flagType {
+			continue
+		}
+
+		var first time.Time
+		if m.Type == ws.SlotsUpdatesFirstShredReceived {
+			value, _ := highest.LoadOrStore(m.Slot, ts)
+			first = value.(time.Time)
+		} else {
+			value, ok := highest.Load(m.Slot)
+			if ok {
+				first = value.(time.Time)
+			}
+		}
+
+		if m.Type == ws.SlotsUpdatesRoot {
+			highest.Delete(m.Slot)
+		}
+
+		var prop int64
+		if !first.IsZero() {
+			prop = time.Since(first).Milliseconds()
+		} else {
+			prop = -1
+		}
+
+		klog.Infof("%s: slot=%d type=%s delta=%dms prop=%dms parent=%d",
+			node.Name, m.Slot, m.Type, delta.Milliseconds(), prop, m.Parent)
 	}
 }
 
