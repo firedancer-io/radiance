@@ -4,6 +4,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
+	_ "net/http/pprof"
 	"strings"
 	"sync"
 	"time"
@@ -18,9 +20,12 @@ var (
 	flagEnv  = flag.String("env", ".env.prototxt", "Env file (.prototxt)")
 	flagOnly = flag.String("only", "", "Only watch specified nodes (comma-separated)")
 	flagType = flag.String("type", "", "Only print specific types")
+
+	flagDebugAddr = flag.String("debugAddr", "localhost:6060", "pprof/metrics listen address")
 )
 
 func init() {
+	klog.InitFlags(nil)
 	flag.Parse()
 }
 
@@ -68,19 +73,30 @@ func main() {
 		klog.Fatalf("No nodes found in env file")
 	}
 
+	go func() {
+		klog.Error(http.ListenAndServe(*flagDebugAddr, nil))
+	}()
+
 	nodes = filterNodes(nodes, parseOnlyFlag(*flagOnly))
 
+	if len(nodes) == 0 {
+		klog.Exitf("No nodes in environment or all nodes filtered")
+	}
 	klog.Infof("Watching %d nodes", len(nodes))
 
 	ctx := context.Background()
 
 	highest := &sync.Map{}
 
+	sched := &leaderSchedule{}
+
+	go sched.Run(ctx, env.Nodes)
+
 	for _, node := range nodes {
 		node := node
 		go func() {
 			for {
-				if err := watchSlotUpdates(ctx, node, highest); err != nil {
+				if err := watchSlotUpdates(ctx, node, highest, sched); err != nil {
 					klog.Errorf("watchSlotUpdates on node %s, reconnecting: %v", node.Name, err)
 				}
 				time.Sleep(time.Second * 5)
@@ -102,7 +118,7 @@ func main() {
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map, sched *leaderSchedule) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -123,11 +139,13 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 		}
 
 		ts := m.Timestamp.Time()
-		delta := time.Since(ts)
+		delay := time.Since(ts)
 
 		if *flagType != "" && string(m.Type) != *flagType {
 			continue
 		}
+
+		sched.Update(m.Slot)
 
 		var first time.Time
 		if m.Type == ws.SlotsUpdatesFirstShredReceived {
@@ -146,13 +164,13 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 
 		var prop int64
 		if !first.IsZero() {
-			prop = time.Since(first).Milliseconds()
+			prop = ts.Sub(first).Milliseconds()
 		} else {
 			prop = -1
 		}
 
-		klog.Infof("%s: slot=%d type=%s delta=%dms prop=%dms parent=%d stats=%v",
-			node.Name, m.Slot, m.Type, delta.Milliseconds(), prop, m.Parent, m.Stats)
+		klog.Infof("%s: slot=%d type=%s delay=%dms prop=%dms parent=%d stats=%v leader=%s",
+			node.Name, m.Slot, m.Type, delay.Milliseconds(), prop, m.Parent, m.Stats, sched.Get(m.Slot))
 	}
 }
 
