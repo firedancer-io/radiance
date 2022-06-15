@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/certusone/radiance/pkg/envfile"
+	"github.com/certusone/radiance/pkg/leaderschedule"
 	"github.com/certusone/radiance/proto/envv1"
 	"github.com/gagliardetto/solana-go/rpc/ws"
 	"k8s.io/klog/v2"
@@ -88,7 +89,7 @@ func main() {
 
 	highest := &sync.Map{}
 
-	sched := &leaderSchedule{}
+	sched := &leaderschedule.Tracker{}
 
 	go sched.Run(ctx, env.Nodes)
 
@@ -118,7 +119,7 @@ func main() {
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map, sched *leaderSchedule) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map, sched *leaderschedule.Tracker) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
