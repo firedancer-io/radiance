@@ -23,7 +23,7 @@ type Tracker struct {
 
 	// bySlot maps slots to their leader. Grows indefinitely as epochs progress.
 	bySlot   map[uint64]solana.PublicKey
-	bySlotMu sync.Mutex
+	bySlotMu sync.RWMutex
 
 	// slotsPerEpoch is the number of slots per epoch on the network.
 	// Fetched once via RPC. Used to calculate epoch boundaries.
@@ -188,8 +188,8 @@ func (t *Tracker) Get(slot uint64) solana.PublicKey {
 		<-t.initCh
 	}
 
-	t.bySlotMu.Lock()
-	defer t.bySlotMu.Unlock()
+	t.bySlotMu.RLock()
+	defer t.bySlotMu.RUnlock()
 
 	return t.bySlot[slot]
 }
