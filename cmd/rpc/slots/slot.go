@@ -142,10 +142,6 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 		ts := m.Timestamp.Time()
 		delay := time.Since(ts)
 
-		if *flagType != "" && string(m.Type) != *flagType {
-			continue
-		}
-
 		sched.Update(m.Slot)
 
 		var first time.Time
@@ -168,6 +164,10 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 			prop = ts.Sub(first).Milliseconds()
 		} else {
 			prop = -1
+		}
+
+		if *flagType != "" && string(m.Type) != *flagType {
+			continue
 		}
 
 		klog.Infof("%s: slot=%d type=%s delay=%dms prop=%dms parent=%d stats=%v leader=%s",
