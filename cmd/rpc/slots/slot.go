@@ -122,8 +122,7 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 			return fmt.Errorf("recv: %w", err)
 		}
 
-		// TODO: submit upstream fix for Time() conversion
-		ts := time.Unix(0, int64(*m.Timestamp)*int64(time.Millisecond))
+		ts := m.Timestamp.Time()
 		delta := time.Since(ts)
 
 		if *flagType != "" && string(m.Type) != *flagType {
@@ -152,8 +151,8 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 			prop = -1
 		}
 
-		klog.Infof("%s: slot=%d type=%s delta=%dms prop=%dms parent=%d",
-			node.Name, m.Slot, m.Type, delta.Milliseconds(), prop, m.Parent)
+		klog.Infof("%s: slot=%d type=%s delta=%dms prop=%dms parent=%d stats=%v",
+			node.Name, m.Slot, m.Type, delta.Milliseconds(), prop, m.Parent, m.Stats)
 	}
 }
 
