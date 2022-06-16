@@ -2,6 +2,8 @@ package envfile
 
 import (
 	"testing"
+
+	envv1 "github.com/certusone/radiance/proto/env/v1"
 )
 
 func TestLoadEnvFile(t *testing.T) {
@@ -17,4 +19,13 @@ func TestLoadEnvFile(t *testing.T) {
 	if len(env.Nodes) != 2 {
 		t.Errorf("Expected 2 node, got %d", len(env.Nodes))
 	}
+
+	if len(env.Kafka.Brokers) != 2 {
+		t.Errorf("Expected 2 broker, got %d", len(env.Kafka.Brokers))
+	}
+
+	if _, ok := env.Kafka.Encryption.(*envv1.Kafka_TlsEncryption); !ok {
+		t.Errorf("Expected TLS encryption, got %T", env.Kafka.Encryption)
+	}
+
 }

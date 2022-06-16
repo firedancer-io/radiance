@@ -11,6 +11,7 @@ require (
 	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
 	github.com/klauspost/compress v1.15.6
 	github.com/prometheus/client_golang v1.12.2
+	github.com/twmb/franz-go v1.6.0
 	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d
 	google.golang.org/protobuf v1.28.0
 	k8s.io/klog/v2 v2.60.1
@@ -59,6 +60,7 @@ require (
 	github.com/mostynb/zstdpool-freelist v0.0.0-20201229113212-927304c0c3b1 // indirect
 	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/onsi/gomega v1.15.0 // indirect
+	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.34.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
@@ -67,6 +69,7 @@ require (
 	github.com/tidwall/gjson v1.14.1 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.1.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.uber.org/atomic v1.9.0 // indirect

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package proto.network.v1;
+
+option go_package = "github.com/certusone/radiance/proto/network;networkv1";
+
+// See client/src/rpc_response.rs.
+message SlotStatus {
+  // Slot number
+  uint64 slot = 1;
+
+  // Millisecond UNIX timestamp of the observation on the Solana node.
+  // Depends on accurate local clocks.
+  uint64 timestamp = 2;
+
+  // One-way delay between the Solana node and the client.
+  uint64 delay = 3;
+
+  // Update type
+  enum UpdateType {
+    UPDATE_TYPE_UNSPECIFIED = 0;
+    UPDATE_TYPE_FIRST_SHRED_RECEIVED = 1;
+    UPDATE_TYPE_COMPLETED = 2;
+    UPDATE_TYPE_CREATED_BANK = 3;
+    UPDATE_TYPE_FROZEN = 4;
+    UPDATE_TYPE_DEAD = 5;
+    UPDATE_TYPE_OPTIMISTIC_CONFIRMATION = 6;
+    UPDATE_TYPE_ROOT = 7;
+  }
+
+  UpdateType type = 4;
+
+  // For type == CREATED_BANK, the parent slot number is included.
+  uint64 parent = 5;
+
+  // For type == FROZEN, extra transaction stats are included.
+  TxStats stats = 6;
+
+  // For type == DEAD, an error is included.
+  // TODO: solana-go doesn't currently expose this
+  string err = 7;
+
+  // Slot's leader as base58 string (looked up by the ingester)
+  string leader = 8;
+
+  // Source node identifier
+  string source = 9;
+}
+
+message TxStats {
+  uint64 num_transaction_entries = 1;
+  uint64 num_successful_transactions = 2;
+  uint64 num_failed_transactions = 3;
+  uint64 max_transactions_per_entry = 4;
+}

@@ -11,16 +11,24 @@ import (
 	"time"
 
 	"github.com/certusone/radiance/pkg/envfile"
+	"github.com/certusone/radiance/pkg/kafka"
 	"github.com/certusone/radiance/pkg/leaderschedule"
 	envv1 "github.com/certusone/radiance/proto/env/v1"
+	networkv1 "github.com/certusone/radiance/proto/network/v1"
 	"github.com/gagliardetto/solana-go/rpc/ws"
+	"github.com/golang/protobuf/proto"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"k8s.io/klog/v2"
 )
 
 var (
 	flagEnv  = flag.String("env", ".env.prototxt", "Env file (.prototxt)")
 	flagOnly = flag.String("only", "", "Only watch specified nodes (comma-separated)")
-	flagType = flag.String("type", "", "Only print specific types")
+
+	flagType = flag.String("type", "", "Only print specific types to log")
+
+	flagKafka      = flag.Bool("kafka", false, "Enable Kafka publishing")
+	flagKafkaTopic = flag.String("kafkaTopic", "slot_status", "Kafka topic suffix to publish to")
 
 	flagDebugAddr = flag.String("debugAddr", "localhost:6060", "pprof/metrics listen address")
 )
@@ -93,11 +101,25 @@ func main() {
 
 	go sched.Run(ctx, env.Nodes)
 
+	var kcl *kgo.Client
+	var topic string
+	if *flagKafka {
+		if *flagKafkaTopic == "" {
+			klog.Exitf("Kafka enabled but no topic specified")
+		}
+		topic = strings.Join([]string{env.Kafka.TopicPrefix, *flagKafkaTopic}, ".")
+		klog.Infof("Publishing to topic %s", topic)
+		kcl, err = kafka.NewClientFromEnv(env.Kafka)
+		if err != nil {
+			klog.Exitf("Failed to create kafka client: %v", err)
+		}
+	}
+
 	for _, node := range nodes {
 		node := node
 		go func() {
 			for {
-				if err := watchSlotUpdates(ctx, node, highest, sched); err != nil {
+				if err := watchSlotUpdates(ctx, node, highest, sched, kcl, topic); err != nil {
 					klog.Errorf("watchSlotUpdates on node %s, reconnecting: %v", node.Name, err)
 				}
 				time.Sleep(time.Second * 5)
@@ -119,7 +141,7 @@ func main() {
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map, sched *leaderschedule.Tracker) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Map, sched *leaderschedule.Tracker, kcl *kgo.Client, topic string) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -170,8 +192,68 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, highest *sync.Ma
 			continue
 		}
 
-		klog.Infof("%s: slot=%d type=%s delay=%dms prop=%dms parent=%d stats=%v leader=%s",
-			node.Name, m.Slot, m.Type, delay.Milliseconds(), prop, m.Parent, m.Stats, sched.Get(m.Slot))
+		leader := sched.Get(m.Slot)
+
+		if kcl != nil {
+			var stats *networkv1.TxStats
+			if m.Type == ws.SlotsUpdatesFrozen {
+				stats = &networkv1.TxStats{
+					NumTransactionEntries:     m.Stats.NumTransactionEntries,
+					NumSuccessfulTransactions: m.Stats.NumSuccessfulTransactions,
+					NumFailedTransactions:     m.Stats.NumFailedTransactions,
+					MaxTransactionsPerEntry:   m.Stats.MaxTransactionsPerEntry,
+				}
+			}
+
+			st := &networkv1.SlotStatus{
+				Slot:      m.Slot,
+				Timestamp: uint64(ts.UnixMilli()),
+				Delay:     uint64(delay.Milliseconds()),
+				Type:      convertUpdateType(m.Type),
+				Parent:    m.Parent,
+				Stats:     stats,
+				Err:       "", // TODO
+				Leader:    leader.String(),
+				Source:    node.Name,
+			}
+
+			// Fixed-length proto encoding
+			buf := proto.NewBuffer([]byte{})
+			if err := buf.EncodeMessage(st); err != nil {
+				panic(err)
+			}
+
+			r := &kgo.Record{Topic: topic, Value: buf.Bytes()}
+			kcl.Produce(ctx, r, func(_ *kgo.Record, err error) {
+				if err != nil {
+					klog.Warningf("failed to publish message to %s: %v", topic, err)
+				}
+			})
+		}
+
+		klog.V(1).Infof("%s: slot=%d type=%s delay=%dms prop=%dms parent=%d stats=%v leader=%s",
+			node.Name, m.Slot, m.Type, delay.Milliseconds(), prop, m.Parent, m.Stats, leader)
+	}
+}
+
+func convertUpdateType(t ws.SlotsUpdatesType) networkv1.SlotStatus_UpdateType {
+	switch t {
+	case ws.SlotsUpdatesFirstShredReceived:
+		return networkv1.SlotStatus_UPDATE_TYPE_FIRST_SHRED_RECEIVED
+	case ws.SlotsUpdatesCompleted:
+		return networkv1.SlotStatus_UPDATE_TYPE_COMPLETED
+	case ws.SlotsUpdatesCreatedBank:
+		return networkv1.SlotStatus_UPDATE_TYPE_CREATED_BANK
+	case ws.SlotsUpdatesFrozen:
+		return networkv1.SlotStatus_UPDATE_TYPE_FROZEN
+	case ws.SlotsUpdatesDead:
+		return networkv1.SlotStatus_UPDATE_TYPE_DEAD
+	case ws.SlotsUpdatesOptimisticConfirmation:
+		return networkv1.SlotStatus_UPDATE_TYPE_OPTIMISTIC_CONFIRMATION
+	case ws.SlotsUpdatesRoot:
+		return networkv1.SlotStatus_UPDATE_TYPE_ROOT
+	default:
+		panic("unknown slot update type " + t)
 	}
 }
 
@@ -195,7 +277,7 @@ func watchSlots(ctx context.Context, node *envv1.RPCNode) error {
 			return fmt.Errorf("recv: %w", err)
 		}
 
-		klog.Infof("%s: slot=%d root=%d parent=%d",
+		klog.V(1).Infof("%s: slot=%d root=%d parent=%d",
 			node.Name, m.Slot, m.Root, m.Parent)
 	}
 }
