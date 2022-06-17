@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/bigtable v1.13.0
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
 	github.com/gagliardetto/binary v0.6.1
-	github.com/gagliardetto/solana-go v1.4.1-0.20220507102811-7886c8c5b6b2
+	github.com/gagliardetto/solana-go v1.4.1-0.20220616103316-ad739fd566b3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
@@ -102,8 +102,6 @@ require (
 	google.golang.org/grpc v1.47.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 )
-
-replace github.com/gagliardetto/solana-go => github.com/certusone/solana-go v0.3.7-0.20220615124756-25b9f3025b41
 
 // https://github.com/lucas-clemente/quic-go/issues/3453
 replace github.com/lucas-clemente/quic-go => github.com/leoluk/quic-go v0.27.1-0.20220617104859-ebc95102ed1c
