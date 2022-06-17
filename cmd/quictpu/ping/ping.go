@@ -37,7 +37,7 @@ func main() {
 
 	var (
 		qconf quic.Config
-		dbg   *os.File
+		dbg   io.Writer
 		err   error
 	)
 	if *flagDebug {
