@@ -68,18 +68,24 @@ func main() {
 
 	for c < *flagCount || *flagCount == -1 {
 		t := time.Now()
+		ctx, cancel := context.WithTimeout(ctx, *flagDelay)
 		conn, err := quic.DialAddrContext(ctx, flag.Args()[0], tlsConf, &qconf)
 		if err != nil {
-			klog.Exitf("Failed to dial: %v", err)
+			klog.Errorf("Failed to dial: %v", err)
+			cancel()
+			continue
 		}
+		cancel()
 
 		klog.Infof("Connected to %s (in %dms, %d/%d)",
 			flag.Args()[0], time.Since(t).Milliseconds(),
 			c+1, *flagCount)
 
-		for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
-			klog.Infof("Certificate: %s", cert.Subject)
-			klog.Infof("Public key: %s", base58.Encode(cert.PublicKey.(ed25519.PublicKey)))
+		if klog.V(1).Enabled() {
+			for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
+				klog.Infof("Certificate: %s", cert.Subject)
+				klog.Infof("Public key: %s", base58.Encode(cert.PublicKey.(ed25519.PublicKey)))
+			}
 		}
 
 		if err := conn.CloseWithError(0, ""); err != nil {
