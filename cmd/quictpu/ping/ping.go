@@ -28,6 +28,11 @@ var (
 
 func init() {
 	flag.Parse()
+
+	// Mute receive buffer warning (we don't even send data!)
+	if err := os.Setenv("QUIC_GO_DISABLE_RECEIVE_BUFFER_WARNING", "1"); err != nil {
+		panic(err)
+	}
 }
 
 func main() {
