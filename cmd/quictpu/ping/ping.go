@@ -75,7 +75,11 @@ func main() {
 
 	for c < *flagCount || *flagCount == -1 {
 		t := time.Now()
-		ctx, cancel := context.WithTimeout(ctx, *flagDelay)
+		minTimeout := 100 * time.Millisecond
+		if *flagDelay > minTimeout {
+			minTimeout = *flagDelay
+		}
+		ctx, cancel := context.WithTimeout(ctx, minTimeout)
 		conn, err := quic.DialAddrContext(ctx, *flagAddr, tlsConf, &qconf)
 		if err != nil {
 			klog.Errorf("Failed to dial: %v", err)
