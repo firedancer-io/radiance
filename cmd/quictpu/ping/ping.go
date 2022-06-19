@@ -24,9 +24,11 @@ var (
 	flagDebug = flag.Bool("debug", false, "Enable debug logging")
 	flagCount = flag.Int("count", 1, "Number of pings to send, -1 for infinite")
 	flagDelay = flag.Duration("delay", 1*time.Second, "Delay between pings")
+	flagAddr  = flag.String("addr", "", "Address to ping (<host>:<port>)")
 )
 
 func init() {
+	klog.InitFlags(nil)
 	flag.Parse()
 
 	// Mute receive buffer warning (we don't even send data!)
@@ -38,8 +40,8 @@ func init() {
 func main() {
 	ctx := context.Background()
 
-	if len(flag.Args()) != 1 {
-		klog.Exitf("Usage: %s <node>:<port>", os.Args[0])
+	if *flagAddr == "" {
+		klog.Exit("No address to ping specified")
 	}
 
 	var (
@@ -74,16 +76,17 @@ func main() {
 	for c < *flagCount || *flagCount == -1 {
 		t := time.Now()
 		ctx, cancel := context.WithTimeout(ctx, *flagDelay)
-		conn, err := quic.DialAddrContext(ctx, flag.Args()[0], tlsConf, &qconf)
+		conn, err := quic.DialAddrContext(ctx, *flagAddr, tlsConf, &qconf)
 		if err != nil {
 			klog.Errorf("Failed to dial: %v", err)
+			time.Sleep(*flagDelay)
 			cancel()
 			continue
 		}
 		cancel()
 
 		klog.Infof("Connected to %s (in %dms, %d/%d)",
-			flag.Args()[0], time.Since(t).Milliseconds(),
+			*flagAddr, time.Since(t).Milliseconds(),
 			c+1, *flagCount)
 
 		if klog.V(1).Enabled() {
