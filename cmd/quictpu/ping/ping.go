@@ -22,6 +22,8 @@ import (
 
 var (
 	flagDebug = flag.Bool("debug", false, "Enable debug logging")
+	flagCount = flag.Int("count", 1, "Number of pings to send, -1 for infinite")
+	flagDelay = flag.Duration("delay", 1*time.Second, "Delay between pings")
 )
 
 func init() {
@@ -62,20 +64,30 @@ func main() {
 		KeyLogWriter:       dbg,
 	}
 
-	t := time.Now()
-	conn, err := quic.DialAddrContext(ctx, flag.Args()[0], tlsConf, &qconf)
-	if err != nil {
-		klog.Exitf("Failed to dial: %v", err)
-	}
+	c := 0
 
-	klog.Infof("Connected to %s (%dms)", flag.Args()[0], time.Since(t).Milliseconds())
+	for c < *flagCount || *flagCount == -1 {
+		t := time.Now()
+		conn, err := quic.DialAddrContext(ctx, flag.Args()[0], tlsConf, &qconf)
+		if err != nil {
+			klog.Exitf("Failed to dial: %v", err)
+		}
 
-	for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
-		klog.Infof("Certificate: %s", cert.Subject)
-		klog.Infof("Public key: %s", base58.Encode(cert.PublicKey.(ed25519.PublicKey)))
-	}
+		klog.Infof("Connected to %s (in %dms, %d/%d)",
+			flag.Args()[0], time.Since(t).Milliseconds(),
+			c+1, *flagCount)
 
-	if err := conn.CloseWithError(0, ""); err != nil {
-		klog.Exitf("Failed to close: %v", err)
+		for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
+			klog.Infof("Certificate: %s", cert.Subject)
+			klog.Infof("Public key: %s", base58.Encode(cert.PublicKey.(ed25519.PublicKey)))
+		}
+
+		if err := conn.CloseWithError(0, ""); err != nil {
+			klog.Exitf("Failed to close: %v", err)
+		}
+
+		time.Sleep(*flagDelay)
+
+		c++
 	}
 }
