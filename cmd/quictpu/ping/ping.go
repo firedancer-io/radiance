@@ -22,8 +22,8 @@ import (
 
 var (
 	flagDebug = flag.Bool("debug", false, "Enable debug logging")
-	flagCount = flag.Int("count", 1, "Number of pings to send, -1 for infinite")
-	flagDelay = flag.Duration("delay", 1*time.Second, "Delay between pings")
+	flagCount = flag.Int("c", 1, "Number of pings to send, -1 for infinite")
+	flagDelay = flag.Duration("i", 1*time.Second, "Delay between pings")
 	flagAddr  = flag.String("addr", "", "Address to ping (<host>:<port>)")
 )
 
@@ -73,7 +73,8 @@ func main() {
 
 	c := 0
 
-	for c < *flagCount || *flagCount == -1 {
+	for c := 0; c < *flagCount || *flagCount == -1; c++ {
+		c := c
 		t := time.Now()
 		minTimeout := 100 * time.Millisecond
 		if *flagDelay > minTimeout {
@@ -105,7 +106,5 @@ func main() {
 		}
 
 		time.Sleep(*flagDelay)
-
-		c++
 	}
 }
