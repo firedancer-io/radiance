@@ -56,8 +56,6 @@ func main() {
 		})
 	}
 
-	qconf.EnableDatagrams = true
-
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
 		NextProtos:         nil,
