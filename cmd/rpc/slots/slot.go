@@ -49,28 +49,6 @@ func init() {
 	I0612 20:37:43.805364  916547 slot.go:111] val1.ffm1: slot=137326466 type=root delta=8ms parent=0
 */
 
-func parseOnlyFlag(only string) []string {
-	if only == "" {
-		return nil
-	}
-	return strings.Split(only, ",")
-}
-
-func filterNodes(nodes []*envv1.RPCNode, only []string) []*envv1.RPCNode {
-	if len(only) == 0 {
-		return nodes
-	}
-	var filtered []*envv1.RPCNode
-	for _, node := range nodes {
-		for _, o := range only {
-			if node.Name == o {
-				filtered = append(filtered, node)
-			}
-		}
-	}
-	return filtered
-}
-
 func main() {
 	env, err := envfile.Load(*flagEnv)
 	if err != nil {
@@ -86,7 +64,7 @@ func main() {
 		klog.Error(http.ListenAndServe(*flagDebugAddr, nil))
 	}()
 
-	nodes = filterNodes(nodes, parseOnlyFlag(*flagOnly))
+	nodes = envfile.FilterNodes(nodes, envfile.ParseOnlyFlag(*flagOnly))
 
 	if len(nodes) == 0 {
 		klog.Exitf("No nodes in environment or all nodes filtered")
