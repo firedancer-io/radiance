@@ -9,10 +9,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/certusone/radiance/pkg/blockhash"
 	"github.com/certusone/radiance/pkg/clusternodes"
 	"github.com/certusone/radiance/pkg/envfile"
 	"github.com/certusone/radiance/pkg/leaderschedule"
 	envv1 "github.com/certusone/radiance/proto/env/v1"
+	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc/ws"
 	"k8s.io/klog/v2"
 )
@@ -61,13 +63,17 @@ func main() {
 	gossip := clusternodes.New()
 	go gossip.Run(ctx, env.Nodes, time.Minute)
 
+	// Blockhash helper
+	bh := blockhash.New(nodes)
+	go bh.Run(ctx, time.Second)
+
 	var highest uint64
 
 	for _, node := range nodes {
 		node := node
 		go func() {
 			for {
-				if err := watchSlotUpdates(ctx, node, sched, gossip, &highest); err != nil {
+				if err := watchSlotUpdates(ctx, node, sched, gossip, bh, &highest); err != nil {
 					klog.Errorf("watchSlotUpdates on node %s, reconnecting: %v", node.Name, err)
 				}
 				time.Sleep(time.Second * 5)
@@ -78,7 +84,7 @@ func main() {
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leaderschedule.Tracker, gossip *clusternodes.Tracker, highest *uint64) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leaderschedule.Tracker, gossip *clusternodes.Tracker, bh *blockhash.Tracker, highest *uint64) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -100,6 +106,8 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leadersch
 
 		sched.Update(m.Slot)
 
+		var lastBlockhash solana.Hash
+
 		if m.Type == ws.SlotsUpdatesFirstShredReceived {
 			klog.V(1).Infof("%s: first shred received for slot %d", node.Name, m.Slot)
 
@@ -117,6 +125,11 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leadersch
 					continue
 				}
 				klog.Infof("current leader: %s, tpu: %s", leader, *g.TPU)
+				b := bh.MostRecent()
+				if b != lastBlockhash {
+					klog.Infof("new blockhash: %s", b)
+					lastBlockhash = b
+				}
 			}
 		}
 	}
