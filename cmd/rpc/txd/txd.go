@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
-	"os"
 	"sync/atomic"
 	"time"
 
@@ -18,13 +16,13 @@ import (
 	envv1 "github.com/certusone/radiance/proto/env/v1"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc/ws"
-	"github.com/gagliardetto/solana-go/text"
 	"k8s.io/klog/v2"
 )
 
 var (
-	flagEnv  = flag.String("env", ".env.prototxt", "Env file (.prototxt)")
-	flagOnly = flag.String("only", "", "Only watch specified nodes (comma-separated)")
+	flagEnv    = flag.String("env", ".env.prototxt", "Env file (.prototxt)")
+	flagOnly   = flag.String("only", "", "Only watch specified nodes (comma-separated)")
+	flagPinger = flag.Bool("pinger", false, "Enable pinger")
 
 	flagDebugAddr = flag.String("debugAddr", "localhost:6060", "pprof/metrics listen address")
 )
@@ -140,30 +138,9 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leadersch
 					lastBlockhash = b
 				}
 
-				tx := buildTransaction(m.Slot, time.Now(), b, signer.PublicKey())
-				sigs, err := tx.Sign(func(key solana.PublicKey) *solana.PrivateKey {
-					if key != signer.PublicKey() {
-						panic("no private key for unknown signer " + key.String())
-					}
-					return &signer
-				})
-				if err != nil {
-					panic(err)
+				if *flagPinger {
+					sendPing(m, b, signer, g)
 				}
-
-				if klog.V(2).Enabled() {
-					tx.EncodeTree(text.NewTreeEncoder(os.Stdout, "Ping memo"))
-				}
-
-				txb, err := tx.MarshalBinary()
-				if err != nil {
-					panic(err)
-				}
-
-				klog.Infof("Sending tx %s", sigs[0].String())
-				klog.V(2).Infof("tx: %s", hex.EncodeToString(txb))
-
-				sendUDP(*g.TPU, txb)
 			}
 		}
 	}
