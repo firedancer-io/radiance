@@ -31,6 +31,9 @@ type Tracker struct {
 
 	// initCh is used to signal that the leader schedule is available.
 	initCh chan struct{}
+
+	// c caches RPC client connections by node name.
+	c map[string]*rpc.Client
 }
 
 const (
@@ -62,12 +65,16 @@ func (t *Tracker) Update(slot uint64) {
 func (t *Tracker) Run(ctx context.Context, nodes []*envv1.RPCNode) {
 	t.initCh = make(chan struct{})
 
+	t.c = make(map[string]*rpc.Client)
+	for _, node := range nodes {
+		t.c[node.Name] = rpc.New(node.Http)
+	}
+
 	for {
 		// Fetch slots per epoch
 		node := nodes[rand.Intn(len(nodes))]
-		c := rpc.New(node.Http)
 		klog.Infof("Fetching epoch schedule from %s", node.Http)
-		out, err := c.GetEpochSchedule(ctx)
+		out, err := t.c[node.Name].GetEpochSchedule(ctx)
 		if err != nil {
 			klog.Errorf("get epoch schedule: %w", err)
 			time.Sleep(time.Second)
@@ -145,8 +152,7 @@ func (t *Tracker) fetch(ctx context.Context, nodes []*envv1.RPCNode, slot uint64
 	klog.Infof("Using node %s", node.Http)
 
 	// Fetch the leader schedule
-	c := rpc.New(node.Http)
-	out, err := c.GetLeaderScheduleWithOpts(ctx, &rpc.GetLeaderScheduleOpts{
+	out, err := t.c[node.Name].GetLeaderScheduleWithOpts(ctx, &rpc.GetLeaderScheduleOpts{
 		Epoch: &slot,
 	})
 	if err != nil {

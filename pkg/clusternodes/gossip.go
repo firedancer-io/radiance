@@ -16,33 +16,42 @@ type Tracker struct {
 	mu       sync.Mutex
 	current  []*rpc.GetClusterNodesResult
 	byPubkey map[solana.PublicKey]*rpc.GetClusterNodesResult
+	c        map[string]*rpc.Client
+	nodes    []*envv1.RPCNode
 }
 
-func New() *Tracker {
+func New(nodes []*envv1.RPCNode) *Tracker {
+	c := make(map[string]*rpc.Client)
+	for _, node := range nodes {
+		c[node.Name] = rpc.New(node.Http)
+	}
+
 	return &Tracker{
 		byPubkey: make(map[solana.PublicKey]*rpc.GetClusterNodesResult),
+		c:        c,
+		nodes:    nodes,
 	}
 }
 
 // Run periodically fetches the gossip
-func (t *Tracker) Run(ctx context.Context, nodes []*envv1.RPCNode, interval time.Duration) {
-	t.update(ctx, nodes)
+func (t *Tracker) Run(ctx context.Context, interval time.Duration) {
+	t.update(ctx)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(interval):
-			t.update(ctx, nodes)
+			t.update(ctx)
 		}
 	}
 }
 
-func (t *Tracker) update(ctx context.Context, nodes []*envv1.RPCNode) {
+func (t *Tracker) update(ctx context.Context) {
 	now := time.Now()
 
 	// Fetch gossip
-	node := nodes[rand.Intn(len(nodes))]
-	c := rpc.New(node.Http)
+	node := t.nodes[rand.Intn(len(t.nodes))]
+	c := t.c[node.Name]
 	klog.Infof("Fetching cluster nodes from %s", node.Http)
 	out, err := c.GetClusterNodes(ctx)
 	if err != nil {
