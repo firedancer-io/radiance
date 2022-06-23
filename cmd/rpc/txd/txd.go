@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
 	"sync/atomic"
 	"time"
 
@@ -16,6 +18,7 @@ import (
 	envv1 "github.com/certusone/radiance/proto/env/v1"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc/ws"
+	"github.com/gagliardetto/solana-go/text"
 	"k8s.io/klog/v2"
 )
 
@@ -67,13 +70,19 @@ func main() {
 	bh := blockhash.New(nodes)
 	go bh.Run(ctx, time.Second)
 
+	// Load signing key
+	signer, err := loadLocalSigner()
+	if err != nil {
+		klog.Exitf("Failed to load signing : %v", err)
+	}
+
 	var highest uint64
 
 	for _, node := range nodes {
 		node := node
 		go func() {
 			for {
-				if err := watchSlotUpdates(ctx, node, sched, gossip, bh, &highest); err != nil {
+				if err := watchSlotUpdates(ctx, node, sched, gossip, bh, signer, &highest); err != nil {
 					klog.Errorf("watchSlotUpdates on node %s, reconnecting: %v", node.Name, err)
 				}
 				time.Sleep(time.Second * 5)
@@ -84,7 +93,7 @@ func main() {
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leaderschedule.Tracker, gossip *clusternodes.Tracker, bh *blockhash.Tracker, highest *uint64) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leaderschedule.Tracker, gossip *clusternodes.Tracker, bh *blockhash.Tracker, signer solana.PrivateKey, highest *uint64) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -130,6 +139,31 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leadersch
 					klog.Infof("new blockhash: %s", b)
 					lastBlockhash = b
 				}
+
+				tx := buildTransaction(m.Slot, time.Now(), b, signer.PublicKey())
+				sigs, err := tx.Sign(func(key solana.PublicKey) *solana.PrivateKey {
+					if key != signer.PublicKey() {
+						panic("no private key for unknown signer " + key.String())
+					}
+					return &signer
+				})
+				if err != nil {
+					panic(err)
+				}
+
+				if klog.V(2).Enabled() {
+					tx.EncodeTree(text.NewTreeEncoder(os.Stdout, "Ping memo"))
+				}
+
+				txb, err := tx.MarshalBinary()
+				if err != nil {
+					panic(err)
+				}
+
+				klog.Infof("Sending tx %s", sigs[0].String())
+				klog.V(2).Infof("tx: %s", hex.EncodeToString(txb))
+
+				sendUDP(*g.TPU, txb)
 			}
 		}
 	}
