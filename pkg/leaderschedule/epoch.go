@@ -138,12 +138,7 @@ func (t *Tracker) Run(ctx context.Context, nodes []*envv1.RPCNode) {
 }
 
 func (t *Tracker) fetch(ctx context.Context, nodes []*envv1.RPCNode, slot uint64) error {
-	t.bySlotMu.Lock()
-	defer t.bySlotMu.Unlock()
-
-	if t.bySlot == nil {
-		t.bySlot = make(map[uint64]solana.PublicKey)
-	}
+	now := time.Now()
 
 	// Pick random node from nodes
 	node := nodes[rand.Intn(len(nodes))]
@@ -159,6 +154,17 @@ func (t *Tracker) fetch(ctx context.Context, nodes []*envv1.RPCNode, slot uint64
 	}
 
 	epoch, firstSlot := t.FirstSlot(slot)
+
+	klog.Infof("Fetched epoch schedule from %s in %v", node.Http, time.Since(now))
+
+	now = time.Now()
+	defer klog.V(1).Infof("bySlotMu: %v", time.Since(now))
+	t.bySlotMu.Lock()
+	defer t.bySlotMu.Unlock()
+
+	if t.bySlot == nil {
+		t.bySlot = make(map[uint64]solana.PublicKey)
+	}
 
 	// Update the leader schedule
 	m := uint64(0)
@@ -192,4 +198,17 @@ func (t *Tracker) Get(slot uint64) solana.PublicKey {
 	defer t.bySlotMu.RUnlock()
 
 	return t.bySlot[slot]
+}
+
+// TryGet returns the scheduled leader for the given slot.
+// It returns false if the leader schedule is not yet available.
+func (t *Tracker) TryGet(slot uint64) (solana.PublicKey, bool) {
+	t.bySlotMu.RLock()
+	defer t.bySlotMu.RUnlock()
+
+	if t.bySlot == nil {
+		return solana.PublicKey{}, false
+	}
+
+	return t.bySlot[slot], true
 }

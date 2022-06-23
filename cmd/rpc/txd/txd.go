@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/certusone/radiance/pkg/clusternodes"
 	"github.com/certusone/radiance/pkg/envfile"
 	"github.com/certusone/radiance/pkg/leaderschedule"
 	envv1 "github.com/certusone/radiance/proto/env/v1"
@@ -56,13 +57,17 @@ func main() {
 	sched := &leaderschedule.Tracker{}
 	go sched.Run(ctx, env.Nodes)
 
+	// Gossip helper
+	gossip := clusternodes.New()
+	go gossip.Run(ctx, env.Nodes, time.Minute)
+
 	var highest uint64
 
 	for _, node := range nodes {
 		node := node
 		go func() {
 			for {
-				if err := watchSlotUpdates(ctx, node, sched, &highest); err != nil {
+				if err := watchSlotUpdates(ctx, node, sched, gossip, &highest); err != nil {
 					klog.Errorf("watchSlotUpdates on node %s, reconnecting: %v", node.Name, err)
 				}
 				time.Sleep(time.Second * 5)
@@ -73,7 +78,7 @@ func main() {
 	select {}
 }
 
-func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leaderschedule.Tracker, highest *uint64) error {
+func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leaderschedule.Tracker, gossip *clusternodes.Tracker, highest *uint64) error {
 	timeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
@@ -101,6 +106,17 @@ func watchSlotUpdates(ctx context.Context, node *envv1.RPCNode, sched *leadersch
 			if m.Slot > atomic.LoadUint64(highest) {
 				atomic.StoreUint64(highest, m.Slot)
 				klog.Infof("%s: highest slot is now %d", node.Name, m.Slot)
+				leader, ok := sched.TryGet(m.Slot)
+				if !ok {
+					klog.Infof("could not fetch leader for slot %d", m.Slot)
+					continue
+				}
+				g := gossip.GetByPubkey(leader)
+				if g == nil || g.TPU == nil {
+					klog.Infof("could not fetch gossip entry for leader %s", leader)
+					continue
+				}
+				klog.Infof("current leader: %s, tpu: %s", leader, *g.TPU)
 			}
 		}
 	}
