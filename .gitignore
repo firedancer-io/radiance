@@ -1,3 +1,4 @@
 .idea
 *.pb.go
 .env.prototxt
+*.log
