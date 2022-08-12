@@ -47,7 +47,7 @@ class RadianceClient():
         self.session.auth = (self.user, self.password)
 
     def query(self, query):
-        r = self.session.post(self.host, data=query)
+        r = self.session.post(self.host, data=query + "\nFORMAT JSON")
         if r.status_code != 200:
             raise Exception("Failed to get leader stats: {}".format(r.text))
         return r.json()['data']
