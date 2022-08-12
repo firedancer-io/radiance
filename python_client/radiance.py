@@ -57,8 +57,7 @@ class RadianceClient():
 
 
 if __name__ == '__main__':
-    import pprint
-
+    import json
     c = RadianceClient(RADIANCE_HOST, RADIANCE_USER, RADIANCE_PASSWORD)
     r = c.get_leader_stats()
-    pprint.pprint(r)
+    print(json.dumps(r, indent=2))
