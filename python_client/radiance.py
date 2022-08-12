@@ -10,9 +10,10 @@ RADIANCE_PASSWORD = os.getenv("RADIANCE_PASSWORD")
 
 LEADER_STATS = """
 SELECT
+    floor(slot, -3) as slotWindow,
     leader,
-    median(diff),
-    count()
+    median(diff) AS medianReplay,
+    count() AS count
 FROM
 (
     WITH
@@ -30,11 +31,10 @@ FROM
         slot,
         leader,
         source
+    HAVING diff > 0
 )
-GROUP BY leader
-ORDER BY median(diff)
-FORMAT JSON
-"""
+GROUP BY slotWindow, leader
+ORDER BY median(diff)"""
 
 
 class RadianceClient():
