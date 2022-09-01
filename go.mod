@@ -5,13 +5,14 @@ go 1.18
 require (
 	cloud.google.com/go/bigtable v1.13.0
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
-	github.com/gagliardetto/binary v0.6.1
+	github.com/gagliardetto/binary v0.7.1
 	github.com/gagliardetto/solana-go v1.4.1-0.20220616103316-ad739fd566b3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
 	github.com/klauspost/compress v1.15.6
 	github.com/lucas-clemente/quic-go v0.27.2
+	github.com/mr-tron/base58 v1.2.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/twmb/franz-go v1.6.0
 	golang.org/x/sys v0.0.0-20220610221304-9f5ed59c137d
@@ -66,7 +67,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/zstdpool-freelist v0.0.0-20201229113212-927304c0c3b1 // indirect
-	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.16.4 // indirect
 	github.com/onsi/gomega v1.15.0 // indirect

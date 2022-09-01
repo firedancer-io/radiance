@@ -119,8 +119,6 @@ github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx2
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/census-instrumentation/opencensus-proto v0.3.0 h1:t/LhUZLVitR1Ow2YOnduCsavhwFUklBMoGVYUCqmCqk=
 github.com/census-instrumentation/opencensus-proto v0.3.0/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
-github.com/certusone/solana-go v0.3.7-0.20220615124756-25b9f3025b41 h1:WrRma/gmAvdF29+IeF1GTpEf72w7vCs/kvX5t0nGEWk=
-github.com/certusone/solana-go v0.3.7-0.20220615124756-25b9f3025b41/go.mod h1:NFuoDwHPvw858ZMHUJr6bkhN8qHt4x6e+U3EYHxAwNY=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
@@ -184,8 +182,9 @@ github.com/francoispqt/gojay v1.2.13/go.mod h1:ehT5mTG4ua4581f1++1WLG0vPdaA9HaiD
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
-github.com/gagliardetto/binary v0.6.1 h1:vGrbUym10xaaswadfnuSDr0xlP3NZS5XWbLqENJidrI=
 github.com/gagliardetto/binary v0.6.1/go.mod h1:aOfYkc20U0deHaHn/LVZXiqlkDbFAX0FpTlDhsXa0S0=
+github.com/gagliardetto/binary v0.7.1 h1:6ggDQ26vR+4xEvl/S13NcdLK3MUCi4oSy73pS9aI1cI=
+github.com/gagliardetto/binary v0.7.1/go.mod h1:aOfYkc20U0deHaHn/LVZXiqlkDbFAX0FpTlDhsXa0S0=
 github.com/gagliardetto/gofuzz v1.2.2/go.mod h1:bkH/3hYLZrMLbfYWA0pWzXmi5TTRZnu4pMGZBkqMKvY=
 github.com/gagliardetto/solana-go v1.4.1-0.20220616103316-ad739fd566b3 h1:sJiZFrGx4/Ka32wjXUiZi3xPy5Nrv+X221QkDlVJ46w=
 github.com/gagliardetto/solana-go v1.4.1-0.20220616103316-ad739fd566b3/go.mod h1:NFuoDwHPvw858ZMHUJr6bkhN8qHt4x6e+U3EYHxAwNY=
