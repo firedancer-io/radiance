@@ -17,7 +17,7 @@ require (
 	github.com/twmb/franz-go v1.6.0
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
 	google.golang.org/protobuf v1.28.1
-	k8s.io/klog/v2 v2.60.1
+	k8s.io/klog/v2 v2.70.1
 )
 
 require (
