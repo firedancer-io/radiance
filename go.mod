@@ -13,10 +13,10 @@ require (
 	github.com/klauspost/compress v1.15.6
 	github.com/lucas-clemente/quic-go v0.27.2
 	github.com/mr-tron/base58 v1.2.0
-	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/client_golang v1.13.0
 	github.com/twmb/franz-go v1.6.0
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
-	google.golang.org/protobuf v1.28.0
+	google.golang.org/protobuf v1.28.1
 	k8s.io/klog/v2 v2.60.1
 )
 
@@ -73,8 +73,8 @@ require (
 	github.com/onsi/gomega v1.15.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.34.0 // indirect
-	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/stretchr/testify v1.7.1 // indirect
 	github.com/teris-io/shortid v0.0.0-20201117134242-e59966efd125 // indirect
 	github.com/tidwall/gjson v1.14.1 // indirect
