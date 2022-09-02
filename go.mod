@@ -14,7 +14,7 @@ require (
 	github.com/lucas-clemente/quic-go v0.27.2
 	github.com/mr-tron/base58 v1.2.0
 	github.com/prometheus/client_golang v1.13.0
-	github.com/stretchr/testify v1.7.1
+	github.com/stretchr/testify v1.8.0
 	github.com/twmb/franz-go v1.6.0
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c
 	google.golang.org/protobuf v1.28.1
@@ -103,7 +103,7 @@ require (
 	google.golang.org/genproto v0.0.0-20220725144611-272f38e5d71b // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // https://github.com/lucas-clemente/quic-go/issues/3453
