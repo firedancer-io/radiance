@@ -1,4 +1,4 @@
-package sbf
+package loader
 
 import (
 	"debug/elf"
