@@ -1,4 +1,7 @@
-package sbf
+// Package loader implements an ELF loader for the Sealevel virtual machine.
+//
+// Based on https://docs.rs/solana_rbpf/latest/solana_rbpf/elf_parser/index.html
+package loader
 
 import (
 	"bufio"
