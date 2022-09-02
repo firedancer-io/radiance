@@ -44,13 +44,12 @@ func ifname(n string) []byte {
 //
 // Generates a chain that looks like this:
 //
-// table ip filter {
-//   chain tpuproxy {
-//     type filter hook prerouting priority -2147483648; policy accept;
-//     iifname "enp6s0" udp dport { 8003, 8004, 8005 } tproxy to :51211
-//   }
-// }
-//
+//	table ip filter {
+//	  chain tpuproxy {
+//	    type filter hook prerouting priority -2147483648; policy accept;
+//	    iifname "enp6s0" udp dport { 8003, 8004, 8005 } tproxy to :51211
+//	  }
+//	}
 func InsertProxyChain(destPorts []uint16, redirectPort uint16, iface string) error {
 	c := getNFTConn()
 
