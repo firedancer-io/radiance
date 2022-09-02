@@ -41,6 +41,7 @@ type loader struct {
 	phLoad     elf.Prog64
 	phDynamic  *elf.Prog64
 	shShstrtab elf.Section64
+	shText     *elf.Section64
 	shSymtab   *elf.Section64
 	shStrtab   *elf.Section64
 	shDynstr   *elf.Section64
@@ -295,6 +296,8 @@ func (l *loader) parseSections() error {
 			return nil
 		}
 		switch sectionName {
+		case ".text":
+			err = setSection(&l.shText)
 		case ".symtab":
 			err = setSection(&l.shSymtab)
 		case ".strtab":

@@ -63,6 +63,16 @@ func TestLoadProgram_Noop(t *testing.T) {
 	}, loader.shShstrtab)
 
 	assert.Equal(t, &elf.Section64{
+		Name:      50,
+		Type:      uint32(elf.SHT_PROGBITS),
+		Flags:     6,
+		Addr:      4096,
+		Off:       4096,
+		Size:      96,
+		Addralign: 8,
+	}, loader.shText)
+
+	assert.Equal(t, &elf.Section64{
 		Name:      74,
 		Type:      uint32(elf.SHT_SYMTAB),
 		Flags:     0,
