@@ -66,7 +66,7 @@ func (v *Verifier) Verify() error {
 			fallthrough
 		case OpDiv32Imm, OpDiv64Imm, OpMod32Imm, OpMod64Imm:
 			if ins.Imm() == 0 {
-				return fmt.Errorf("division by zero")
+				return ExcDivideByZero
 			}
 		case OpJa,
 			OpJeqImm, OpJeqReg,
