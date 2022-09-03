@@ -18,52 +18,8 @@ import (
 // TODO Fuzz
 // TODO Differential fuzz against rbpf
 
-const EF_SBF_V2 = 0x20
-
-const DT_NUM = 35
-
-// Bounds checks
-const (
-	// 64 MiB max program size.
-	// Allows loader to use unchecked math when adding 32-bit offsets.
-	maxFileLen = 1 << 26
-
-	maxSectionNameLen = 16
-	maxSymbolNameLen  = 1024
-)
-
-// loader is based on solana_rbpf::elf_parser
-type loader struct {
-	rd       io.ReaderAt
-	fileSize uint64
-
-	eh         elf.Header64
-	phLoad     elf.Prog64
-	phDynamic  *elf.Prog64
-	shShstrtab elf.Section64
-	shText     *elf.Section64
-	shSymtab   *elf.Section64
-	shStrtab   *elf.Section64
-	shDynstr   *elf.Section64
-	shDynamic  *elf.Section64
-	dynamic    [DT_NUM]uint64
-	relocsIter *tableIter[elf.Rel64]
-	dynSymIter *tableIter[elf.Sym64]
-}
-
-func newLoader(buf []byte) (*loader, error) {
-	if len(buf) > maxFileLen {
-		return nil, fmt.Errorf("ELF file too large")
-	}
-	l := &loader{
-		rd:       bytes.NewReader(buf),
-		fileSize: uint64(len(buf)),
-	}
-	return l, nil
-}
-
 // parse checks ELF file for validity and loads metadata with minimal allocations.
-func (l *loader) parse() error {
+func (l *Loader) parse() error {
 	if err := l.readHeader(); err != nil {
 		return err
 	}
@@ -82,6 +38,9 @@ func (l *loader) parse() error {
 	if err := l.parseDynamic(); err != nil {
 		return err
 	}
+	if err := l.validate(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -94,17 +53,17 @@ const (
 	symLen   = 0x18 // sizeof(elf.Sym64)
 )
 
-func (l *loader) newPhTableIter() *tableIter[elf.Prog64] {
+func (l *Loader) newPhTableIter() *tableIter[elf.Prog64] {
 	eh := &l.eh
 	return newTableIterator[elf.Prog64](l, eh.Phoff, uint32(eh.Phnum), phEntLen)
 }
 
-func (l *loader) newShTableIter() *tableIter[elf.Section64] {
+func (l *Loader) newShTableIter() *tableIter[elf.Section64] {
 	eh := &l.eh
 	return newTableIterator[elf.Section64](l, eh.Shoff, uint32(eh.Shnum), shEntLen)
 }
 
-func (l *loader) readHeader() error {
+func (l *Loader) readHeader() error {
 	var hdrBuf [ehLen]byte
 	if _, err := io.ReadFull(io.NewSectionReader(l.rd, 0, ehLen), hdrBuf[:]); err != nil {
 		return err
@@ -112,7 +71,7 @@ func (l *loader) readHeader() error {
 	return binary.Read(bytes.NewReader(hdrBuf[:]), binary.LittleEndian, &l.eh)
 }
 
-func (l *loader) validateHeader() error {
+func (l *Loader) validateHeader() error {
 	eh := &l.eh
 	ident := &eh.Ident
 
@@ -152,7 +111,7 @@ func (l *loader) validateHeader() error {
 }
 
 // scan the program header table and remember the last PT_LOAD segment
-func (l *loader) loadProgramHeaderTable() error {
+func (l *Loader) loadProgramHeaderTable() error {
 	iter := l.newPhTableIter()
 	for iter.Next() && iter.Err() == nil {
 		ph := iter.Item()
@@ -166,7 +125,7 @@ func (l *loader) loadProgramHeaderTable() error {
 			}
 			continue
 		case elf.PT_LOAD:
-			break
+			// ok
 		default:
 			continue
 		}
@@ -188,7 +147,7 @@ func (l *loader) loadProgramHeaderTable() error {
 
 // reads and validates the section header table.
 // remembers the section header table.
-func (l *loader) readSectionHeaderTable() error {
+func (l *Loader) readSectionHeaderTable() error {
 	eh := &l.eh
 	iter := l.newShTableIter()
 	sectionDataOff := uint64(0)
@@ -212,7 +171,7 @@ func (l *loader) readSectionHeaderTable() error {
 				*l.shDynamic = sh
 			}
 		default:
-			break
+			// ok
 		}
 
 		// Ensure section data is not overlapping with ELF headers
@@ -252,7 +211,7 @@ func (l *loader) readSectionHeaderTable() error {
 	return iter.Err()
 }
 
-func (l *loader) getString(strtab *elf.Section64, stroff uint32, maxLen uint16) (string, error) {
+func (l *Loader) getString(strtab *elf.Section64, stroff uint32, maxLen uint16) (string, error) {
 	if elf.SectionType(strtab.Type) != elf.SHT_STRTAB {
 		return "", fmt.Errorf("invalid strtab")
 	}
@@ -275,8 +234,8 @@ func (l *loader) getString(strtab *elf.Section64, stroff uint32, maxLen uint16) 
 	return builder.String(), nil
 }
 
-// Iterate sections and remember special sections by name.
-func (l *loader) parseSections() error {
+// Iterate sections, validate them, and remember special sections by name.
+func (l *Loader) parseSections() error {
 	shShstrtab := &l.shShstrtab
 	iter := l.newShTableIter()
 	for iter.Next() && iter.Err() == nil {
@@ -296,6 +255,8 @@ func (l *loader) parseSections() error {
 			return nil
 		}
 		switch sectionName {
+		case ".bss":
+			return fmt.Errorf("unsupported section .bss")
 		case ".text":
 			err = setSection(&l.shText)
 		case ".symtab":
@@ -308,11 +269,25 @@ func (l *loader) parseSections() error {
 		if err != nil {
 			return err
 		}
+
+		if strings.HasPrefix(sectionName, ".bss") {
+			return fmt.Errorf("unsupported bss-like section")
+		}
+		if (sh.Flags&uint64(elf.SHF_ALLOC|elf.SHF_WRITE)) == uint64(elf.SHF_ALLOC|elf.SHF_WRITE) &&
+			strings.HasPrefix(sectionName, ".data") &&
+			!strings.HasPrefix(sectionName, ".data.rel") {
+			return fmt.Errorf("unsupported data-like section")
+		}
+
+		// bounds check
+		if sh.Off+sh.Size < sh.Off || sh.Off+sh.Size > l.fileSize {
+			return io.ErrUnexpectedEOF
+		}
 	}
 	return iter.Err()
 }
 
-func (l *loader) newDynamicIter() (*tableIter[elf.Dyn64], error) {
+func (l *Loader) newDynamicIter() (*tableIter[elf.Dyn64], error) {
 	var off uint64
 	var size uint64
 	if ph := l.phDynamic; ph != nil {
@@ -334,7 +309,7 @@ func (l *loader) newDynamicIter() (*tableIter[elf.Dyn64], error) {
 	return iter, nil
 }
 
-func (l *loader) parseDynamicTable() error {
+func (l *Loader) parseDynamicTable() error {
 	iter, err := l.newDynamicIter()
 	if err != nil {
 		return err
@@ -358,7 +333,7 @@ func (l *loader) parseDynamicTable() error {
 }
 
 // sectionAt finds the section that has a start address matching vaddr.
-func (l *loader) sectionAt(vaddr uint64) (*elf.Section64, error) {
+func (l *Loader) sectionAt(vaddr uint64) (*elf.Section64, error) {
 	iter := l.newShTableIter()
 	for iter.Next() && iter.Err() == nil {
 		sh := iter.Item()
@@ -370,7 +345,7 @@ func (l *loader) sectionAt(vaddr uint64) (*elf.Section64, error) {
 }
 
 // segmentByVaddr finds the segment which vaddr lies within.
-func (l *loader) segmentByVaddr(vaddr uint64) (*elf.Prog64, error) {
+func (l *Loader) segmentByVaddr(vaddr uint64) (*elf.Prog64, error) {
 	iter := l.newPhTableIter()
 	for iter.Next() && iter.Err() == nil {
 		ph := iter.Item()
@@ -384,7 +359,7 @@ func (l *loader) segmentByVaddr(vaddr uint64) (*elf.Prog64, error) {
 	return nil, iter.Err()
 }
 
-func (l *loader) parseRelocs() error {
+func (l *Loader) parseRelocs() error {
 	vaddr := l.dynamic[elf.DT_REL]
 	if vaddr == 0 {
 		return nil
@@ -429,7 +404,7 @@ func (l *loader) parseRelocs() error {
 // getSymtab returns an iterator over the symbols in a symtab-like section.
 //
 // Performs necessary bounds checking.
-func (l *loader) getSymtab(sh *elf.Section64) (*tableIter[elf.Sym64], error) {
+func (l *Loader) getSymtab(sh *elf.Section64) (*tableIter[elf.Sym64], error) {
 	switch elf.SectionType(sh.Type) {
 	case elf.SHT_SYMTAB, elf.SHT_DYNSYM:
 		break
@@ -439,7 +414,7 @@ func (l *loader) getSymtab(sh *elf.Section64) (*tableIter[elf.Sym64], error) {
 	return newTableIteratorChecked[elf.Sym64](l, sh.Off, sh.Off+sh.Size, symLen)
 }
 
-func (l *loader) parseDynSymtab() error {
+func (l *Loader) parseDynSymtab() error {
 	vaddr := l.dynamic[elf.DT_SYMTAB]
 	if vaddr == 0 {
 		return nil
@@ -457,7 +432,7 @@ func (l *loader) parseDynSymtab() error {
 	return err
 }
 
-func (l *loader) parseDynamic() error {
+func (l *Loader) parseDynamic() error {
 	if err := l.parseDynamicTable(); err != nil {
 		return err
 	}
@@ -470,10 +445,31 @@ func (l *loader) parseDynamic() error {
 	return nil
 }
 
+// validate performs additional checks after parsing.
+func (l *Loader) validate() error {
+	if l.shText == nil {
+		return fmt.Errorf("missing .text section")
+	}
+	if !l.checkEntrypoint() {
+		return fmt.Errorf("invalid entrypoint")
+	}
+	return nil
+}
+
+func (l *Loader) checkEntrypoint() bool {
+	start := l.shText.Addr
+	end, overflow := bits.Add64(start, l.shText.Size, 0)
+	if overflow != 0 {
+		end = math.MaxUint64
+	}
+	entry := l.eh.Entry
+	return start <= entry && entry < end && (entry-start)%8 == 0
+}
+
 // tableIter is a memory-efficient iterator over densely packed tables of statically sized items.
 // Such as the ELF program header and section header tables.
 type tableIter[T any] struct {
-	l        *loader
+	l        *Loader
 	off      uint64
 	i        uint32 // one ahead
 	count    uint32
@@ -483,7 +479,7 @@ type tableIter[T any] struct {
 }
 
 // newTableIteratorChecked is like newTableIterator, but with all necessary bounds checks.
-func newTableIteratorChecked[T any](l *loader, start uint64, end uint64, elemSize uint16) (*tableIter[T], error) {
+func newTableIteratorChecked[T any](l *Loader, start uint64, end uint64, elemSize uint16) (*tableIter[T], error) {
 	if end < start || end > l.fileSize {
 		return nil, io.ErrUnexpectedEOF
 	}
@@ -499,7 +495,7 @@ func newTableIteratorChecked[T any](l *loader, start uint64, end uint64, elemSiz
 }
 
 // newTableIterator creates a new tableIter at `off` for `count` elements of `elemSize` len.
-func newTableIterator[T any](l *loader, off uint64, count uint32, elemSize uint16) *tableIter[T] {
+func newTableIterator[T any](l *Loader, off uint64, count uint32, elemSize uint16) *tableIter[T] {
 	return &tableIter[T]{
 		l:        l,
 		off:      off,

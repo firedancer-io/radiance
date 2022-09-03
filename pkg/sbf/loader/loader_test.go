@@ -15,10 +15,11 @@ var (
 )
 
 func TestLoadProgram_Noop(t *testing.T) {
-	loader, err := newLoader(soNoop)
+	loader, err := NewLoaderFromBytes(soNoop)
 	require.NoError(t, err)
 
 	err = loader.parse()
+	require.NoError(t, err)
 
 	assert.Equal(t, elf.Header64{
 		Ident: [16]byte{
@@ -147,4 +148,45 @@ func TestLoadProgram_Noop(t *testing.T) {
 	dynamic[elf.DT_FLAGS] = 0x04
 
 	assert.Equal(t, dynamic, loader.dynamic)
+
+	err = loader.copy()
+	require.NoError(t, err)
+
+	assert.Equal(t, []addrRange{
+		{
+			// .rodata
+			min: 0x2b8,
+			max: 0x2c3,
+		},
+	}, loader.rodatas)
+
+	assert.Equal(t, addrRange{
+		min: 0x1000,
+		max: 0x1060,
+	}, loader.text)
+
+	assertZeroBytes(t, loader.program[:loader.rodatas[0].min])
+	assert.Equal(t,
+		soNoop[loader.rodatas[0].min:loader.rodatas[0].max],
+		loader.program[loader.rodatas[0].min:loader.rodatas[0].max])
+	assertZeroBytes(t, loader.program[loader.rodatas[0].max:loader.text.min])
+	assert.Equal(t,
+		soNoop[loader.text.min:loader.text.max],
+		loader.program[loader.text.min:loader.text.max])
+	assertZeroBytes(t, loader.program[loader.text.max:])
+}
+
+func assertZeroBytes(t *testing.T, b []byte) {
+	if !isZeroBytes(b) {
+		t.Fatal("Should be zero")
+	}
+}
+
+func isZeroBytes(b []byte) bool {
+	for _, v := range b {
+		if v != 0x00 {
+			return false
+		}
+	}
+	return true
 }
