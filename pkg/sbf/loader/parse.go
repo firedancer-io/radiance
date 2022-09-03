@@ -1,6 +1,3 @@
-// Package loader implements an ELF loader for the Sealevel virtual machine.
-//
-// Based on https://docs.rs/solana_rbpf/latest/solana_rbpf/elf_parser/index.html
 package loader
 
 import (
@@ -14,9 +11,6 @@ import (
 	"math/bits"
 	"strings"
 )
-
-// TODO Fuzz
-// TODO Differential fuzz against rbpf
 
 // parse checks ELF file for validity and loads metadata with minimal allocations.
 func (l *Loader) parse() error {
@@ -51,6 +45,11 @@ const (
 	dynLen   = 0x10 // sizeof(elf.Dyn64)
 	relLen   = 0x10 // sizeof(elf.Rel64)
 	symLen   = 0x18 // sizeof(elf.Sym64)
+)
+
+const (
+	maxSectionNameLen = 16
+	maxSymbolNameLen  = 1024
 )
 
 func (l *Loader) newPhTableIter() *tableIter[elf.Prog64] {
@@ -414,21 +413,21 @@ func (l *Loader) getSymtab(sh *elf.Section64) (*tableIter[elf.Sym64], error) {
 	return newTableIteratorChecked[elf.Sym64](l, sh.Off, sh.Off+sh.Size, symLen)
 }
 
-func (l *Loader) parseDynSymtab() error {
+func (l *Loader) parseDynSymtab() (err error) {
 	vaddr := l.dynamic[elf.DT_SYMTAB]
 	if vaddr == 0 {
 		return nil
 	}
 
-	dynsym, err := l.sectionAt(vaddr)
+	l.shDynsym, err = l.sectionAt(vaddr)
 	if err != nil {
 		return err
 	}
-	if dynsym == nil {
+	if l.shDynsym == nil {
 		return fmt.Errorf("cannot find DT_SYMTAB section")
 	}
 
-	l.dynSymIter, err = l.getSymtab(dynsym)
+	l.dynSymIter, err = l.getSymtab(l.shDynsym)
 	return err
 }
 
@@ -549,6 +548,26 @@ func (it *tableIter[T]) getNext() (bool, error) {
 	it.off += uint64(it.elemSize)
 	it.i++
 	return true, nil
+}
+
+// lookupFromTable does a point select in a densely packed table.
+func lookupFromTable[T any](l *Loader, section *elf.Section64, i uint32, elemSize uint16) (ret T, err error) {
+	off := uint64(i) * uint64(elemSize)
+	if off > section.Size {
+		return ret, io.ErrUnexpectedEOF
+	}
+	rd := io.NewSectionReader(l.rd, int64(section.Off+off), int64(elemSize))
+	err = binary.Read(rd, binary.LittleEndian, &ret)
+	return
+}
+
+func (l *Loader) getDynsym(idx uint32) (elf.Sym64, error) {
+	// TODO is shDynsym.Off checked?
+	return lookupFromTable[elf.Sym64](l, l.shDynsym, idx, symLen)
+}
+
+func (l *Loader) getDynstr(name uint32) (string, error) {
+	return l.getString(l.shDynstr, name, maxSymbolNameLen)
 }
 
 func isOverlap(startA uint64, sizeA uint64, startB uint64, sizeB uint64) bool {

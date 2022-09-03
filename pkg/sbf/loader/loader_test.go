@@ -168,12 +168,15 @@ func TestLoadProgram_Noop(t *testing.T) {
 	assertZeroBytes(t, loader.program[:loader.rodatas[0].min])
 	assert.Equal(t,
 		soNoop[loader.rodatas[0].min:loader.rodatas[0].max],
-		loader.program[loader.rodatas[0].min:loader.rodatas[0].max])
+		loader.getRange(loader.rodatas[0]))
 	assertZeroBytes(t, loader.program[loader.rodatas[0].max:loader.text.min])
 	assert.Equal(t,
 		soNoop[loader.text.min:loader.text.max],
-		loader.program[loader.text.min:loader.text.max])
+		loader.getRange(loader.text))
 	assertZeroBytes(t, loader.program[loader.text.max:])
+
+	err = loader.relocate()
+	require.NoError(t, err)
 }
 
 func assertZeroBytes(t *testing.T, b []byte) {

@@ -4,6 +4,8 @@ import (
 	"debug/elf"
 	"fmt"
 	"io"
+
+	"github.com/certusone/radiance/pkg/sbf"
 )
 
 // The following ELF loading rules seem mostly arbitrary.
@@ -88,9 +90,9 @@ func (l *Loader) checkSectionAddrs(sh *elf.Section64) error {
 	}
 
 	// Ensure section within VM program range
-	vaddr := clampAddUint64(VaddrProgram, sh.Addr)
+	vaddr := clampAddUint64(sbf.VaddrProgram, sh.Addr)
 	vaddrEnd := vaddr + sh.Size
-	if vaddrEnd < vaddr || vaddrEnd > VaddrStack {
+	if vaddrEnd < vaddr || vaddrEnd > sbf.VaddrStack {
 		return fmt.Errorf("section virtual address out-of-bounds")
 	}
 
@@ -126,4 +128,8 @@ func (l *Loader) copySection(section addrRange) (err error) {
 	rd := io.NewSectionReader(l.rd, off, size)
 	_, err = io.ReadFull(rd, l.program[section.min:section.max])
 	return
+}
+
+func (l *Loader) getRange(section addrRange) []byte {
+	return l.program[section.min:section.max]
 }

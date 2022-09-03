@@ -14,6 +14,7 @@ require (
 	github.com/lucas-clemente/quic-go v0.27.2
 	github.com/mr-tron/base58 v1.2.0
 	github.com/prometheus/client_golang v1.13.0
+	github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72
 	github.com/stretchr/testify v1.8.0
 	github.com/twmb/franz-go v1.6.0
 	golang.org/x/sys v0.0.0-20220615213510-4f61da869c0c

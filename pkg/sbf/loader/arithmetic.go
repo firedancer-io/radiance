@@ -28,14 +28,12 @@ func (a addrRange) len() uint64 {
 	return a.max - a.min
 }
 
-/*
 func (a addrRange) contains(addr uint64) bool {
 	if a.len() == 0 {
 		return false
 	}
 	return a.min <= addr && addr < a.max
 }
-*/
 
 func (a addrRange) containsRange(b addrRange) bool {
 	if a.len() == 0 || b.len() == 0 {
