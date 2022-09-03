@@ -39,12 +39,14 @@ type Loader struct {
 	// Program section/segment mappings
 	// Uses physical addressing
 	rodatas   []addrRange
-	text      addrRange
+	textRange addrRange
 	progRange addrRange
 
 	// Contains most of ELF (.text and rodata-like)
 	// Non-loaded sections are zeroed
-	program []byte
+	program    []byte
+	text       []byte
+	entrypoint uint64 // program counter
 
 	// Symbols
 	funcs    map[uint32]uint64
@@ -77,6 +79,9 @@ func NewLoaderFromBytes(buf []byte) (*Loader, error) {
 }
 
 // Load parses, loads, and relocates an SBF program.
+//
+// This loader differs from rbpf in a few ways:
+// We don't support spec bugs, we relocate after loading.
 func (l *Loader) Load() (*sbf.Program, error) {
 	if err := l.parse(); err != nil {
 		return nil, err
@@ -87,8 +92,13 @@ func (l *Loader) Load() (*sbf.Program, error) {
 	if err := l.relocate(); err != nil {
 		return nil, err
 	}
-	prog := &sbf.Program{
-		RO: l.program,
+	return l.getProgram(), nil
+}
+
+func (l *Loader) getProgram() *sbf.Program {
+	return &sbf.Program{
+		RO:         l.program,
+		Text:       l.text,
+		Entrypoint: l.entrypoint,
 	}
-	return prog, nil
 }

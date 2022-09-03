@@ -11,10 +11,14 @@ import (
 
 // relocate applies ELF relocations (for syscalls and position-independent code).
 func (l *Loader) relocate() error {
+	l.funcs = make(map[uint32]uint64)
 	if err := l.fixupRelativeCalls(); err != nil {
 		return err
 	}
 	if err := l.applyDynamicRelocs(); err != nil {
+		return err
+	}
+	if err := l.getEntrypoint(); err != nil {
 		return err
 	}
 	return nil
@@ -22,8 +26,8 @@ func (l *Loader) relocate() error {
 
 func (l *Loader) fixupRelativeCalls() error {
 	// TODO does invariant text.size%8 == 0 hold?
-	insCount := l.text.len() / sbf.SlotSize
-	buf := l.getRange(l.text)
+	insCount := l.textRange.len() / sbf.SlotSize
+	buf := l.getRange(l.textRange)
 	for i := uint64(0); i < insCount; i++ {
 		off := i * sbf.SlotSize
 		slot := sbf.GetSlot(buf[off : off+sbf.SlotSize])
@@ -99,7 +103,7 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 		binary.LittleEndian.PutUint32(l.program[rOff+4:rOff+8], uint32(addr))
 		binary.LittleEndian.PutUint32(l.program[rOff+12:rOff+16], uint32(addr>>32))
 	case R_BPF_64_RELATIVE:
-		if l.text.contains(rOff) {
+		if l.textRange.contains(rOff) {
 			immLow := binary.LittleEndian.Uint32(l.program[rOff+4 : rOff+8])
 			immHi := binary.LittleEndian.Uint32(l.program[rOff+12 : rOff+16])
 
@@ -141,10 +145,10 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 		var hash uint32
 		if elf.ST_TYPE(sym.Info) == elf.STT_FUNC && sym.Value != 0 {
 			// Function call
-			if !l.text.contains(sym.Value) {
+			if !l.textRange.contains(sym.Value) {
 				return fmt.Errorf("out-of-bounds R_BPF_64_32 function ref")
 			}
-			target := (sym.Value - l.text.min) / 8
+			target := (sym.Value - l.textRange.min) / 8
 			hash, err = l.registerFunc(target)
 			if err != nil {
 				return fmt.Errorf("R_BPF_64_32 function ref: %w", err)
@@ -159,6 +163,15 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 	default:
 		return fmt.Errorf("unsupported reloc type %d", rType)
 	}
+	return nil
+}
+
+func (l *Loader) getEntrypoint() error {
+	offset := l.eh.Entry - l.shText.Addr
+	if offset%sbf.SlotSize != 0 {
+		return fmt.Errorf("invalid entrypoint")
+	}
+	l.entrypoint = offset / sbf.SlotSize
 	return nil
 }
 

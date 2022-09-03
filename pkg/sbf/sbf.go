@@ -34,25 +34,30 @@ func GetSlot(buf []byte) Slot {
 
 // Op returns the opcode field.
 func (s Slot) Op() uint8 {
-	return uint8(s >> 56)
+	return uint8(s)
 }
 
 // Dst returns the destination register field.
 func (s Slot) Dst() uint8 {
-	return uint8(s>>52) & 0xF
+	return uint8(s>>12) & 0xF
 }
 
 // Src returns the source register field.
 func (s Slot) Src() uint8 {
-	return uint8(s>>48) & 0xF
+	return uint8(s>>8) & 0xF
 }
 
 // Off returns the offset field.
-func (s Slot) Off() uint16 {
-	return uint16(s >> 32)
+func (s Slot) Off() int16 {
+	return int16(uint16(s >> 16))
 }
 
 // Imm returns the immediate field.
 func (s Slot) Imm() int32 {
-	return int32(uint32(s))
+	return int32(uint32(s >> 32))
+}
+
+// Uimm returns the immediate field as unsigned.
+func (s Slot) Uimm() uint32 {
+	return uint32(s >> 32)
 }

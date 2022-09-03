@@ -14,7 +14,7 @@ var (
 	soNoop []byte
 )
 
-func TestLoadProgram_Noop(t *testing.T) {
+func TestLoader_Noop(t *testing.T) {
 	loader, err := NewLoaderFromBytes(soNoop)
 	require.NoError(t, err)
 
@@ -163,20 +163,28 @@ func TestLoadProgram_Noop(t *testing.T) {
 	assert.Equal(t, addrRange{
 		min: 0x1000,
 		max: 0x1060,
-	}, loader.text)
+	}, loader.textRange)
 
 	assertZeroBytes(t, loader.program[:loader.rodatas[0].min])
 	assert.Equal(t,
 		soNoop[loader.rodatas[0].min:loader.rodatas[0].max],
 		loader.getRange(loader.rodatas[0]))
-	assertZeroBytes(t, loader.program[loader.rodatas[0].max:loader.text.min])
+	assertZeroBytes(t, loader.program[loader.rodatas[0].max:loader.textRange.min])
 	assert.Equal(t,
-		soNoop[loader.text.min:loader.text.max],
-		loader.getRange(loader.text))
-	assertZeroBytes(t, loader.program[loader.text.max:])
+		soNoop[loader.textRange.min:loader.textRange.max],
+		loader.getRange(loader.textRange))
+	assertZeroBytes(t, loader.program[loader.textRange.max:])
+
+	assert.Equal(t,
+		soNoop[loader.textRange.min:loader.textRange.max],
+		loader.text)
 
 	err = loader.relocate()
 	require.NoError(t, err)
+
+	assert.Equal(t, uint64(0), loader.entrypoint)
+
+	assert.NotNil(t, loader.getProgram())
 }
 
 func assertZeroBytes(t *testing.T, b []byte) {
@@ -192,4 +200,14 @@ func isZeroBytes(b []byte) bool {
 		}
 	}
 	return true
+}
+
+func TestVerifier(t *testing.T) {
+	loader, err := NewLoaderFromBytes(soNoop)
+	require.NoError(t, err)
+
+	program, err := loader.Load()
+	require.NoError(t, err)
+
+	require.NoError(t, program.Verify())
 }

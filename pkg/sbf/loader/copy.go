@@ -34,7 +34,7 @@ func (l *Loader) getText() error {
 	if err := l.checkSectionAddrs(l.shText); err != nil {
 		return fmt.Errorf("invalid .text: %w", err)
 	}
-	l.text = addrRange{min: l.shText.Off, max: l.shText.Off + l.shText.Size}
+	l.textRange = addrRange{min: l.shText.Off, max: l.shText.Off + l.shText.Size}
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (l *Loader) mapSections() error {
 		}
 		l.progRange.insert(section)
 
-		if section.min != l.text.min {
+		if section.min != l.textRange.min {
 			l.rodatas = append(l.rodatas, section)
 		}
 	}
@@ -116,9 +116,12 @@ func (l *Loader) copySections() error {
 			return err
 		}
 	}
-	if err := l.copySection(l.text); err != nil {
+	if err := l.copySection(l.textRange); err != nil {
 		return err
 	}
+
+	// Special sub-slice for text
+	l.text = l.getRange(l.textRange)
 
 	return nil
 }
