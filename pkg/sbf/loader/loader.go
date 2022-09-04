@@ -49,8 +49,7 @@ type Loader struct {
 	entrypoint uint64 // program counter
 
 	// Symbols
-	funcs    map[uint32]uint64
-	syscalls map[uint32]string
+	funcs map[uint32]uint64
 }
 
 // Bounds checks

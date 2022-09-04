@@ -56,11 +56,11 @@ func (i *Interpreter) Run() (err error) {
 
 	// TODO step to next instruction
 
+mainLoop:
 	for {
 		// Fetch
 		ins := i.getSlot(pc)
 		// Execute
-		pc++
 		switch ins.Op() {
 		case OpLdxb:
 			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
@@ -373,15 +373,20 @@ func (i *Interpreter) Run() (err error) {
 		case OpCallx:
 			panic("callx not implemented")
 		case OpExit:
-			return nil
+			// TODO implement function returns
+			break mainLoop
 		default:
 			panic(fmt.Sprintf("unimplemented opcode %#02x", ins.Op()))
 		}
+		// Post execute
 		if err != nil {
 			// TODO return CPU exception error type here
 			return err
 		}
+		pc++
 	}
+
+	return nil
 }
 
 func (i *Interpreter) getSlot(pc int64) Slot {

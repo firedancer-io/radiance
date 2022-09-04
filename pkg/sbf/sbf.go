@@ -41,12 +41,12 @@ func (s Slot) Op() uint8 {
 
 // Dst returns the destination register field.
 func (s Slot) Dst() uint8 {
-	return uint8(s>>12) & 0xF
+	return uint8(s>>8) & 0xF
 }
 
 // Src returns the source register field.
 func (s Slot) Src() uint8 {
-	return uint8(s>>8) & 0xF
+	return uint8(s>>12) & 0xF
 }
 
 // Off returns the offset field.
