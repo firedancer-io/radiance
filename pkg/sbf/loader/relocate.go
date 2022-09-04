@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/certusone/radiance/pkg/sbf"
-	"github.com/spaolacci/murmur3"
 )
 
 // relocate applies ELF relocations (for syscalls and position-independent code).
@@ -57,7 +56,7 @@ func (l *Loader) fixupRelativeCalls() error {
 }
 
 func (l *Loader) registerFunc(target uint64) (uint32, error) {
-	hash := PCHash(target)
+	hash := sbf.PCHash(target)
 	// TODO check for collision with syscalls
 	if _, ok := l.funcs[hash]; ok {
 		return 0, fmt.Errorf("symbol hash collision")
@@ -155,7 +154,7 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 			}
 		} else {
 			// Syscall
-			hash = SymbolHash(name)
+			hash = sbf.SymbolHash(name)
 			// TODO check whether syscall is known
 		}
 
@@ -173,24 +172,6 @@ func (l *Loader) getEntrypoint() error {
 	}
 	l.entrypoint = offset / sbf.SlotSize
 	return nil
-}
-
-const (
-	// EntrypointHash equals SymbolHash("entrypoint")
-	EntrypointHash = uint32(0x71e3cf81)
-)
-
-// SymbolHash returns the murmur3 32-bit hash of a symbol name.
-func SymbolHash(s string) uint32 {
-	return murmur3.Sum32([]byte(s))
-}
-
-// PCHash returns the murmur3 32-bit hash of a program counter.
-func PCHash(addr uint64) uint32 {
-	// TODO this is kinda pointless …
-	var key [8]byte
-	binary.LittleEndian.PutUint64(key[:], addr)
-	return murmur3.Sum32(key[:])
 }
 
 // Relocation types for eBPF.

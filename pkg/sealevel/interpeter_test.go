@@ -1,15 +1,18 @@
-package loader
+package sealevel
 
 import (
 	_ "embed"
 	"testing"
 
+	"github.com/certusone/radiance/fixtures"
 	"github.com/certusone/radiance/pkg/sbf"
+	"github.com/certusone/radiance/pkg/sbf/loader"
 	"github.com/stretchr/testify/require"
 )
 
 func TestInterpreter_Noop(t *testing.T) {
-	loader, err := NewLoaderFromBytes(soNoop)
+	// TODO simplify API?
+	loader, err := loader.NewLoaderFromBytes(fixtures.SBF(t, "noop.so"))
 	require.NotNil(t, loader)
 	require.NoError(t, err)
 
@@ -19,11 +22,16 @@ func TestInterpreter_Noop(t *testing.T) {
 
 	require.NoError(t, program.Verify())
 
+	syscalls := sbf.NewSyscallRegistry()
+	syscalls.Register("log", SyscallLog)
+	syscalls.Register("log_64", SyscallLog64)
+
 	interpreter := sbf.NewInterpreter(program, &sbf.VMOpts{
 		StackSize: 1024,
 		HeapSize:  1024, // TODO
 		Input:     nil,
 		MaxCU:     10000,
+		Syscalls:  syscalls,
 	})
 	require.NotNil(t, interpreter)
 

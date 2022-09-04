@@ -13,6 +13,7 @@ func clampAddUint64(x uint64, y uint64) uint64 {
 	return z
 }
 
+/*
 func clampSubUint64(x uint64, y uint64) uint64 {
 	z, borrow := bits.Sub64(x, y, 0)
 	if borrow != 0 {
@@ -20,6 +21,7 @@ func clampSubUint64(x uint64, y uint64) uint64 {
 	}
 	return z
 }
+*/
 
 type addrRange struct {
 	min, max uint64
