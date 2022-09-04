@@ -9,17 +9,18 @@ import (
 
 // Interpreter implements the SBF core in pure Go.
 type Interpreter struct {
-	text  []byte
-	ro    []byte
-	stack []byte
-	heap  []byte
-	input []byte
+	textVA uint64
+	text   []byte
+	ro     []byte
+	stack  Stack
+	heap   []byte
+	input  []byte
 
 	entry uint64
-
 	cuMax uint64
 
 	syscalls  map[uint32]Syscall
+	funcs     map[uint32]int64
 	vmContext any
 }
 
@@ -31,7 +32,7 @@ func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 	return &Interpreter{
 		text:      p.Text,
 		ro:        p.RO,
-		stack:     make([]byte, opts.StackSize),
+		stack:     NewStack(),
 		heap:      make([]byte, opts.HeapSize),
 		input:     opts.Input,
 		entry:     p.Entrypoint,
@@ -45,16 +46,18 @@ func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 //
 // This function may panic given code that doesn't pass the static verifier.
 func (i *Interpreter) Run() (err error) {
-	// Deliberately implementing the entire core in a single function here
-	// to give the compiler more creative liberties.
-
 	var r [11]uint64
 	r[1] = VaddrInput
 	// TODO frame pointer
 	pc := int64(i.entry)
 	cuLeft := int64(i.cuMax)
 
-	// TODO step to next instruction
+	// Design notes
+	// - The interpreter is deliberately implemented in a single big loop,
+	//   to give the compiler more creative liberties, and avoid escaping hot data to the heap.
+	// - uint64(int32(x)) performs sign extension. Most ALU64 instructions make use of this.
+	// - The static verifier imposes invariants on the bytecode.
+	//   The interpreter may panic when it notices these invariants are violated (e.g. invalid opcode)
 
 mainLoop:
 	for {
@@ -367,21 +370,49 @@ mainLoop:
 			// TODO use src reg hint
 			if sc, ok := i.syscalls[ins.Uimm()]; ok {
 				r[0], cuLeft, err = sc.Invoke(i, r[1], r[2], r[3], r[4], r[5], cuLeft)
+			} else if target, ok := i.funcs[ins.Uimm()]; ok {
+				r[10], ok = i.stack.Push((*[4]uint64)(r[6:10]), pc+1)
+				if !ok {
+					err = ExcCallDepth
+				}
+				pc = target
 			} else {
-				panic("bpf function calls not implemented")
+				err = ExcCallDest
 			}
 		case OpCallx:
-			panic("callx not implemented")
+			target := r[ins.Uimm()]
+			target &= ^(uint64(0x7))
+			var ok bool
+			r[10], ok = i.stack.Push((*[4]uint64)(r[6:10]), pc+1)
+			if !ok {
+				err = ExcCallDepth
+			}
+			if target < i.textVA || target >= VaddrStack || target >= i.textVA+uint64(len(i.text)) {
+				err = NewExcBadAccess(target, 8, false, "jump out-of-bounds")
+			}
+			pc = int64((target - i.textVA) / 8)
 		case OpExit:
-			// TODO implement function returns
-			break mainLoop
+			var ok bool
+			r[10], pc, ok = i.stack.Pop((*[4]uint64)(r[6:10]))
+			if !ok {
+				break mainLoop
+			}
 		default:
 			panic(fmt.Sprintf("unimplemented opcode %#02x", ins.Op()))
 		}
 		// Post execute
+		if cuLeft < 0 {
+			err = ExcOutOfCU
+		}
 		if err != nil {
-			// TODO return CPU exception error type here
-			return err
+			exc := &Exception{
+				PC:     pc,
+				Detail: err,
+			}
+			if IsLongIns(ins.Op()) {
+				exc.PC-- // fix reported PC
+			}
+			return exc
 		}
 		pc++
 	}
@@ -412,7 +443,11 @@ func (i *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.Po
 		}
 		return unsafe.Pointer(&i.ro[lo]), nil
 	case VaddrStack >> 32:
-		panic("todo implement stack access check")
+		mem := i.stack.GetFrame(uint32(addr))
+		if uint32(len(mem)) < size {
+			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds stack access")
+		}
+		return unsafe.Pointer(&mem[0]), nil
 	case VaddrHeap >> 32:
 		panic("todo implement heap access check")
 	case VaddrInput >> 32:

@@ -20,8 +20,6 @@ const (
 	MaxInsSize = 2 * SlotSize
 )
 
-const StackFrameSize = 0x1000
-
 func IsLongIns(op uint8) bool {
 	return op == OpLddw
 }
