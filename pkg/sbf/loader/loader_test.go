@@ -5,16 +5,14 @@ import (
 	_ "embed"
 	"testing"
 
+	"github.com/certusone/radiance/fixtures"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-var (
-	//go:embed tests/noop.so
-	soNoop []byte
-)
-
 func TestLoader_Noop(t *testing.T) {
+	soNoop := fixtures.SBF(t, "noop.so")
+
 	loader, err := NewLoaderFromBytes(soNoop)
 	require.NoError(t, err)
 
@@ -203,7 +201,7 @@ func isZeroBytes(b []byte) bool {
 }
 
 func TestVerifier(t *testing.T) {
-	loader, err := NewLoaderFromBytes(soNoop)
+	loader, err := NewLoaderFromBytes(fixtures.SBF(t, "noop.so"))
 	require.NoError(t, err)
 
 	program, err := loader.Load()
