@@ -25,13 +25,12 @@ type VM interface {
 // VMOpts specifies virtual machine parameters.
 type VMOpts struct {
 	// Machine parameters
-	StackSize int
-	HeapSize  int
-	Syscalls  SyscallRegistry
+	HeapSize int
+	Syscalls SyscallRegistry
 
 	// Execution parameters
 	Context any // passed to syscalls
-	MaxCU   uint64
+	MaxCU   int
 	Input   []byte // mapped at VaddrInput
 }
 
@@ -54,7 +53,6 @@ var (
 	ExcDivideOverflow = errors.New("divide overflow")
 	ExcOutOfCU        = errors.New("compute unit overrun")
 	ExcCallDepth      = errors.New("call depth exceeded")
-	ExcCallDest       = errors.New("unknown symbol or syscall")
 )
 
 type ExcBadAccess struct {
@@ -75,4 +73,12 @@ func NewExcBadAccess(addr uint64, size uint32, write bool, reason string) ExcBad
 
 func (e ExcBadAccess) Error() string {
 	return fmt.Sprintf("bad memory access at %#x (size=%d write=%v), reason: %s", e.Addr, e.Size, e.Write, e.Reason)
+}
+
+type ExcCallDest struct {
+	Imm uint32
+}
+
+func (e ExcCallDest) Error() string {
+	return fmt.Sprintf("unknown symbol or syscall 0x%08x", e.Imm)
 }

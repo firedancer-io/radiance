@@ -33,6 +33,8 @@ func (v *Verifier) Verify() error {
 		case OpMul32Imm, OpMul32Reg, OpMul64Imm, OpMul64Reg:
 		case OpOr32Imm, OpOr32Reg, OpOr64Imm, OpOr64Reg:
 		case OpAnd32Imm, OpAnd32Reg, OpAnd64Imm, OpAnd64Reg:
+		case OpLsh32Reg, OpLsh64Reg:
+		case OpRsh32Reg, OpRsh64Reg:
 		case OpNeg32, OpNeg64:
 		case OpXor32Imm, OpXor32Reg, OpXor64Imm, OpXor64Reg:
 		case OpMov32Imm, OpMov32Reg, OpMov64Imm, OpMov64Reg:

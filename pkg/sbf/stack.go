@@ -87,7 +87,7 @@ func (s *Stack) Push(nvRegs *[4]uint64, ret int64) (fp uint64, ok bool) {
 	}
 
 	fp = s.GetFramePtr() + 2*StackFrameSize
-	s.shadow = s.shadow[len(s.shadow)+1:]
+	s.shadow = s.shadow[:len(s.shadow)+1]
 	s.shadow[len(s.shadow)-1] = Frame{
 		FramePtr: fp,
 		NVRegs:   *nvRegs,
@@ -109,10 +109,11 @@ func (s *Stack) Pop(nvRegs *[4]uint64) (fp uint64, ret int64, ok bool) {
 	}
 
 	var frame Frame
-	frame, s.shadow = s.shadow[0], s.shadow[1:]
+	frame, s.shadow = s.shadow[len(s.shadow)-1], s.shadow[:len(s.shadow)-1]
 
 	fp = s.GetFramePtr()
 	*nvRegs = frame.NVRegs
 	ret = frame.RetAddr
+	ok = true
 	return
 }

@@ -49,7 +49,7 @@ type Loader struct {
 	entrypoint uint64 // program counter
 
 	// Symbols
-	funcs map[uint32]uint64
+	funcs map[uint32]int64
 }
 
 // Bounds checks
@@ -98,6 +98,8 @@ func (l *Loader) getProgram() *sbf.Program {
 	return &sbf.Program{
 		RO:         l.program,
 		Text:       l.text,
+		TextVA:     sbf.VaddrProgram + l.textRange.min,
 		Entrypoint: l.entrypoint,
+		Funcs:      l.funcs,
 	}
 }

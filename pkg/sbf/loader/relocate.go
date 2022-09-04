@@ -10,7 +10,7 @@ import (
 
 // relocate applies ELF relocations (for syscalls and position-independent code).
 func (l *Loader) relocate() error {
-	l.funcs = make(map[uint32]uint64)
+	l.funcs = make(map[uint32]int64)
 	if err := l.fixupRelativeCalls(); err != nil {
 		return err
 	}
@@ -31,9 +31,7 @@ func (l *Loader) fixupRelativeCalls() error {
 		off := i * sbf.SlotSize
 		slot := sbf.GetSlot(buf[off : off+sbf.SlotSize])
 
-		isCall := slot.Op() == sbf.OpCall &&
-			slot.Imm() != -1 &&
-			slot.Src() == 0
+		isCall := slot.Op() == sbf.OpCall && slot.Imm() != -1
 		if !isCall {
 			continue
 		}
@@ -58,10 +56,10 @@ func (l *Loader) fixupRelativeCalls() error {
 func (l *Loader) registerFunc(target uint64) (uint32, error) {
 	hash := sbf.PCHash(target)
 	// TODO check for collision with syscalls
-	if _, ok := l.funcs[hash]; ok {
-		return 0, fmt.Errorf("symbol hash collision")
-	}
-	l.funcs[hash] = target
+	//if _, ok := l.funcs[hash]; ok {
+	//	return 0, fmt.Errorf("symbol hash collision for func at=%d hash=%#08x", target, hash)
+	//}
+	l.funcs[hash] = int64(target)
 	return hash, nil
 }
 
@@ -127,7 +125,7 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 			} else {
 				// lol
 				addr = uint64(binary.LittleEndian.Uint32(l.program[rOff+4 : rOff+8]))
-				addr = clampAddUint64(addr, sbf.VaddrStack)
+				addr = clampAddUint64(addr, sbf.VaddrProgram)
 			}
 			binary.LittleEndian.PutUint64(l.program[rOff:rOff+8], addr)
 		}

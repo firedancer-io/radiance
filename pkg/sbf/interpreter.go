@@ -17,7 +17,7 @@ type Interpreter struct {
 	input  []byte
 
 	entry uint64
-	cuMax uint64
+	cuMax int
 
 	syscalls  map[uint32]Syscall
 	funcs     map[uint32]int64
@@ -30,6 +30,7 @@ type Interpreter struct {
 // In other words, Run may only be called once per interpreter.
 func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 	return &Interpreter{
+		textVA:    p.TextVA,
 		text:      p.Text,
 		ro:        p.RO,
 		stack:     NewStack(),
@@ -38,6 +39,7 @@ func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 		entry:     p.Entrypoint,
 		cuMax:     opts.MaxCU,
 		syscalls:  opts.Syscalls,
+		funcs:     p.Funcs,
 		vmContext: opts.Context,
 	}
 }
@@ -45,12 +47,13 @@ func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 // Run executes the program.
 //
 // This function may panic given code that doesn't pass the static verifier.
-func (i *Interpreter) Run() (err error) {
+func (ip *Interpreter) Run() (err error) {
 	var r [11]uint64
 	r[1] = VaddrInput
+	r[10] = ip.stack.GetFramePtr()
 	// TODO frame pointer
-	pc := int64(i.entry)
-	cuLeft := int64(i.cuMax)
+	pc := int64(ip.entry)
+	cuLeft := int(ip.cuMax)
 
 	// Design notes
 	// - The interpreter is deliberately implemented in a single big loop,
@@ -60,53 +63,56 @@ func (i *Interpreter) Run() (err error) {
 	//   The interpreter may panic when it notices these invariants are violated (e.g. invalid opcode)
 
 mainLoop:
-	for {
+	for i := 0; true; i++ {
 		// Fetch
-		ins := i.getSlot(pc)
+		ins := ip.getSlot(pc)
+		fmt.Printf("% 5d [%016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x] %-5d: %s\n",
+			i, r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10], pc, GetOpcodeName(ins.Op()))
+		fmt.Printf("       ins=%016x op=%s\n", bits.ReverseBytes64(uint64(ins)), GetOpcodeName(ins.Op()))
 		// Execute
 		switch ins.Op() {
 		case OpLdxb:
 			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
 			var v uint8
-			v, err = i.Read8(vma)
+			v, err = ip.Read8(vma)
 			r[ins.Dst()] = uint64(v)
 		case OpLdxh:
 			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
 			var v uint16
-			v, err = i.Read16(vma)
+			v, err = ip.Read16(vma)
 			r[ins.Dst()] = uint64(v)
 		case OpLdxw:
 			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
 			var v uint32
-			v, err = i.Read32(vma)
+			v, err = ip.Read32(vma)
 			r[ins.Dst()] = uint64(v)
 		case OpLdxdw:
 			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
-			r[ins.Dst()], err = i.Read64(vma)
+			r[ins.Dst()], err = ip.Read64(vma)
 		case OpStb:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write8(vma, uint8(ins.Uimm()))
+			err = ip.Write8(vma, uint8(ins.Uimm()))
 		case OpSth:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write16(vma, uint16(ins.Uimm()))
+			err = ip.Write16(vma, uint16(ins.Uimm()))
 		case OpStw:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write32(vma, ins.Uimm())
+			err = ip.Write32(vma, ins.Uimm())
 		case OpStdw:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write64(vma, uint64(ins.Imm()))
+			err = ip.Write64(vma, uint64(ins.Imm()))
 		case OpStxb:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write8(vma, uint8(r[ins.Src()]))
+			err = ip.Write8(vma, uint8(r[ins.Src()]))
 		case OpStxh:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write16(vma, uint16(r[ins.Src()]))
+			err = ip.Write16(vma, uint16(r[ins.Src()]))
 		case OpStxw:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write32(vma, uint32(r[ins.Src()]))
+			err = ip.Write32(vma, uint32(r[ins.Src()]))
 		case OpStxdw:
 			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
-			err = i.Write64(vma, r[ins.Src()])
+			err = ip.Write64(vma, r[ins.Src()])
 		case OpAdd32Imm:
 			r[ins.Dst()] = uint64(int32(r[ins.Dst()]) + ins.Imm())
 		case OpAdd32Reg:
@@ -274,7 +280,7 @@ mainLoop:
 				panic("invalid be instruction")
 			}
 		case OpLddw:
-			r[ins.Dst()] = uint64(ins.Uimm()) | (uint64(i.getSlot(pc+1).Uimm()) << 32)
+			r[ins.Dst()] = uint64(ins.Uimm()) | (uint64(ip.getSlot(pc+1).Uimm()) << 32)
 			pc++
 		case OpJa:
 			pc += int64(ins.Off())
@@ -368,35 +374,36 @@ mainLoop:
 			}
 		case OpCall:
 			// TODO use src reg hint
-			if sc, ok := i.syscalls[ins.Uimm()]; ok {
-				r[0], cuLeft, err = sc.Invoke(i, r[1], r[2], r[3], r[4], r[5], cuLeft)
-			} else if target, ok := i.funcs[ins.Uimm()]; ok {
-				r[10], ok = i.stack.Push((*[4]uint64)(r[6:10]), pc+1)
+			if sc, ok := ip.syscalls[ins.Uimm()]; ok {
+				r[0], cuLeft, err = sc.Invoke(ip, r[1], r[2], r[3], r[4], r[5], cuLeft)
+			} else if target, ok := ip.funcs[ins.Uimm()]; ok {
+				r[10], ok = ip.stack.Push((*[4]uint64)(r[6:10]), pc+1)
 				if !ok {
 					err = ExcCallDepth
 				}
-				pc = target
+				pc = target - 1
 			} else {
-				err = ExcCallDest
+				err = ExcCallDest{ins.Uimm()}
 			}
 		case OpCallx:
 			target := r[ins.Uimm()]
 			target &= ^(uint64(0x7))
 			var ok bool
-			r[10], ok = i.stack.Push((*[4]uint64)(r[6:10]), pc+1)
+			r[10], ok = ip.stack.Push((*[4]uint64)(r[6:10]), pc+1)
 			if !ok {
 				err = ExcCallDepth
 			}
-			if target < i.textVA || target >= VaddrStack || target >= i.textVA+uint64(len(i.text)) {
+			if target < ip.textVA || target >= VaddrStack || target >= ip.textVA+uint64(len(ip.text)) {
 				err = NewExcBadAccess(target, 8, false, "jump out-of-bounds")
 			}
-			pc = int64((target - i.textVA) / 8)
+			pc = int64((target-ip.textVA)/8) - 1
 		case OpExit:
 			var ok bool
-			r[10], pc, ok = i.stack.Pop((*[4]uint64)(r[6:10]))
+			r[10], pc, ok = ip.stack.Pop((*[4]uint64)(r[6:10]))
 			if !ok {
 				break mainLoop
 			}
+			pc--
 		default:
 			panic(fmt.Sprintf("unimplemented opcode %#02x", ins.Op()))
 		}
@@ -420,15 +427,15 @@ mainLoop:
 	return nil
 }
 
-func (i *Interpreter) getSlot(pc int64) Slot {
-	return GetSlot(i.text[pc*SlotSize:])
+func (ip *Interpreter) getSlot(pc int64) Slot {
+	return GetSlot(ip.text[pc*SlotSize:])
 }
 
-func (i *Interpreter) VMContext() any {
-	return i.vmContext
+func (ip *Interpreter) VMContext() any {
+	return ip.vmContext
 }
 
-func (i *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.Pointer, error) {
+func (ip *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.Pointer, error) {
 	// TODO exhaustive testing against rbpf
 	// TODO review generated asm for performance
 
@@ -438,30 +445,33 @@ func (i *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.Po
 		if write {
 			return nil, NewExcBadAccess(addr, size, write, "write to program")
 		}
-		if lo+uint64(size) >= uint64(len(i.ro)) {
+		if lo+uint64(size) >= uint64(len(ip.ro)) {
 			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds program read")
 		}
-		return unsafe.Pointer(&i.ro[lo]), nil
+		return unsafe.Pointer(&ip.ro[lo]), nil
 	case VaddrStack >> 32:
-		mem := i.stack.GetFrame(uint32(addr))
+		mem := ip.stack.GetFrame(uint32(addr))
 		if uint32(len(mem)) < size {
 			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds stack access")
 		}
 		return unsafe.Pointer(&mem[0]), nil
 	case VaddrHeap >> 32:
-		panic("todo implement heap access check")
-	case VaddrInput >> 32:
-		if lo+uint64(size) >= uint64(len(i.input)) {
-			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds input read")
+		if lo+uint64(size) >= uint64(len(ip.heap)) {
+			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds heap access")
 		}
-		return unsafe.Pointer(&i.input[lo]), nil
+		return unsafe.Pointer(&ip.heap[lo]), nil
+	case VaddrInput >> 32:
+		if lo+uint64(size) >= uint64(len(ip.input)) {
+			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds input access")
+		}
+		return unsafe.Pointer(&ip.input[lo]), nil
 	default:
 		return nil, NewExcBadAccess(addr, size, write, "unmapped region")
 	}
 }
 
-func (i *Interpreter) Read(addr uint64, p []byte) error {
-	ptr, err := i.Translate(addr, uint32(len(p)), false)
+func (ip *Interpreter) Read(addr uint64, p []byte) error {
+	ptr, err := ip.Translate(addr, uint32(len(p)), false)
 	if err != nil {
 		return err
 	}
@@ -470,8 +480,8 @@ func (i *Interpreter) Read(addr uint64, p []byte) error {
 	return nil
 }
 
-func (i *Interpreter) Read8(addr uint64) (uint8, error) {
-	ptr, err := i.Translate(addr, 1, false)
+func (ip *Interpreter) Read8(addr uint64) (uint8, error) {
+	ptr, err := ip.Translate(addr, 1, false)
 	if err != nil {
 		return 0, err
 	}
@@ -480,32 +490,32 @@ func (i *Interpreter) Read8(addr uint64) (uint8, error) {
 
 // TODO is it safe and portable to deref unaligned integer types?
 
-func (i *Interpreter) Read16(addr uint64) (uint16, error) {
-	ptr, err := i.Translate(addr, 2, false)
+func (ip *Interpreter) Read16(addr uint64) (uint16, error) {
+	ptr, err := ip.Translate(addr, 2, false)
 	if err != nil {
 		return 0, err
 	}
 	return *(*uint16)(ptr), nil
 }
 
-func (i *Interpreter) Read32(addr uint64) (uint32, error) {
-	ptr, err := i.Translate(addr, 4, false)
+func (ip *Interpreter) Read32(addr uint64) (uint32, error) {
+	ptr, err := ip.Translate(addr, 4, false)
 	if err != nil {
 		return 0, err
 	}
 	return *(*uint32)(ptr), nil
 }
 
-func (i *Interpreter) Read64(addr uint64) (uint64, error) {
-	ptr, err := i.Translate(addr, 8, false)
+func (ip *Interpreter) Read64(addr uint64) (uint64, error) {
+	ptr, err := ip.Translate(addr, 8, false)
 	if err != nil {
 		return 0, err
 	}
 	return *(*uint64)(ptr), nil
 }
 
-func (i *Interpreter) Write(addr uint64, p []byte) error {
-	ptr, err := i.Translate(addr, uint32(len(p)), true)
+func (ip *Interpreter) Write(addr uint64, p []byte) error {
+	ptr, err := ip.Translate(addr, uint32(len(p)), true)
 	if err != nil {
 		return err
 	}
@@ -514,8 +524,8 @@ func (i *Interpreter) Write(addr uint64, p []byte) error {
 	return nil
 }
 
-func (i *Interpreter) Write8(addr uint64, x uint8) error {
-	ptr, err := i.Translate(addr, 1, true)
+func (ip *Interpreter) Write8(addr uint64, x uint8) error {
+	ptr, err := ip.Translate(addr, 1, true)
 	if err != nil {
 		return err
 	}
@@ -523,8 +533,8 @@ func (i *Interpreter) Write8(addr uint64, x uint8) error {
 	return nil
 }
 
-func (i *Interpreter) Write16(addr uint64, x uint16) error {
-	ptr, err := i.Translate(addr, 2, true)
+func (ip *Interpreter) Write16(addr uint64, x uint16) error {
+	ptr, err := ip.Translate(addr, 2, true)
 	if err != nil {
 		return err
 	}
@@ -532,8 +542,8 @@ func (i *Interpreter) Write16(addr uint64, x uint16) error {
 	return nil
 }
 
-func (i *Interpreter) Write32(addr uint64, x uint32) error {
-	ptr, err := i.Translate(addr, 4, true)
+func (ip *Interpreter) Write32(addr uint64, x uint32) error {
+	ptr, err := ip.Translate(addr, 4, true)
 	if err != nil {
 		return err
 	}
@@ -541,8 +551,8 @@ func (i *Interpreter) Write32(addr uint64, x uint32) error {
 	return nil
 }
 
-func (i *Interpreter) Write64(addr uint64, x uint64) error {
-	ptr, err := i.Translate(addr, 8, false)
+func (ip *Interpreter) Write64(addr uint64, x uint64) error {
+	ptr, err := ip.Translate(addr, 8, false)
 	if err != nil {
 		return err
 	}
