@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/bits"
+	"unsafe"
 )
 
 // Interpreter implements the SBF core in pure Go.
@@ -16,8 +17,7 @@ type Interpreter struct {
 
 	entry uint64
 
-	cuMax  uint64
-	cuLeft uint64
+	cuMax uint64
 
 	syscalls  map[uint32]Syscall
 	vmContext any
@@ -36,7 +36,6 @@ func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 		input:     opts.Input,
 		entry:     p.Entrypoint,
 		cuMax:     opts.MaxCU,
-		cuLeft:    opts.MaxCU,
 		syscalls:  opts.Syscalls,
 		vmContext: opts.Context,
 	}
@@ -53,6 +52,7 @@ func (i *Interpreter) Run() (err error) {
 	r[1] = VaddrInput
 	// TODO frame pointer
 	pc := int64(i.entry)
+	cuLeft := int64(i.cuMax)
 
 	// TODO step to next instruction
 
@@ -62,6 +62,48 @@ func (i *Interpreter) Run() (err error) {
 		// Execute
 		pc++
 		switch ins.Op() {
+		case OpLdxb:
+			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
+			var v uint8
+			v, err = i.Read8(vma)
+			r[ins.Dst()] = uint64(v)
+		case OpLdxh:
+			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
+			var v uint16
+			v, err = i.Read16(vma)
+			r[ins.Dst()] = uint64(v)
+		case OpLdxw:
+			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
+			var v uint32
+			v, err = i.Read32(vma)
+			r[ins.Dst()] = uint64(v)
+		case OpLdxdw:
+			vma := uint64(int64(r[ins.Src()]) + int64(ins.Off()))
+			r[ins.Dst()], err = i.Read64(vma)
+		case OpStb:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write8(vma, uint8(ins.Uimm()))
+		case OpSth:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write16(vma, uint16(ins.Uimm()))
+		case OpStw:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write32(vma, ins.Uimm())
+		case OpStdw:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write64(vma, uint64(ins.Imm()))
+		case OpStxb:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write8(vma, uint8(r[ins.Src()]))
+		case OpStxh:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write16(vma, uint16(r[ins.Src()]))
+		case OpStxw:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write32(vma, uint32(r[ins.Src()]))
+		case OpStxdw:
+			vma := uint64(int64(r[ins.Dst()]) + int64(ins.Off()))
+			err = i.Write64(vma, r[ins.Src()])
 		case OpAdd32Imm:
 			r[ins.Dst()] = uint64(int32(r[ins.Dst()]) + ins.Imm())
 		case OpAdd32Reg:
@@ -100,35 +142,35 @@ func (i *Interpreter) Run() (err error) {
 			if src := r[ins.Src()]; src != 0 {
 				r[ins.Dst()] /= src
 			} else {
-				return ExcDivideByZero
+				err = ExcDivideByZero
 			}
 		case OpSdiv32Imm:
 			if int32(r[ins.Dst()]) == math.MinInt32 && ins.Imm() == -1 {
-				return ExcDivideOverflow
+				err = ExcDivideOverflow
 			}
 			r[ins.Dst()] = uint64(int32(r[ins.Dst()]) / ins.Imm())
 		case OpSdiv32Reg:
 			if src := int32(r[ins.Src()]); src != 0 {
 				if int32(r[ins.Dst()]) == math.MinInt32 && src == -1 {
-					return ExcDivideOverflow
+					err = ExcDivideOverflow
 				}
 				r[ins.Dst()] = uint64(int32(r[ins.Dst()]) / src)
 			} else {
-				return ExcDivideByZero
+				err = ExcDivideByZero
 			}
 		case OpSdiv64Imm:
 			if int64(r[ins.Dst()]) == math.MinInt64 && ins.Imm() == -1 {
-				return ExcDivideOverflow
+				err = ExcDivideOverflow
 			}
 			r[ins.Dst()] = uint64(int64(r[ins.Dst()]) / int64(ins.Imm()))
 		case OpSdiv64Reg:
 			if src := int64(r[ins.Src()]); src != 0 {
 				if int64(r[ins.Dst()]) == math.MinInt64 && src == -1 {
-					return ExcDivideOverflow
+					err = ExcDivideOverflow
 				}
 				r[ins.Dst()] = uint64(int64(r[ins.Dst()]) / src)
 			} else {
-				return ExcDivideByZero
+				err = ExcDivideByZero
 			}
 		case OpOr32Imm:
 			r[ins.Dst()] = uint64(uint32(r[ins.Dst()]) | ins.Uimm())
@@ -172,7 +214,7 @@ func (i *Interpreter) Run() (err error) {
 			if src := uint32(r[ins.Src()]); src != 0 {
 				r[ins.Dst()] = uint64(uint32(r[ins.Dst()]) % src)
 			} else {
-				return ExcDivideByZero
+				err = ExcDivideByZero
 			}
 		case OpMod64Imm:
 			r[ins.Dst()] %= uint64(ins.Imm())
@@ -180,7 +222,7 @@ func (i *Interpreter) Run() (err error) {
 			if src := r[ins.Src()]; src != 0 {
 				r[ins.Dst()] %= src
 			} else {
-				return ExcDivideByZero
+				err = ExcDivideByZero
 			}
 		case OpXor32Imm:
 			r[ins.Dst()] = uint64(uint32(r[ins.Dst()]) ^ ins.Uimm())
@@ -324,7 +366,7 @@ func (i *Interpreter) Run() (err error) {
 		case OpCall:
 			// TODO use src reg hint
 			if sc, ok := i.syscalls[ins.Uimm()]; ok {
-				r[0], err = sc.Invoke(i, r[1], r[2], r[3], r[4], r[5])
+				r[0], cuLeft, err = sc.Invoke(i, r[1], r[2], r[3], r[4], r[5], cuLeft)
 			} else {
 				panic("bpf function calls not implemented")
 			}
@@ -335,6 +377,10 @@ func (i *Interpreter) Run() (err error) {
 		default:
 			panic(fmt.Sprintf("unimplemented opcode %#02x", ins.Op()))
 		}
+		if err != nil {
+			// TODO return CPU exception error type here
+			return err
+		}
 	}
 }
 
@@ -344,4 +390,122 @@ func (i *Interpreter) getSlot(pc int64) Slot {
 
 func (i *Interpreter) VMContext() any {
 	return i.vmContext
+}
+
+func (i *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.Pointer, error) {
+	// TODO exhaustive testing against rbpf
+	// TODO review generated asm for performance
+
+	hi, lo := addr>>32, addr&math.MaxUint32
+	switch hi {
+	case VaddrProgram >> 32:
+		if write {
+			return nil, NewExcBadAccess(addr, size, write, "write to program")
+		}
+		if lo+uint64(size) >= uint64(len(i.ro)) {
+			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds program read")
+		}
+		return unsafe.Pointer(&i.ro[lo]), nil
+	case VaddrStack >> 32:
+		panic("todo implement stack access check")
+	case VaddrHeap >> 32:
+		panic("todo implement heap access check")
+	case VaddrInput >> 32:
+		if lo+uint64(size) >= uint64(len(i.input)) {
+			return nil, NewExcBadAccess(addr, size, write, "out-of-bounds input read")
+		}
+		return unsafe.Pointer(&i.input[lo]), nil
+	default:
+		return nil, NewExcBadAccess(addr, size, write, "unmapped region")
+	}
+}
+
+func (i *Interpreter) Read(addr uint64, p []byte) error {
+	ptr, err := i.Translate(addr, uint32(len(p)), false)
+	if err != nil {
+		return err
+	}
+	mem := unsafe.Slice((*uint8)(ptr), len(p))
+	copy(p, mem)
+	return nil
+}
+
+func (i *Interpreter) Read8(addr uint64) (uint8, error) {
+	ptr, err := i.Translate(addr, 1, false)
+	if err != nil {
+		return 0, err
+	}
+	return *(*uint8)(ptr), nil
+}
+
+// TODO is it safe and portable to deref unaligned integer types?
+
+func (i *Interpreter) Read16(addr uint64) (uint16, error) {
+	ptr, err := i.Translate(addr, 2, false)
+	if err != nil {
+		return 0, err
+	}
+	return *(*uint16)(ptr), nil
+}
+
+func (i *Interpreter) Read32(addr uint64) (uint32, error) {
+	ptr, err := i.Translate(addr, 4, false)
+	if err != nil {
+		return 0, err
+	}
+	return *(*uint32)(ptr), nil
+}
+
+func (i *Interpreter) Read64(addr uint64) (uint64, error) {
+	ptr, err := i.Translate(addr, 8, false)
+	if err != nil {
+		return 0, err
+	}
+	return *(*uint64)(ptr), nil
+}
+
+func (i *Interpreter) Write(addr uint64, p []byte) error {
+	ptr, err := i.Translate(addr, uint32(len(p)), true)
+	if err != nil {
+		return err
+	}
+	mem := unsafe.Slice((*uint8)(ptr), len(p))
+	copy(mem, p)
+	return nil
+}
+
+func (i *Interpreter) Write8(addr uint64, x uint8) error {
+	ptr, err := i.Translate(addr, 1, true)
+	if err != nil {
+		return err
+	}
+	*(*uint8)(ptr) = x
+	return nil
+}
+
+func (i *Interpreter) Write16(addr uint64, x uint16) error {
+	ptr, err := i.Translate(addr, 2, true)
+	if err != nil {
+		return err
+	}
+	*(*uint16)(ptr) = x
+	return nil
+}
+
+func (i *Interpreter) Write32(addr uint64, x uint32) error {
+	ptr, err := i.Translate(addr, 4, true)
+	if err != nil {
+		return err
+	}
+	*(*uint32)(ptr) = x
+	return nil
+}
+
+func (i *Interpreter) Write64(addr uint64, x uint64) error {
+	ptr, err := i.Translate(addr, 8, false)
+	if err != nil {
+		return err
+	}
+	*(*uint64)(ptr) = x
+	return nil
 }
