@@ -27,6 +27,7 @@ type VMOpts struct {
 	// Machine parameters
 	HeapSize int
 	Syscalls SyscallRegistry
+	Tracer   TraceSink
 
 	// Execution parameters
 	Context any // passed to syscalls

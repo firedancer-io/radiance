@@ -22,6 +22,11 @@ type Interpreter struct {
 	syscalls  map[uint32]Syscall
 	funcs     map[uint32]int64
 	vmContext any
+	trace     TraceSink
+}
+
+type TraceSink interface {
+	Printf(format string, v ...any)
 }
 
 // NewInterpreter creates a new interpreter instance for a program execution.
@@ -41,6 +46,7 @@ func NewInterpreter(p *Program, opts *VMOpts) *Interpreter {
 		syscalls:  opts.Syscalls,
 		funcs:     p.Funcs,
 		vmContext: opts.Context,
+		trace:     opts.Tracer,
 	}
 }
 
@@ -66,9 +72,10 @@ mainLoop:
 	for i := 0; true; i++ {
 		// Fetch
 		ins := ip.getSlot(pc)
-		fmt.Printf("% 5d [%016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x] %-5d: %s\n",
-			i, r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10], pc, GetOpcodeName(ins.Op()))
-		fmt.Printf("       ins=%016x op=%s\n", bits.ReverseBytes64(uint64(ins)), GetOpcodeName(ins.Op()))
+		if ip.trace != nil {
+			ip.trace.Printf("% 5d [%016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x, %016x] % 5d: %s",
+				i, r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8], r[9], r[10], pc+29 /*todo weird offset*/, disassemble(ins /*todo*/, 0))
+		}
 		// Execute
 		switch ins.Op() {
 		case OpLdxb:

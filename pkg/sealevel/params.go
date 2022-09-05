@@ -45,14 +45,14 @@ func (p *Params) Serialize(buf *bytes.Buffer) {
 
 		if acc.IsDuplicate {
 			_, _ = buf.Write([]byte{acc.DuplicateIndex})
-			buf.Grow(7)
+			_ = writeZeros(buf, 7)
 			continue
 		}
 		_ = binary.Write(buf, binary.LittleEndian, uint8(0xFF))
 		_ = binary.Write(buf, binary.LittleEndian, acc.IsSigner)
 		_ = binary.Write(buf, binary.LittleEndian, acc.IsWritable)
 		_ = binary.Write(buf, binary.LittleEndian, acc.IsExecutable)
-		buf.Grow(4)
+		_ = writeZeros(buf, 4)
 		_, _ = buf.Write(acc.Key[:])
 		_, _ = buf.Write(acc.Owner[:])
 		_ = binary.Write(buf, binary.LittleEndian, acc.Lamports)
@@ -61,8 +61,11 @@ func (p *Params) Serialize(buf *bytes.Buffer) {
 		// This account copy cannot be avoided without a significant redesign of the VM
 		_, _ = buf.Write(acc.Data[:])
 
-		acc.Padding = ReallocSpace + 1 + ((buf.Len() - 1) / ReallocAlign)
-		buf.Grow(acc.Padding)
+		acc.Padding = ReallocSpace
+		if offset := buf.Len() % ReallocAlign; offset != 0 {
+			acc.Padding += ReallocAlign - offset
+		}
+		_ = writeZeros(buf, acc.Padding)
 
 		_ = binary.Write(buf, binary.LittleEndian, acc.RentEpoch)
 	}
@@ -125,4 +128,18 @@ func (p *Params) Update(buf *bytes.Reader) error {
 	_, _ = buf.Seek(int64(len(p.Data)), io.SeekCurrent)
 	_, err := buf.Read(p.ProgramID[:])
 	return err
+}
+
+func writeZeros(b *bytes.Buffer, n int) error {
+	_, err := io.Copy(b, io.LimitReader(zeroRd{}, int64(n)))
+	return err
+}
+
+type zeroRd struct{}
+
+func (zeroRd) Read(buf []byte) (int, error) {
+	for i := range buf {
+		buf[i] = 0
+	}
+	return len(buf), nil
 }

@@ -1,3 +1,4 @@
+// Package fixtures contains test data
 package fixtures
 
 import (
