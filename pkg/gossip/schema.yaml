@@ -1,0 +1,25 @@
+---
+Message:
+  ENUM:
+    4:
+      Ping:
+        NEWTYPE:
+          TYPENAME: Ping
+    5:
+      Pong:
+        NEWTYPE:
+          TYPENAME: Ping
+Ping:
+  STRUCT:
+    - from:
+        TUPLEARRAY:
+          CONTENT: U8
+          SIZE: 32
+    - token:
+        TUPLEARRAY:
+          CONTENT: U8
+          SIZE: 32
+    - signature:
+        TUPLEARRAY:
+          CONTENT: U8
+          SIZE: 64
