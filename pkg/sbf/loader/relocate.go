@@ -65,6 +65,9 @@ func (l *Loader) registerFunc(target uint64) (uint32, error) {
 
 func (l *Loader) applyDynamicRelocs() error {
 	iter := l.relocsIter
+	if iter == nil {
+		return nil
+	}
 	for iter.Next() && iter.Err() == nil {
 		reloc := iter.Item()
 		if err := l.applyReloc(&reloc); err != nil {

@@ -135,7 +135,8 @@ func TestExecute(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	for _, _case := range cases {
+	for i := range cases {
+		_case := cases[i]
 		t.Run(_case.Name, func(t *testing.T) {
 			t.Parallel()
 			_case.run(t)
