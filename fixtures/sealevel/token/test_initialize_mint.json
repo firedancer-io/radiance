@@ -32,6 +32,6 @@
 	"ProgramID": "11111111111111111111111111111111"
   },
   "Logs": [
-	"Instruction: InitializeMint"
+	"Program log: Instruction: InitializeMint"
   ]
 }
