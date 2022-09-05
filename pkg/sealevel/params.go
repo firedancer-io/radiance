@@ -5,13 +5,15 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+
+	"github.com/gagliardetto/solana-go"
 )
 
 // Params is the data passed to programs via the Sealevel VM input segment.
 type Params struct {
 	Accounts  []AccountParam
 	Data      []byte // per-instruction data
-	ProgramID [32]byte
+	ProgramID solana.PublicKey
 }
 
 // ReallocSpace is the allowed length by which an account is allowed to grow.
@@ -27,8 +29,8 @@ type AccountParam struct {
 	IsSigner       bool
 	IsWritable     bool
 	IsExecutable   bool
-	Key            [32]byte
-	Owner          [32]byte
+	Key            solana.PublicKey
+	Owner          solana.PublicKey
 	Lamports       uint64
 	Data           []byte
 	Padding        int // ignored, written by serializer

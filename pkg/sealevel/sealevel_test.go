@@ -2,7 +2,11 @@ package sealevel
 
 import (
 	_ "embed"
-	"log"
+	"encoding/json"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/certusone/radiance/fixtures"
@@ -78,64 +82,27 @@ func TestInterpreter_Noop(t *testing.T) {
 	})
 }
 
-func TestExecute_Token(t *testing.T) {
-	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sealevel", "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA.so"))
-	require.NoError(t, err)
-	require.NotNil(t, loader)
+type executeCase struct {
+	Name    string
+	Program string
+	Params  Params
+	Logs    []string
+}
 
-	program, err := loader.Load()
+func (e *executeCase) run(t *testing.T) {
+	ld, err := loader.NewLoaderFromBytes(fixtures.Load(t, e.Program))
+	require.NoError(t, err)
+	require.NotNil(t, ld)
+
+	program, err := ld.Load()
 	require.NoError(t, err)
 	require.NotNil(t, program)
 
 	require.NoError(t, program.Verify())
 
 	tx := TxContext{}
-	opts := tx.newVMOpts(&Params{
-		Accounts: []AccountParam{
-			// Mint
-			{
-				IsDuplicate:    false,
-				DuplicateIndex: 0xFF,
-				IsSigner:       true,
-				IsWritable:     true,
-				IsExecutable:   false,
-				Key:            [32]byte{0x1},
-				Owner:          [32]byte{6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206, 235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140, 245, 133, 126, 255, 0, 169},
-				Lamports:       10000000,
-				Data:           make([]byte, 82),
-				RentEpoch:      0,
-			},
-			// Rent sysvar
-			{
-				IsDuplicate:    false,
-				DuplicateIndex: 0xFF,
-				IsSigner:       true,
-				IsWritable:     true,
-				IsExecutable:   false,
-				Key:            [32]byte{0x06, 0xa7, 0xd5, 0x17, 0x19, 0x2c, 0x5c, 0x51, 0x21, 0x8c, 0xc9, 0x4c, 0x3d, 0x4a, 0xf1, 0x7f, 0x58, 0xda, 0xee, 0x08, 0x9b, 0xa1, 0xfd, 0x44, 0xe3, 0xdb, 0xd9, 0x8a, 0x00, 0x00, 0x00, 0x00},
-				Owner:          [32]byte{0x06, 0xa7, 0xd5, 0x17, 0x18, 0x75, 0xf7, 0x29, 0xc7, 0x3d, 0x93, 0x40, 0x8f, 0x21, 0x61, 0x20, 0x06, 0x7e, 0xd8, 0x8c, 0x76, 0xe0, 0x8c, 0x28, 0x7f, 0xc1, 0x94, 0x60, 0x00, 0x00, 0x00, 0x00},
-				Lamports:       10092,
-				Data: []byte{
-					0x98, 0x0d, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-					0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x40,
-					0x64,
-				},
-				RentEpoch: 0,
-			},
-		},
-		Data: []byte{
-			0, 0, 0, 0,
-			1,
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			0,
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		},
-		ProgramID: [32]byte{},
-	})
-
-	logger := log.Default()
-	logger.SetFlags(0)
-	opts.Tracer = logger
+	opts := tx.newVMOpts(&e.Params)
+	opts.Tracer = testLogger{t}
 
 	interpreter := sbf.NewInterpreter(program, opts)
 	require.NotNil(t, interpreter)
@@ -144,7 +111,42 @@ func TestExecute_Token(t *testing.T) {
 	assert.NoError(t, err)
 
 	logs := opts.Context.(*Execution).Log.(*LogRecorder).Logs
-	assert.Equal(t, logs, []string{
-		"Instruction: InitializeMint",
+	assert.Equal(t, logs, e.Logs)
+}
+
+func TestExecute(t *testing.T) {
+	// Collect test cases
+	var cases []executeCase
+	err := filepath.WalkDir(fixtures.Path(t, "sealevel"), func(path string, entry fs.DirEntry, err error) error {
+		if !entry.Type().IsRegular() ||
+			!strings.HasPrefix(filepath.Base(path), "test_") ||
+			filepath.Ext(path) != ".json" {
+			return nil
+		}
+
+		buf, err := os.ReadFile(path)
+		require.NoError(t, err, path)
+
+		var _case executeCase
+		require.NoError(t, json.Unmarshal(buf, &_case), path)
+
+		cases = append(cases, _case)
+		return nil
 	})
+	require.NoError(t, err)
+
+	for _, _case := range cases {
+		t.Run(_case.Name, func(t *testing.T) {
+			t.Parallel()
+			_case.run(t)
+		})
+	}
+}
+
+type testLogger struct {
+	t *testing.T
+}
+
+func (t testLogger) Printf(format string, args ...any) {
+	t.t.Logf(format, args...)
 }
