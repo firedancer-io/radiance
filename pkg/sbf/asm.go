@@ -1,5 +1,7 @@
 package sbf
 
+import "fmt"
+
 var mnemonicTable = [0x100]string{
 	OpLddw:      "lddw",
 	OpLdxb:      "ldxb",
@@ -100,4 +102,57 @@ var mnemonicTable = [0x100]string{
 
 func GetOpcodeName(opc uint8) string {
 	return mnemonicTable[opc]
+}
+
+func disassemble(slot Slot, slot2 Slot) string {
+	opc := slot.Op()
+	mnemonic := GetOpcodeName(opc)
+	switch opc {
+	case OpLddw:
+		return fmt.Sprintf("lddw r%d, %#x", slot.Dst(), uint64(slot.Uimm())|(uint64(slot2.Uimm())<<32))
+	case OpLdxb, OpLdxh, OpLdxw, OpLdxdw:
+		return fmt.Sprintf("%s r%d, [r%d%#+x]", mnemonic, slot.Dst(), slot.Src(), slot.Off())
+	case OpStb:
+		return fmt.Sprintf("stb [r%d%#+x], %#x", slot.Src(), slot.Off(), int8(slot.Imm()))
+	case OpSth:
+		return fmt.Sprintf("sth [r%d%#+x], %#x", slot.Src(), slot.Off(), int16(slot.Imm()))
+	case OpStw:
+		return fmt.Sprintf("stw [r%d%#+x], %#x", slot.Src(), slot.Off(), slot.Imm())
+	case OpStdw:
+		return fmt.Sprintf("stdw [r%d%#+x], %#x", slot.Src(), slot.Off(), int64(slot.Imm()))
+	case OpStxb, OpStxh, OpStxw, OpStxdw:
+		return fmt.Sprintf("%s [r%d%#+x], r%d", mnemonic, slot.Src(), slot.Off(), slot.Dst())
+	case OpAdd32Imm, OpSub32Imm, OpAdd64Imm, OpSub64Imm:
+		return fmt.Sprintf("%s r%d, %#x", mnemonic, slot.Dst(), slot.Imm())
+	case OpOr32Imm, OpAnd32Imm, OpXor32Imm, OpMov32Imm:
+		return fmt.Sprintf("%s r%d, %#x", mnemonic, slot.Dst(), slot.Uimm())
+	case OpDiv32Imm, OpMod32Imm, OpLsh32Imm, OpRsh32Imm, OpArsh32Imm,
+		OpDiv64Imm, OpMod64Imm, OpLsh64Imm, OpRsh64Imm, OpArsh64Imm:
+		return fmt.Sprintf("%s r%d, %d", mnemonic, slot.Dst(), slot.Uimm())
+	case OpMul32Imm, OpSdiv32Imm, OpMul64Imm, OpSdiv64Imm:
+		return fmt.Sprintf("%s r%d, %d", mnemonic, slot.Dst(), slot.Imm())
+	case OpOr64Imm, OpAnd64Imm, OpXor64Imm, OpMov64Imm:
+		return fmt.Sprintf("%s r%d, %#x", mnemonic, slot.Dst(), uint64(slot.Imm()))
+	case OpAdd32Reg, OpSub32Reg, OpMul32Reg, OpDiv32Reg, OpOr32Reg, OpAnd32Reg, OpLsh32Reg, OpRsh32Reg, OpMod32Reg, OpXor32Reg, OpMov32Reg, OpArsh32Reg, OpSdiv32Reg,
+		OpAdd64Reg, OpSub64Reg, OpMul64Reg, OpDiv64Reg, OpOr64Reg, OpAnd64Reg, OpLsh64Reg, OpRsh64Reg, OpMod64Reg, OpXor64Reg, OpMov64Reg, OpArsh64Reg, OpSdiv64Reg:
+		return fmt.Sprintf("%s r%d, r%d", mnemonic, slot.Dst(), slot.Src())
+	case OpNeg32, OpNeg64:
+		return fmt.Sprintf("%s r%d", mnemonic, slot.Dst())
+	case OpLe, OpBe:
+		return fmt.Sprintf("%s%d r%d", mnemonic, slot.Uimm(), slot.Dst())
+	case OpJa:
+		return fmt.Sprintf("ja %+d", slot.Off())
+	case OpJeqImm, OpJgtImm, OpJgeImm, OpJltImm, OpJleImm, OpJsetImm, OpJneImm, OpJsgtImm, OpJsgeImm, OpJsltImm, OpJsleImm:
+		return fmt.Sprintf("%s r%d, %#x, %+d", mnemonic, slot.Dst(), int64(slot.Imm()), slot.Off())
+	case OpJeqReg, OpJgtReg, OpJgeReg, OpJltReg, OpJleReg, OpJsetReg, OpJneReg, OpJsgtReg, OpJsgeReg, OpJsltReg, OpJsleReg:
+		return fmt.Sprintf("%s r%d, r%d, %+d", mnemonic, slot.Dst(), slot.Src(), slot.Off())
+	case OpCall:
+		return fmt.Sprintf("call %#x", slot.Uimm())
+	case OpCallx:
+		return fmt.Sprintf("call r%d", slot.Dst())
+	case OpExit:
+		return "exit"
+	default:
+		return "invalid"
+	}
 }
