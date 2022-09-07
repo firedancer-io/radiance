@@ -157,7 +157,7 @@ func (s *Session) sendPing(ctx context.Context, c int) {
 
 func (s *Session) receive(ctx context.Context) error {
 	for ctx.Err() == nil {
-		var packet [132]byte
+		var packet [4 + gossip.PingSize]byte
 		n, remote, err := s.udpConn.ReadFromUDPAddrPort(packet[:])
 		klog.V(7).Infof("Packet from %s", remote)
 		if n >= len(packet) {

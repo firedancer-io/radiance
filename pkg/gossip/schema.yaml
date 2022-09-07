@@ -1,6 +1,64 @@
 ---
+# ------------------------
+# Basic types
+# ------------------------
+Pubkey:
+  NEWTYPESTRUCT:
+    TUPLEARRAY:
+      CONTENT: U8
+      SIZE: 32
+Hash:
+  NEWTYPESTRUCT:
+    TUPLEARRAY:
+      CONTENT: U8
+      SIZE: 32
+Signature:
+  NEWTYPESTRUCT:
+    TUPLEARRAY:
+      CONTENT: U8
+      SIZE: 64
+SocketAddr:
+  ENUM:
+    0:
+      V4:
+        NEWTYPE:
+          TUPLEARRAY:
+            CONTENT: U8
+            SIZE: 4
+    1:
+      V6:
+        NEWTYPE:
+          TUPLEARRAY:
+            CONTENT: U8
+            SIZE: 16
+
+# ------------------------
+# Message Enum
+# ------------------------
 Message:
   ENUM:
+    0:
+      PullRequest:
+        TUPLE:
+          - TYPENAME: CrdsFilter
+          - TYPENAME: CrdsValue
+    1:
+      PullResponse:
+        TUPLE:
+          - TYPENAME: Pubkey
+          - SEQ:
+              TYPENAME: CrdsValue
+    2:
+      PushMessage:
+        TUPLE:
+          - TYPENAME: Pubkey
+          - SEQ:
+              TYPENAME: CrdsValue
+    3:
+      PruneMessage:
+        TUPLE:
+          - TYPENAME: Pubkey
+          - TYPENAME: PruneData
     4:
       Ping:
         NEWTYPE:
@@ -9,17 +67,265 @@ Message:
       Pong:
         NEWTYPE:
           TYPENAME: Ping
+
+# ------------------------
+# CRDS
+# ------------------------
+CrdsData:
+  ENUM:
+    0:
+      ContactInfo:
+        NEWTYPE:
+          TYPENAME: ContactInfo
+    1:
+      Vote:
+        TUPLE:
+          - U8
+          - TYPENAME: Vote
+    2:
+      LowestSlot:
+        TUPLE:
+          - U8
+          - TYPENAME: LowestSlot
+    3:
+      SnapshotHashes:
+        NEWTYPE:
+          TYPENAME: SnapshotHashes
+    4:
+      AccountsHashes:
+        NEWTYPE:
+          TYPENAME: SnapshotHashes
+    5:
+      EpochSlots:
+        TUPLE:
+          - U8
+          - TYPENAME: EpochSlots
+    6:
+      LegacyVersion:
+        NEWTYPE:
+          TYPENAME: LegacyVersion
+    7:
+      Version:
+        NEWTYPE:
+          TYPENAME: Version
+    8:
+      NodeInstance:
+        NEWTYPE:
+          TYPENAME: NodeInstance
+    9:
+      DuplicateShred:
+        TUPLE:
+          - U16
+          - TYPENAME: DuplicateShred
+    10:
+      IncrementalSnapshotHashes:
+        NEWTYPE:
+          TYPENAME: IncrementalSnapshotHashes
+
+# ------------------------
+# Auxiliary stuff
+# ------------------------
+BitVecU8:
+  STRUCT:
+    - bits:
+        TYPENAME: BitVecU8Inner
+    - len: U64
+BitVecU8Inner:
+  NEWTYPESTRUCT:
+    OPTION:
+      SEQ: U8
+BitVecU64:
+  STRUCT:
+    - bits:
+        TYPENAME: BitVecU64Inner
+    - len: U64
+BitVecU64Inner:
+  NEWTYPESTRUCT:
+    OPTION:
+      SEQ: U8
+
+# ------------------------
+# CRDTs
+# ------------------------
+ContactInfo:
+  STRUCT:
+    - id:
+        TYPENAME: Pubkey
+    - gossip:
+        TYPENAME: SocketAddr
+    - tvu:
+        TYPENAME: SocketAddr
+    - tvu_forwards:
+        TYPENAME: SocketAddr
+    - repair:
+        TYPENAME: SocketAddr
+    - tpu:
+        TYPENAME: SocketAddr
+    - tpu_forwards:
+        TYPENAME: SocketAddr
+    - tpu_vote:
+        TYPENAME: SocketAddr
+    - rpc:
+        TYPENAME: SocketAddr
+    - rpc_pubsub:
+        TYPENAME: SocketAddr
+    - serve_repair:
+        TYPENAME: SocketAddr
+    - wallclock: U64
+    - shred_version: U16
+CompressedSlots:
+  ENUM:
+    0:
+      Flate2:
+        NEWTYPE:
+          TYPENAME: SlotsFlate2
+    1:
+      Uncompressed:
+        NEWTYPE:
+          TYPENAME: SlotsUncompressed
+DuplicateShred:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - wallclock: U64
+    - slot: U64
+    - shred_index: U32
+    - shred_type: U8
+    - num_chunks: U8
+    - chunk_index: U8
+    - chunk:
+        SEQ: U8
+EpochSlots:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - slots:
+        SEQ:
+          TYPENAME: CompressedSlots
+    - wallclock: U64
+IncrementalSnapshotHashes:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - base:
+        TYPENAME: SlotHash
+    - hashes:
+        SEQ:
+          TYPENAME: SlotHash
+    - wallclock: U64
+NodeInstance:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - wallclock: U64
+    - timestamp: U64
+    - token: U64
+SlotHash:
+  STRUCT:
+    - slot: U64
+    - hash:
+        TYPENAME: Hash
+SlotsFlate2:
+  STRUCT:
+    - first_slot: U64
+    - num: U64
+    - compressed:
+        SEQ: U8
+SlotsUncompressed:
+  STRUCT:
+    - first_slot: U64
+    - num: U64
+    - slots:
+        TYPENAME: BitVecU8
+LegacyVersion:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - wallclock: U64
+    - major: U16
+    - minor: U16
+    - patch: U16
+    - commit:
+        OPTION: U32
+LowestSlot:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - root: U64
+    - lowest: U64
+    - slots:
+        SEQ: U64
+    - stash:
+        SEQ: UNIT
+    - wallclock: U64
+SnapshotHashes:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - hashes:
+        SEQ:
+          TYPENAME: SlotHash
+    - wallclock: U64
+Version:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - wallclock: U64
+    - major: U16
+    - minor: U16
+    - patch: U16
+    - commit:
+        OPTION: U32
+    - feature_set: U32
+Vote:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - transaction:
+        TYPENAME: Transaction
+    - wallclock: U64
+    - slot:
+        OPTION: U64
+
+# ------------------------
+# Message Types
+# ------------------------
+Bloom:
+  STRUCT:
+    - keys:
+        SEQ: U64
+    - bits:
+        TYPENAME: BitVecU64
+    - num_bits_set: U64
+CrdsFilter:
+  STRUCT:
+    - filter:
+        TYPENAME: Bloom
+    - mask: U64
+    - mask_bits: U32
+CrdsValue:
+  STRUCT:
+    - signature:
+        TYPENAME: Signature
+    - data:
+        TYPENAME: CrdsData
+PruneData:
+  STRUCT:
+    - pubkey:
+        TYPENAME: Pubkey
+    - prunes:
+        SEQ:
+          TYPENAME: Pubkey
+    - signature:
+        TYPENAME: Signature
+    - destination:
+        TYPENAME: Pubkey
+    - wallclock: U64
 Ping:
   STRUCT:
     - from:
-        TUPLEARRAY:
-          CONTENT: U8
-          SIZE: 32
+        TYPENAME: Pubkey
     - token:
-        TUPLEARRAY:
-          CONTENT: U8
-          SIZE: 32
+        TYPENAME: Hash
     - signature:
-        TUPLEARRAY:
-          CONTENT: U8
-          SIZE: 64
+        TYPENAME: Signature
