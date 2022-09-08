@@ -42,7 +42,7 @@ func TestExecute_Memo(t *testing.T) {
 
 	logs := opts.Context.(*Execution).Log.(*LogRecorder).Logs
 	assert.Equal(t, logs, []string{
-		`Memo (len 3): "Bla"`,
+		`Program log: Memo (len 3): "Bla"`,
 	})
 }
 
@@ -77,8 +77,8 @@ func TestInterpreter_Noop(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, log.Logs, []string{
-		"entrypoint\x00",
-		"0x1, 0x2, 0x3, 0x4, 0x5\n",
+		"Program log: entrypoint\x00",
+		"Program log: 0x1, 0x2, 0x3, 0x4, 0x5\n",
 	})
 }
 
