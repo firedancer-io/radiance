@@ -2523,6 +2523,195 @@ func BincodeDeserializePubkey(input []byte) (Pubkey, error) {
 	return obj, err
 }
 
+type RawAddr interface {
+	isRawAddr()
+	Serialize(serializer serde.Serializer) error
+	BincodeSerialize() ([]byte, error)
+}
+
+func DeserializeRawAddr(deserializer serde.Deserializer) (RawAddr, error) {
+	index, err := deserializer.DeserializeVariantIndex()
+	if err != nil {
+		return nil, err
+	}
+
+	switch index {
+	case 0:
+		if val, err := load_RawAddr__V4(deserializer); err == nil {
+			return &val, nil
+		} else {
+			return nil, err
+		}
+
+	case 1:
+		if val, err := load_RawAddr__V6(deserializer); err == nil {
+			return &val, nil
+		} else {
+			return nil, err
+		}
+
+	default:
+		return nil, fmt.Errorf("Unknown variant index for RawAddr: %d", index)
+	}
+}
+
+func BincodeDeserializeRawAddr(input []byte) (RawAddr, error) {
+	if input == nil {
+		var obj RawAddr
+		return obj, fmt.Errorf("Cannot deserialize null array")
+	}
+	deserializer := bincode.NewDeserializer(input)
+	obj, err := DeserializeRawAddr(deserializer)
+	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
+		return obj, fmt.Errorf("Some input bytes were not read")
+	}
+	return obj, err
+}
+
+type RawAddr__V4 [4]uint8
+
+func (*RawAddr__V4) isRawAddr() {}
+
+func (obj *RawAddr__V4) Serialize(serializer serde.Serializer) error {
+	if err := serializer.IncreaseContainerDepth(); err != nil {
+		return err
+	}
+	serializer.SerializeVariantIndex(0)
+	if err := serialize_array4_u8_array((([4]uint8)(*obj)), serializer); err != nil {
+		return err
+	}
+	serializer.DecreaseContainerDepth()
+	return nil
+}
+
+func (obj *RawAddr__V4) BincodeSerialize() ([]byte, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("Cannot serialize null object")
+	}
+	serializer := bincode.NewSerializer()
+	if err := obj.Serialize(serializer); err != nil {
+		return nil, err
+	}
+	return serializer.GetBytes(), nil
+}
+
+func load_RawAddr__V4(deserializer serde.Deserializer) (RawAddr__V4, error) {
+	var obj [4]uint8
+	if err := deserializer.IncreaseContainerDepth(); err != nil {
+		return (RawAddr__V4)(obj), err
+	}
+	if val, err := deserialize_array4_u8_array(deserializer); err == nil {
+		obj = val
+	} else {
+		return ((RawAddr__V4)(obj)), err
+	}
+	deserializer.DecreaseContainerDepth()
+	return (RawAddr__V4)(obj), nil
+}
+
+type RawAddr__V6 [16]uint8
+
+func (*RawAddr__V6) isRawAddr() {}
+
+func (obj *RawAddr__V6) Serialize(serializer serde.Serializer) error {
+	if err := serializer.IncreaseContainerDepth(); err != nil {
+		return err
+	}
+	serializer.SerializeVariantIndex(1)
+	if err := serialize_array16_u8_array((([16]uint8)(*obj)), serializer); err != nil {
+		return err
+	}
+	serializer.DecreaseContainerDepth()
+	return nil
+}
+
+func (obj *RawAddr__V6) BincodeSerialize() ([]byte, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("Cannot serialize null object")
+	}
+	serializer := bincode.NewSerializer()
+	if err := obj.Serialize(serializer); err != nil {
+		return nil, err
+	}
+	return serializer.GetBytes(), nil
+}
+
+func load_RawAddr__V6(deserializer serde.Deserializer) (RawAddr__V6, error) {
+	var obj [16]uint8
+	if err := deserializer.IncreaseContainerDepth(); err != nil {
+		return (RawAddr__V6)(obj), err
+	}
+	if val, err := deserialize_array16_u8_array(deserializer); err == nil {
+		obj = val
+	} else {
+		return ((RawAddr__V6)(obj)), err
+	}
+	deserializer.DecreaseContainerDepth()
+	return (RawAddr__V6)(obj), nil
+}
+
+type RawSocketAddr struct {
+	Addr Addr
+	Port uint16
+}
+
+func (obj *RawSocketAddr) Serialize(serializer serde.Serializer) error {
+	if err := serializer.IncreaseContainerDepth(); err != nil {
+		return err
+	}
+	if err := obj.Addr.Serialize(serializer); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Port); err != nil {
+		return err
+	}
+	serializer.DecreaseContainerDepth()
+	return nil
+}
+
+func (obj *RawSocketAddr) BincodeSerialize() ([]byte, error) {
+	if obj == nil {
+		return nil, fmt.Errorf("Cannot serialize null object")
+	}
+	serializer := bincode.NewSerializer()
+	if err := obj.Serialize(serializer); err != nil {
+		return nil, err
+	}
+	return serializer.GetBytes(), nil
+}
+
+func DeserializeRawSocketAddr(deserializer serde.Deserializer) (RawSocketAddr, error) {
+	var obj RawSocketAddr
+	if err := deserializer.IncreaseContainerDepth(); err != nil {
+		return obj, err
+	}
+	if val, err := DeserializeAddr(deserializer); err == nil {
+		obj.Addr = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Port = val
+	} else {
+		return obj, err
+	}
+	deserializer.DecreaseContainerDepth()
+	return obj, nil
+}
+
+func BincodeDeserializeRawSocketAddr(input []byte) (RawSocketAddr, error) {
+	if input == nil {
+		var obj RawSocketAddr
+		return obj, fmt.Errorf("Cannot deserialize null array")
+	}
+	deserializer := bincode.NewDeserializer(input)
+	obj, err := DeserializeRawSocketAddr(deserializer)
+	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
+		return obj, fmt.Errorf("Some input bytes were not read")
+	}
+	return obj, err
+}
+
 type Signature [64]uint8
 
 func (obj *Signature) Serialize(serializer serde.Serializer) error {
@@ -2847,133 +3036,6 @@ func BincodeDeserializeSnapshotHashes(input []byte) (SnapshotHashes, error) {
 		return obj, fmt.Errorf("Some input bytes were not read")
 	}
 	return obj, err
-}
-
-type SocketAddr interface {
-	isSocketAddr()
-	Serialize(serializer serde.Serializer) error
-	BincodeSerialize() ([]byte, error)
-}
-
-func DeserializeSocketAddr(deserializer serde.Deserializer) (SocketAddr, error) {
-	index, err := deserializer.DeserializeVariantIndex()
-	if err != nil {
-		return nil, err
-	}
-
-	switch index {
-	case 0:
-		if val, err := load_SocketAddr__V4(deserializer); err == nil {
-			return &val, nil
-		} else {
-			return nil, err
-		}
-
-	case 1:
-		if val, err := load_SocketAddr__V6(deserializer); err == nil {
-			return &val, nil
-		} else {
-			return nil, err
-		}
-
-	default:
-		return nil, fmt.Errorf("Unknown variant index for SocketAddr: %d", index)
-	}
-}
-
-func BincodeDeserializeSocketAddr(input []byte) (SocketAddr, error) {
-	if input == nil {
-		var obj SocketAddr
-		return obj, fmt.Errorf("Cannot deserialize null array")
-	}
-	deserializer := bincode.NewDeserializer(input)
-	obj, err := DeserializeSocketAddr(deserializer)
-	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
-		return obj, fmt.Errorf("Some input bytes were not read")
-	}
-	return obj, err
-}
-
-type SocketAddr__V4 [4]uint8
-
-func (*SocketAddr__V4) isSocketAddr() {}
-
-func (obj *SocketAddr__V4) Serialize(serializer serde.Serializer) error {
-	if err := serializer.IncreaseContainerDepth(); err != nil {
-		return err
-	}
-	serializer.SerializeVariantIndex(0)
-	if err := serialize_array4_u8_array((([4]uint8)(*obj)), serializer); err != nil {
-		return err
-	}
-	serializer.DecreaseContainerDepth()
-	return nil
-}
-
-func (obj *SocketAddr__V4) BincodeSerialize() ([]byte, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("Cannot serialize null object")
-	}
-	serializer := bincode.NewSerializer()
-	if err := obj.Serialize(serializer); err != nil {
-		return nil, err
-	}
-	return serializer.GetBytes(), nil
-}
-
-func load_SocketAddr__V4(deserializer serde.Deserializer) (SocketAddr__V4, error) {
-	var obj [4]uint8
-	if err := deserializer.IncreaseContainerDepth(); err != nil {
-		return (SocketAddr__V4)(obj), err
-	}
-	if val, err := deserialize_array4_u8_array(deserializer); err == nil {
-		obj = val
-	} else {
-		return ((SocketAddr__V4)(obj)), err
-	}
-	deserializer.DecreaseContainerDepth()
-	return (SocketAddr__V4)(obj), nil
-}
-
-type SocketAddr__V6 [16]uint8
-
-func (*SocketAddr__V6) isSocketAddr() {}
-
-func (obj *SocketAddr__V6) Serialize(serializer serde.Serializer) error {
-	if err := serializer.IncreaseContainerDepth(); err != nil {
-		return err
-	}
-	serializer.SerializeVariantIndex(1)
-	if err := serialize_array16_u8_array((([16]uint8)(*obj)), serializer); err != nil {
-		return err
-	}
-	serializer.DecreaseContainerDepth()
-	return nil
-}
-
-func (obj *SocketAddr__V6) BincodeSerialize() ([]byte, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("Cannot serialize null object")
-	}
-	serializer := bincode.NewSerializer()
-	if err := obj.Serialize(serializer); err != nil {
-		return nil, err
-	}
-	return serializer.GetBytes(), nil
-}
-
-func load_SocketAddr__V6(deserializer serde.Deserializer) (SocketAddr__V6, error) {
-	var obj [16]uint8
-	if err := deserializer.IncreaseContainerDepth(); err != nil {
-		return (SocketAddr__V6)(obj), err
-	}
-	if val, err := deserialize_array16_u8_array(deserializer); err == nil {
-		obj = val
-	} else {
-		return ((SocketAddr__V6)(obj)), err
-	}
-	deserializer.DecreaseContainerDepth()
-	return (SocketAddr__V6)(obj), nil
 }
 
 type Version struct {

@@ -17,7 +17,12 @@ Signature:
     TUPLEARRAY:
       CONTENT: U8
       SIZE: 64
-SocketAddr:
+RawSocketAddr:
+  STRUCT:
+    - addr:
+        TYPENAME: Addr
+    - port: U16
+RawAddr:
   ENUM:
     0:
       V4:
