@@ -123,16 +123,35 @@ CrdsData:
           - TYPENAME: EpochSlots
     6:
       LegacyVersion:
-        NEWTYPE:
-          TYPENAME: LegacyVersion
+        STRUCT:
+          - from:
+              TYPENAME: Pubkey
+          - wallclock: U64
+          - major: U16
+          - minor: U16
+          - patch: U16
+          - commit:
+              OPTION: U32
     7:
       Version:
-        NEWTYPE:
-          TYPENAME: Version
+        STRUCT:
+          - from:
+              TYPENAME: Pubkey
+          - wallclock: U64
+          - major: U16
+          - minor: U16
+          - patch: U16
+          - commit:
+              OPTION: U32
+          - feature_set: U32
     8:
       NodeInstance:
-        NEWTYPE:
-          TYPENAME: NodeInstance
+        STRUCT:
+          - from:
+              TYPENAME: Pubkey
+          - wallclock: U64
+          - timestamp: U64
+          - token: U64
     9:
       DuplicateShred:
         TUPLE:
@@ -234,13 +253,6 @@ IncrementalSnapshotHashes:
         SEQ:
           TYPENAME: SlotHash
     - wallclock: U64
-NodeInstance:
-  STRUCT:
-    - from:
-        TYPENAME: Pubkey
-    - wallclock: U64
-    - timestamp: U64
-    - token: U64
 SlotHash:
   STRUCT:
     - slot: U64
@@ -258,16 +270,6 @@ SlotsUncompressed:
     - num: U64
     - slots:
         TYPENAME: BitVecU8
-LegacyVersion:
-  STRUCT:
-    - from:
-        TYPENAME: Pubkey
-    - wallclock: U64
-    - major: U16
-    - minor: U16
-    - patch: U16
-    - commit:
-        OPTION: U32
 LowestSlot:
   STRUCT:
     - from:
@@ -287,17 +289,6 @@ SnapshotHashes:
         SEQ:
           TYPENAME: SlotHash
     - wallclock: U64
-Version:
-  STRUCT:
-    - from:
-        TYPENAME: Pubkey
-    - wallclock: U64
-    - major: U16
-    - minor: U16
-    - patch: U16
-    - commit:
-        OPTION: U32
-    - feature_set: U32
 Vote:
   STRUCT:
     - from:

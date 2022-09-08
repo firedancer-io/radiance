@@ -995,7 +995,12 @@ func load_CrdsData__EpochSlots(deserializer serde.Deserializer) (CrdsData__Epoch
 }
 
 type CrdsData__LegacyVersion struct {
-	Value LegacyVersion
+	From      Pubkey
+	Wallclock uint64
+	Major     uint16
+	Minor     uint16
+	Patch     uint16
+	Commit    *uint32
 }
 
 func (*CrdsData__LegacyVersion) isCrdsData() {}
@@ -1005,7 +1010,22 @@ func (obj *CrdsData__LegacyVersion) Serialize(serializer serde.Serializer) error
 		return err
 	}
 	serializer.SerializeVariantIndex(6)
-	if err := obj.Value.Serialize(serializer); err != nil {
+	if err := obj.From.Serialize(serializer); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU64(obj.Wallclock); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Major); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Minor); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Patch); err != nil {
+		return err
+	}
+	if err := serialize_option_u32(obj.Commit, serializer); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -1028,8 +1048,33 @@ func load_CrdsData__LegacyVersion(deserializer serde.Deserializer) (CrdsData__Le
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
 		return obj, err
 	}
-	if val, err := DeserializeLegacyVersion(deserializer); err == nil {
-		obj.Value = val
+	if val, err := DeserializePubkey(deserializer); err == nil {
+		obj.From = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU64(); err == nil {
+		obj.Wallclock = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Major = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Minor = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Patch = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserialize_option_u32(deserializer); err == nil {
+		obj.Commit = val
 	} else {
 		return obj, err
 	}
@@ -1038,7 +1083,13 @@ func load_CrdsData__LegacyVersion(deserializer serde.Deserializer) (CrdsData__Le
 }
 
 type CrdsData__Version struct {
-	Value Version
+	From       Pubkey
+	Wallclock  uint64
+	Major      uint16
+	Minor      uint16
+	Patch      uint16
+	Commit     *uint32
+	FeatureSet uint32
 }
 
 func (*CrdsData__Version) isCrdsData() {}
@@ -1048,7 +1099,25 @@ func (obj *CrdsData__Version) Serialize(serializer serde.Serializer) error {
 		return err
 	}
 	serializer.SerializeVariantIndex(7)
-	if err := obj.Value.Serialize(serializer); err != nil {
+	if err := obj.From.Serialize(serializer); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU64(obj.Wallclock); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Major); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Minor); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU16(obj.Patch); err != nil {
+		return err
+	}
+	if err := serialize_option_u32(obj.Commit, serializer); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU32(obj.FeatureSet); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -1071,8 +1140,38 @@ func load_CrdsData__Version(deserializer serde.Deserializer) (CrdsData__Version,
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
 		return obj, err
 	}
-	if val, err := DeserializeVersion(deserializer); err == nil {
-		obj.Value = val
+	if val, err := DeserializePubkey(deserializer); err == nil {
+		obj.From = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU64(); err == nil {
+		obj.Wallclock = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Major = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Minor = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU16(); err == nil {
+		obj.Patch = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserialize_option_u32(deserializer); err == nil {
+		obj.Commit = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU32(); err == nil {
+		obj.FeatureSet = val
 	} else {
 		return obj, err
 	}
@@ -1081,7 +1180,10 @@ func load_CrdsData__Version(deserializer serde.Deserializer) (CrdsData__Version,
 }
 
 type CrdsData__NodeInstance struct {
-	Value NodeInstance
+	From      Pubkey
+	Wallclock uint64
+	Timestamp uint64
+	Token     uint64
 }
 
 func (*CrdsData__NodeInstance) isCrdsData() {}
@@ -1091,7 +1193,16 @@ func (obj *CrdsData__NodeInstance) Serialize(serializer serde.Serializer) error 
 		return err
 	}
 	serializer.SerializeVariantIndex(8)
-	if err := obj.Value.Serialize(serializer); err != nil {
+	if err := obj.From.Serialize(serializer); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU64(obj.Wallclock); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU64(obj.Timestamp); err != nil {
+		return err
+	}
+	if err := serializer.SerializeU64(obj.Token); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -1114,8 +1225,23 @@ func load_CrdsData__NodeInstance(deserializer serde.Deserializer) (CrdsData__Nod
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
 		return obj, err
 	}
-	if val, err := DeserializeNodeInstance(deserializer); err == nil {
-		obj.Value = val
+	if val, err := DeserializePubkey(deserializer); err == nil {
+		obj.From = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU64(); err == nil {
+		obj.Wallclock = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU64(); err == nil {
+		obj.Timestamp = val
+	} else {
+		return obj, err
+	}
+	if val, err := deserializer.DeserializeU64(); err == nil {
+		obj.Token = val
 	} else {
 		return obj, err
 	}
@@ -1669,104 +1795,6 @@ func BincodeDeserializeIncrementalSnapshotHashes(input []byte) (IncrementalSnaps
 	return obj, err
 }
 
-type LegacyVersion struct {
-	From      Pubkey
-	Wallclock uint64
-	Major     uint16
-	Minor     uint16
-	Patch     uint16
-	Commit    *uint32
-}
-
-func (obj *LegacyVersion) Serialize(serializer serde.Serializer) error {
-	if err := serializer.IncreaseContainerDepth(); err != nil {
-		return err
-	}
-	if err := obj.From.Serialize(serializer); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU64(obj.Wallclock); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU16(obj.Major); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU16(obj.Minor); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU16(obj.Patch); err != nil {
-		return err
-	}
-	if err := serialize_option_u32(obj.Commit, serializer); err != nil {
-		return err
-	}
-	serializer.DecreaseContainerDepth()
-	return nil
-}
-
-func (obj *LegacyVersion) BincodeSerialize() ([]byte, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("Cannot serialize null object")
-	}
-	serializer := bincode.NewSerializer()
-	if err := obj.Serialize(serializer); err != nil {
-		return nil, err
-	}
-	return serializer.GetBytes(), nil
-}
-
-func DeserializeLegacyVersion(deserializer serde.Deserializer) (LegacyVersion, error) {
-	var obj LegacyVersion
-	if err := deserializer.IncreaseContainerDepth(); err != nil {
-		return obj, err
-	}
-	if val, err := DeserializePubkey(deserializer); err == nil {
-		obj.From = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU64(); err == nil {
-		obj.Wallclock = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU16(); err == nil {
-		obj.Major = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU16(); err == nil {
-		obj.Minor = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU16(); err == nil {
-		obj.Patch = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserialize_option_u32(deserializer); err == nil {
-		obj.Commit = val
-	} else {
-		return obj, err
-	}
-	deserializer.DecreaseContainerDepth()
-	return obj, nil
-}
-
-func BincodeDeserializeLegacyVersion(input []byte) (LegacyVersion, error) {
-	if input == nil {
-		var obj LegacyVersion
-		return obj, fmt.Errorf("Cannot deserialize null array")
-	}
-	deserializer := bincode.NewDeserializer(input)
-	obj, err := DeserializeLegacyVersion(deserializer)
-	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
-		return obj, fmt.Errorf("Some input bytes were not read")
-	}
-	return obj, err
-}
-
 type LowestSlot struct {
 	From      Pubkey
 	Root      uint64
@@ -2230,86 +2258,6 @@ func load_Message__Pong(deserializer serde.Deserializer) (Message__Pong, error) 
 	}
 	deserializer.DecreaseContainerDepth()
 	return obj, nil
-}
-
-type NodeInstance struct {
-	From      Pubkey
-	Wallclock uint64
-	Timestamp uint64
-	Token     uint64
-}
-
-func (obj *NodeInstance) Serialize(serializer serde.Serializer) error {
-	if err := serializer.IncreaseContainerDepth(); err != nil {
-		return err
-	}
-	if err := obj.From.Serialize(serializer); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU64(obj.Wallclock); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU64(obj.Timestamp); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU64(obj.Token); err != nil {
-		return err
-	}
-	serializer.DecreaseContainerDepth()
-	return nil
-}
-
-func (obj *NodeInstance) BincodeSerialize() ([]byte, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("Cannot serialize null object")
-	}
-	serializer := bincode.NewSerializer()
-	if err := obj.Serialize(serializer); err != nil {
-		return nil, err
-	}
-	return serializer.GetBytes(), nil
-}
-
-func DeserializeNodeInstance(deserializer serde.Deserializer) (NodeInstance, error) {
-	var obj NodeInstance
-	if err := deserializer.IncreaseContainerDepth(); err != nil {
-		return obj, err
-	}
-	if val, err := DeserializePubkey(deserializer); err == nil {
-		obj.From = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU64(); err == nil {
-		obj.Wallclock = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU64(); err == nil {
-		obj.Timestamp = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU64(); err == nil {
-		obj.Token = val
-	} else {
-		return obj, err
-	}
-	deserializer.DecreaseContainerDepth()
-	return obj, nil
-}
-
-func BincodeDeserializeNodeInstance(input []byte) (NodeInstance, error) {
-	if input == nil {
-		var obj NodeInstance
-		return obj, fmt.Errorf("Cannot deserialize null array")
-	}
-	deserializer := bincode.NewDeserializer(input)
-	obj, err := DeserializeNodeInstance(deserializer)
-	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
-		return obj, fmt.Errorf("Some input bytes were not read")
-	}
-	return obj, err
 }
 
 type Ping struct {
@@ -3032,113 +2980,6 @@ func BincodeDeserializeSnapshotHashes(input []byte) (SnapshotHashes, error) {
 	}
 	deserializer := bincode.NewDeserializer(input)
 	obj, err := DeserializeSnapshotHashes(deserializer)
-	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
-		return obj, fmt.Errorf("Some input bytes were not read")
-	}
-	return obj, err
-}
-
-type Version struct {
-	From       Pubkey
-	Wallclock  uint64
-	Major      uint16
-	Minor      uint16
-	Patch      uint16
-	Commit     *uint32
-	FeatureSet uint32
-}
-
-func (obj *Version) Serialize(serializer serde.Serializer) error {
-	if err := serializer.IncreaseContainerDepth(); err != nil {
-		return err
-	}
-	if err := obj.From.Serialize(serializer); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU64(obj.Wallclock); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU16(obj.Major); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU16(obj.Minor); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU16(obj.Patch); err != nil {
-		return err
-	}
-	if err := serialize_option_u32(obj.Commit, serializer); err != nil {
-		return err
-	}
-	if err := serializer.SerializeU32(obj.FeatureSet); err != nil {
-		return err
-	}
-	serializer.DecreaseContainerDepth()
-	return nil
-}
-
-func (obj *Version) BincodeSerialize() ([]byte, error) {
-	if obj == nil {
-		return nil, fmt.Errorf("Cannot serialize null object")
-	}
-	serializer := bincode.NewSerializer()
-	if err := obj.Serialize(serializer); err != nil {
-		return nil, err
-	}
-	return serializer.GetBytes(), nil
-}
-
-func DeserializeVersion(deserializer serde.Deserializer) (Version, error) {
-	var obj Version
-	if err := deserializer.IncreaseContainerDepth(); err != nil {
-		return obj, err
-	}
-	if val, err := DeserializePubkey(deserializer); err == nil {
-		obj.From = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU64(); err == nil {
-		obj.Wallclock = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU16(); err == nil {
-		obj.Major = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU16(); err == nil {
-		obj.Minor = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU16(); err == nil {
-		obj.Patch = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserialize_option_u32(deserializer); err == nil {
-		obj.Commit = val
-	} else {
-		return obj, err
-	}
-	if val, err := deserializer.DeserializeU32(); err == nil {
-		obj.FeatureSet = val
-	} else {
-		return obj, err
-	}
-	deserializer.DecreaseContainerDepth()
-	return obj, nil
-}
-
-func BincodeDeserializeVersion(input []byte) (Version, error) {
-	if input == nil {
-		var obj Version
-		return obj, fmt.Errorf("Cannot deserialize null array")
-	}
-	deserializer := bincode.NewDeserializer(input)
-	obj, err := DeserializeVersion(deserializer)
 	if err == nil && deserializer.GetBufferOffset() < uint64(len(input)) {
 		return obj, fmt.Errorf("Some input bytes were not read")
 	}
