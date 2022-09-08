@@ -142,7 +142,7 @@ BitVecU64:
 BitVecU64Inner:
   NEWTYPESTRUCT:
     OPTION:
-      SEQ: U8
+      SEQ: U64
 
 # ------------------------
 # CRDTs

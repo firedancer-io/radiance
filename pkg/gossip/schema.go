@@ -71,14 +71,14 @@ func BincodeDeserializeBitVecU64(input []byte) (BitVecU64, error) {
 }
 
 type BitVecU64Inner struct {
-	Value *[]uint8
+	Value *[]uint64
 }
 
 func (obj *BitVecU64Inner) Serialize(serializer serde.Serializer) error {
 	if err := serializer.IncreaseContainerDepth(); err != nil {
 		return err
 	}
-	if err := serialize_option_vector_u8(obj.Value, serializer); err != nil {
+	if err := serialize_option_vector_u64(obj.Value, serializer); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -101,7 +101,7 @@ func DeserializeBitVecU64Inner(deserializer serde.Deserializer) (BitVecU64Inner,
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
 		return obj, err
 	}
-	if val, err := deserialize_option_vector_u8(deserializer); err == nil {
+	if val, err := deserialize_option_vector_u64(deserializer); err == nil {
 		obj.Value = val
 	} else {
 		return obj, err
@@ -3304,6 +3304,40 @@ func deserialize_option_u64(deserializer serde.Deserializer) (*uint64, error) {
 	if tag {
 		value := new(uint64)
 		if val, err := deserializer.DeserializeU64(); err == nil {
+			*value = val
+		} else {
+			return nil, err
+		}
+		return value, nil
+	} else {
+		return nil, nil
+	}
+}
+
+func serialize_option_vector_u64(value *[]uint64, serializer serde.Serializer) error {
+	if value != nil {
+		if err := serializer.SerializeOptionTag(true); err != nil {
+			return err
+		}
+		if err := serialize_vector_u64((*value), serializer); err != nil {
+			return err
+		}
+	} else {
+		if err := serializer.SerializeOptionTag(false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func deserialize_option_vector_u64(deserializer serde.Deserializer) (*[]uint64, error) {
+	tag, err := deserializer.DeserializeOptionTag()
+	if err != nil {
+		return nil, err
+	}
+	if tag {
+		value := new([]uint64)
+		if val, err := deserialize_vector_u64(deserializer); err == nil {
 			*value = val
 		} else {
 			return nil, err

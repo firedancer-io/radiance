@@ -15,7 +15,7 @@ import (
 )
 
 func NewBloom(numBits uint64, keys []uint64) *Bloom {
-	bits := make([]byte, (numBits+7)/8)
+	bits := make([]uint64, (numBits+63)/64)
 	ret := &Bloom{
 		Keys: keys,
 		Bits: BitVecU64{
@@ -33,7 +33,7 @@ func NewBloomRandom(numItems uint64, falseRate float64, maxBits uint64) *Bloom {
 	if maxBits < numBits {
 		numBits = maxBits
 	}
-	if maxBits == 0 {
+	if numBits == 0 {
 		numBits = 1
 	}
 	numKeys := uint64(BloomNumKeys(float64(numBits), float64(numItems)))
@@ -80,7 +80,7 @@ func (b *Bloom) Add(key *[32]byte) {
 func (b *Bloom) Contains(key *[32]byte) bool {
 	for _, k := range b.Keys {
 		if !b.Bits.Get(b.Pos(key, k)) {
-			return true
+			return false
 		}
 	}
 	return true
@@ -123,9 +123,10 @@ func (bv *BitVecU64) Set(pos uint64, b bool) {
 	if pos >= bv.Len {
 		panic("get bit out of bounds")
 	}
+	bits := *bv.Bits.Value
 	if b {
-		(*bv.Bits.Value)[pos/64] |= 1 << (pos % 64)
+		bits[pos/64] |= 1 << (pos % 64)
 	} else {
-		(*bv.Bits.Value)[pos/64] &= ^uint8(1 << (pos % 64))
+		bits[pos/64] &= ^uint64(1 << (pos % 64))
 	}
 }
