@@ -39,26 +39,34 @@ Message:
   ENUM:
     0:
       PullRequest:
-        TUPLE:
-          - TYPENAME: CrdsFilter
-          - TYPENAME: CrdsValue
+        STRUCT:
+          - filter:
+              TYPENAME: CrdsFilter
+          - value:
+              TYPENAME: CrdsValue
     1:
       PullResponse:
-        TUPLE:
-          - TYPENAME: Pubkey
-          - SEQ:
-              TYPENAME: CrdsValue
+        STRUCT:
+          - pubkey:
+              TYPENAME: Pubkey
+          - values:
+              SEQ:
+                TYPENAME: CrdsValue
     2:
       PushMessage:
-        TUPLE:
-          - TYPENAME: Pubkey
-          - SEQ:
-              TYPENAME: CrdsValue
+        STRUCT:
+          - pubkey:
+              TYPENAME: Pubkey
+          - values:
+              SEQ:
+                TYPENAME: CrdsValue
     3:
       PruneMessage:
-        TUPLE:
-          - TYPENAME: Pubkey
-          - TYPENAME: PruneData
+        STRUCT:
+          - pubkey:
+              TYPENAME: Pubkey
+          - data:
+              TYPENAME: PruneData
     4:
       Ping:
         NEWTYPE:
@@ -67,6 +75,14 @@ Message:
       Pong:
         NEWTYPE:
           TYPENAME: Ping
+Ping:
+  STRUCT:
+    - from:
+        TYPENAME: Pubkey
+    - token:
+        TYPENAME: Hash
+    - signature:
+        TYPENAME: Signature
 
 # ------------------------
 # CRDS
@@ -321,11 +337,3 @@ PruneData:
     - destination:
         TYPENAME: Pubkey
     - wallclock: U64
-Ping:
-  STRUCT:
-    - from:
-        TYPENAME: Pubkey
-    - token:
-        TYPENAME: Hash
-    - signature:
-        TYPENAME: Signature

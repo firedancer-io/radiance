@@ -1939,8 +1939,8 @@ func BincodeDeserializeMessage(input []byte) (Message, error) {
 }
 
 type Message__PullRequest struct {
-	Field0 CrdsFilter
-	Field1 CrdsValue
+	Filter CrdsFilter
+	Value  CrdsValue
 }
 
 func (*Message__PullRequest) isMessage() {}
@@ -1950,10 +1950,10 @@ func (obj *Message__PullRequest) Serialize(serializer serde.Serializer) error {
 		return err
 	}
 	serializer.SerializeVariantIndex(0)
-	if err := obj.Field0.Serialize(serializer); err != nil {
+	if err := obj.Filter.Serialize(serializer); err != nil {
 		return err
 	}
-	if err := obj.Field1.Serialize(serializer); err != nil {
+	if err := obj.Value.Serialize(serializer); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -1977,12 +1977,12 @@ func load_Message__PullRequest(deserializer serde.Deserializer) (Message__PullRe
 		return obj, err
 	}
 	if val, err := DeserializeCrdsFilter(deserializer); err == nil {
-		obj.Field0 = val
+		obj.Filter = val
 	} else {
 		return obj, err
 	}
 	if val, err := DeserializeCrdsValue(deserializer); err == nil {
-		obj.Field1 = val
+		obj.Value = val
 	} else {
 		return obj, err
 	}
@@ -1991,8 +1991,8 @@ func load_Message__PullRequest(deserializer serde.Deserializer) (Message__PullRe
 }
 
 type Message__PullResponse struct {
-	Field0 Pubkey
-	Field1 []CrdsValue
+	Pubkey Pubkey
+	Values []CrdsValue
 }
 
 func (*Message__PullResponse) isMessage() {}
@@ -2002,10 +2002,10 @@ func (obj *Message__PullResponse) Serialize(serializer serde.Serializer) error {
 		return err
 	}
 	serializer.SerializeVariantIndex(1)
-	if err := obj.Field0.Serialize(serializer); err != nil {
+	if err := obj.Pubkey.Serialize(serializer); err != nil {
 		return err
 	}
-	if err := serialize_vector_CrdsValue(obj.Field1, serializer); err != nil {
+	if err := serialize_vector_CrdsValue(obj.Values, serializer); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -2029,12 +2029,12 @@ func load_Message__PullResponse(deserializer serde.Deserializer) (Message__PullR
 		return obj, err
 	}
 	if val, err := DeserializePubkey(deserializer); err == nil {
-		obj.Field0 = val
+		obj.Pubkey = val
 	} else {
 		return obj, err
 	}
 	if val, err := deserialize_vector_CrdsValue(deserializer); err == nil {
-		obj.Field1 = val
+		obj.Values = val
 	} else {
 		return obj, err
 	}
@@ -2043,8 +2043,8 @@ func load_Message__PullResponse(deserializer serde.Deserializer) (Message__PullR
 }
 
 type Message__PushMessage struct {
-	Field0 Pubkey
-	Field1 []CrdsValue
+	Pubkey Pubkey
+	Values []CrdsValue
 }
 
 func (*Message__PushMessage) isMessage() {}
@@ -2054,10 +2054,10 @@ func (obj *Message__PushMessage) Serialize(serializer serde.Serializer) error {
 		return err
 	}
 	serializer.SerializeVariantIndex(2)
-	if err := obj.Field0.Serialize(serializer); err != nil {
+	if err := obj.Pubkey.Serialize(serializer); err != nil {
 		return err
 	}
-	if err := serialize_vector_CrdsValue(obj.Field1, serializer); err != nil {
+	if err := serialize_vector_CrdsValue(obj.Values, serializer); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -2081,12 +2081,12 @@ func load_Message__PushMessage(deserializer serde.Deserializer) (Message__PushMe
 		return obj, err
 	}
 	if val, err := DeserializePubkey(deserializer); err == nil {
-		obj.Field0 = val
+		obj.Pubkey = val
 	} else {
 		return obj, err
 	}
 	if val, err := deserialize_vector_CrdsValue(deserializer); err == nil {
-		obj.Field1 = val
+		obj.Values = val
 	} else {
 		return obj, err
 	}
@@ -2095,8 +2095,8 @@ func load_Message__PushMessage(deserializer serde.Deserializer) (Message__PushMe
 }
 
 type Message__PruneMessage struct {
-	Field0 Pubkey
-	Field1 PruneData
+	Pubkey Pubkey
+	Data   PruneData
 }
 
 func (*Message__PruneMessage) isMessage() {}
@@ -2106,10 +2106,10 @@ func (obj *Message__PruneMessage) Serialize(serializer serde.Serializer) error {
 		return err
 	}
 	serializer.SerializeVariantIndex(3)
-	if err := obj.Field0.Serialize(serializer); err != nil {
+	if err := obj.Pubkey.Serialize(serializer); err != nil {
 		return err
 	}
-	if err := obj.Field1.Serialize(serializer); err != nil {
+	if err := obj.Data.Serialize(serializer); err != nil {
 		return err
 	}
 	serializer.DecreaseContainerDepth()
@@ -2133,12 +2133,12 @@ func load_Message__PruneMessage(deserializer serde.Deserializer) (Message__Prune
 		return obj, err
 	}
 	if val, err := DeserializePubkey(deserializer); err == nil {
-		obj.Field0 = val
+		obj.Pubkey = val
 	} else {
 		return obj, err
 	}
 	if val, err := DeserializePruneData(deserializer); err == nil {
-		obj.Field1 = val
+		obj.Data = val
 	} else {
 		return obj, err
 	}
