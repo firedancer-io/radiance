@@ -61,7 +61,7 @@ func TestBloom_AddContains(t *testing.T) {
 	// known keys to avoid false positives in the test
 	bloom.Keys = []uint64{0, 1, 2, 3}
 
-	var key [32]byte
+	var key Hash
 
 	key = sha256.Sum256([]byte("hello"))
 	assert.False(t, bloom.Contains(&key))
@@ -84,4 +84,8 @@ func TestBloom_Randomness(t *testing.T) {
 	sort.Slice(b2.Keys, func(i, j int) bool { return b2.Keys[i] < b2.Keys[j] })
 
 	assert.NotEqual(t, b1.Keys, b2.Keys)
+}
+
+func TestBloom_MaxItems(t *testing.T) {
+	assert.Equal(t, float64(9), BloomMaxItems(80, 0.01, 8))
 }

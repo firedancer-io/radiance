@@ -55,7 +55,15 @@ func BloomNumKeys(m, n float64) float64 {
 	return math.Max(1, math.Round((m/n)*math.Log(2)))
 }
 
-func (b *Bloom) Pos(key *[32]byte, k uint64) uint64 {
+func BloomMaxItems(m, p, k float64) float64 {
+	return math.Ceil(m / (-k / math.Log(1-math.Exp(math.Log(p)/k))))
+}
+
+func BloomMaskBits(numItems, maxItems float64) uint32 {
+	return uint32(math.Max(math.Ceil(math.Log2(numItems/maxItems)), 0))
+}
+
+func (b *Bloom) Pos(key *Hash, k uint64) uint64 {
 	return FNV1a(key[:], k) % b.Bits.Len
 }
 
@@ -67,7 +75,7 @@ func (b *Bloom) Clear() {
 	b.NumBitsSet = 0
 }
 
-func (b *Bloom) Add(key *[32]byte) {
+func (b *Bloom) Add(key *Hash) {
 	for _, k := range b.Keys {
 		pos := b.Pos(key, k)
 		if !b.Bits.Get(pos) {
@@ -77,7 +85,7 @@ func (b *Bloom) Add(key *[32]byte) {
 	}
 }
 
-func (b *Bloom) Contains(key *[32]byte) bool {
+func (b *Bloom) Contains(key *Hash) bool {
 	for _, k := range b.Keys {
 		if !b.Bits.Get(b.Pos(key, k)) {
 			return false
