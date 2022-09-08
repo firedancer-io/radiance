@@ -605,6 +605,7 @@ type CrdsData interface {
 	isCrdsData()
 	Serialize(serializer serde.Serializer) error
 	BincodeSerialize() ([]byte, error)
+	Pubkey() *Pubkey
 }
 
 func DeserializeCrdsData(deserializer serde.Deserializer) (CrdsData, error) {
@@ -738,6 +739,10 @@ func (obj *CrdsData__ContactInfo) BincodeSerialize() ([]byte, error) {
 	return serializer.GetBytes(), nil
 }
 
+func (obj *CrdsData__ContactInfo) Pubkey() *Pubkey {
+	return &obj.Value.Id
+}
+
 func load_CrdsData__ContactInfo(deserializer serde.Deserializer) (CrdsData__ContactInfo, error) {
 	var obj CrdsData__ContactInfo
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
@@ -783,6 +788,10 @@ func (obj *CrdsData__Vote) BincodeSerialize() ([]byte, error) {
 		return nil, err
 	}
 	return serializer.GetBytes(), nil
+}
+
+func (obj *CrdsData__Vote) Pubkey() *Pubkey {
+	return &obj.Field1.From
 }
 
 func load_CrdsData__Vote(deserializer serde.Deserializer) (CrdsData__Vote, error) {
@@ -837,6 +846,10 @@ func (obj *CrdsData__LowestSlot) BincodeSerialize() ([]byte, error) {
 	return serializer.GetBytes(), nil
 }
 
+func (obj *CrdsData__LowestSlot) Pubkey() *Pubkey {
+	return &obj.Field1.From
+}
+
 func load_CrdsData__LowestSlot(deserializer serde.Deserializer) (CrdsData__LowestSlot, error) {
 	var obj CrdsData__LowestSlot
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
@@ -885,6 +898,10 @@ func (obj *CrdsData__SnapshotHashes) BincodeSerialize() ([]byte, error) {
 	return serializer.GetBytes(), nil
 }
 
+func (obj *CrdsData__SnapshotHashes) Pubkey() *Pubkey {
+	return &obj.Value.From
+}
+
 func load_CrdsData__SnapshotHashes(deserializer serde.Deserializer) (CrdsData__SnapshotHashes, error) {
 	var obj CrdsData__SnapshotHashes
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
@@ -926,6 +943,10 @@ func (obj *CrdsData__AccountsHashes) BincodeSerialize() ([]byte, error) {
 		return nil, err
 	}
 	return serializer.GetBytes(), nil
+}
+
+func (obj *CrdsData__AccountsHashes) Pubkey() *Pubkey {
+	return &obj.Value.From
 }
 
 func load_CrdsData__AccountsHashes(deserializer serde.Deserializer) (CrdsData__AccountsHashes, error) {
@@ -973,6 +994,10 @@ func (obj *CrdsData__EpochSlots) BincodeSerialize() ([]byte, error) {
 		return nil, err
 	}
 	return serializer.GetBytes(), nil
+}
+
+func (obj *CrdsData__EpochSlots) Pubkey() *Pubkey {
+	return &obj.Field1.From
 }
 
 func load_CrdsData__EpochSlots(deserializer serde.Deserializer) (CrdsData__EpochSlots, error) {
@@ -1041,6 +1066,10 @@ func (obj *CrdsData__LegacyVersion) BincodeSerialize() ([]byte, error) {
 		return nil, err
 	}
 	return serializer.GetBytes(), nil
+}
+
+func (obj *CrdsData__LegacyVersion) Pubkey() *Pubkey {
+	return &obj.From
 }
 
 func load_CrdsData__LegacyVersion(deserializer serde.Deserializer) (CrdsData__LegacyVersion, error) {
@@ -1135,6 +1164,10 @@ func (obj *CrdsData__Version) BincodeSerialize() ([]byte, error) {
 	return serializer.GetBytes(), nil
 }
 
+func (obj *CrdsData__Version) Pubkey() *Pubkey {
+	return &obj.From
+}
+
 func load_CrdsData__Version(deserializer serde.Deserializer) (CrdsData__Version, error) {
 	var obj CrdsData__Version
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
@@ -1220,6 +1253,10 @@ func (obj *CrdsData__NodeInstance) BincodeSerialize() ([]byte, error) {
 	return serializer.GetBytes(), nil
 }
 
+func (obj *CrdsData__NodeInstance) Pubkey() *Pubkey {
+	return &obj.From
+}
+
 func load_CrdsData__NodeInstance(deserializer serde.Deserializer) (CrdsData__NodeInstance, error) {
 	var obj CrdsData__NodeInstance
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
@@ -1282,6 +1319,10 @@ func (obj *CrdsData__DuplicateShred) BincodeSerialize() ([]byte, error) {
 	return serializer.GetBytes(), nil
 }
 
+func (obj *CrdsData__DuplicateShred) Pubkey() *Pubkey {
+	return &obj.Field1.From
+}
+
 func load_CrdsData__DuplicateShred(deserializer serde.Deserializer) (CrdsData__DuplicateShred, error) {
 	var obj CrdsData__DuplicateShred
 	if err := deserializer.IncreaseContainerDepth(); err != nil {
@@ -1328,6 +1369,10 @@ func (obj *CrdsData__IncrementalSnapshotHashes) BincodeSerialize() ([]byte, erro
 		return nil, err
 	}
 	return serializer.GetBytes(), nil
+}
+
+func (obj *CrdsData__IncrementalSnapshotHashes) Pubkey() *Pubkey {
+	return &obj.Value.From
 }
 
 func load_CrdsData__IncrementalSnapshotHashes(deserializer serde.Deserializer) (CrdsData__IncrementalSnapshotHashes, error) {
