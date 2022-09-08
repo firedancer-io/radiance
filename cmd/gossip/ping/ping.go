@@ -46,7 +46,7 @@ func main() {
 
 	ctx := context.Background()
 
-	_, privkey, err := ed25519.GenerateKey(rand.Reader)
+	_, identity, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
 		panic(err)
 	}
@@ -56,11 +56,11 @@ func main() {
 		klog.Exit(err)
 	}
 
-	pingClient := gossip.NewPingClient(privkey, conn)
+	pingClient := gossip.NewPingClient(identity, conn)
 	handler := &gossip.Handler{
 		PingClient: pingClient,
 	}
-	client := gossip.NewClient(handler, conn)
+	client := gossip.NewDriver(handler, conn)
 
 	klog.Infof("GOSSIP PING %s (%s)", *flagAddr, target.String())
 

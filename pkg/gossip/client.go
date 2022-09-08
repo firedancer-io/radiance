@@ -7,14 +7,17 @@ import (
 	"sync/atomic"
 )
 
-// Client implements the network main loop.
-type Client struct {
+// Driver implements the network main loop.
+//
+// Note: This uses Go 1.19 standard library networking, which processes packets one-by-one. (slow!)
+// Looks like Go 1.20 will add batch packet receive: https://github.com/golang/go/issues/45886
+type Driver struct {
 	handler *Handler
 	so      *net.UDPConn
 }
 
-func NewClient(handler *Handler, so *net.UDPConn) *Client {
-	return &Client{
+func NewDriver(handler *Handler, so *net.UDPConn) *Driver {
+	return &Driver{
 		handler: handler,
 		so:      so,
 	}
@@ -24,7 +27,7 @@ func NewClient(handler *Handler, so *net.UDPConn) *Client {
 //
 // Destroys all handlers and closes the socket after returning.
 // Returns any network error or nil if the context closed.
-func (c *Client) Run(ctx context.Context) error {
+func (c *Driver) Run(ctx context.Context) error {
 	defer c.handler.Close()
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -38,7 +41,7 @@ func (c *Client) Run(ctx context.Context) error {
 		<-ctx.Done()
 	}()
 
-	var buf [1280]byte
+	var buf [PacketSize]byte
 	for {
 		n, _, _, addr, err := c.so.ReadMsgUDPAddrPort(buf[:], nil)
 		if n > 0 {
@@ -55,6 +58,7 @@ func (c *Client) Run(ctx context.Context) error {
 
 // Handler is a network-agnostic multiplexer for incoming gossip messages.
 type Handler struct {
+	*PullClient
 	*PingClient
 	*PingServer
 
@@ -70,6 +74,11 @@ func (h *Handler) HandlePacket(packet []byte, from netip.AddrPort) {
 		return
 	}
 	switch x := msg.(type) {
+	case *Message__PullResponse:
+		if h.PullClient != nil {
+			h.PullClient.HandlePullResponse(x, from)
+			return
+		}
 	case *Message__Ping:
 		if h.PingServer != nil {
 			h.PingServer.HandlePing(x, from)

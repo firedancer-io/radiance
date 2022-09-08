@@ -27,7 +27,7 @@ func TestPingServer(t *testing.T) {
 		PingClient: NewPingClient(identity, conn),
 		PingServer: NewPingServer(identity, conn),
 	}
-	client := NewClient(handler, conn)
+	client := NewDriver(handler, conn)
 
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
@@ -50,4 +50,16 @@ func TestPingServer(t *testing.T) {
 	})
 	err = group.Wait()
 	assert.NoError(t, err)
+}
+
+func BenchmarkPing_SignHashVerify(b *testing.B) {
+	_, identity, err := ed25519.GenerateKey(rand.Reader)
+	require.NoError(b, err)
+
+	for i := 0; i < b.N; i++ {
+		ping := NewPingRandom(identity)
+		assert.True(b, ping.Verify())
+		pong := NewPing(HashPingToken(ping.Token), identity)
+		assert.True(b, pong.Verify())
+	}
 }
