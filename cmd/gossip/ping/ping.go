@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/signal"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/certusone/radiance/pkg/gossip"
@@ -27,6 +26,8 @@ var (
 	flagAddr    = flag.String("addr", "", "Address to ping (<host>:<port>)")
 )
 
+var target netip.AddrPort
+
 func init() {
 	klog.InitFlags(nil)
 	flag.Parse()
@@ -37,6 +38,12 @@ func main() {
 		klog.Exit("No address to ping specified")
 	}
 
+	udpAddr, err := net.ResolveUDPAddr("udp", *flagAddr)
+	if err != nil {
+		klog.Exitf("invalid target address: %s", err)
+	}
+	target = udpAddr.AddrPort()
+
 	ctx := context.Background()
 
 	_, privkey, err := ed25519.GenerateKey(rand.Reader)
@@ -44,152 +51,72 @@ func main() {
 		panic(err)
 	}
 
-	conn, err := net.Dial("udp", *flagAddr)
+	conn, err := net.ListenUDP("udp", nil)
 	if err != nil {
 		klog.Exit(err)
 	}
-	udpConn := conn.(*net.UDPConn)
 
-	klog.Infof("GOSSIP PING %s (%s)", *flagAddr, conn.RemoteAddr())
-
-	s := Session{
-		privkey: privkey,
-		udpConn: udpConn,
-		reqs:    make(map[[32]byte]pending),
+	pingClient := gossip.NewPingClient(privkey, conn)
+	handler := &gossip.Handler{
+		PingClient: pingClient,
 	}
+	client := gossip.NewClient(handler, conn)
+
+	klog.Infof("GOSSIP PING %s (%s)", *flagAddr, target.String())
 
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
 	defer cancel()
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
-		return s.send(ctx)
+		return client.Run(ctx)
 	})
 	group.Go(func() error {
-		return s.receive(ctx)
+		pingLoop(ctx, pingClient)
+		return context.Canceled // done
 	})
 	_ = group.Wait()
 	_ = conn.Close()
 
-	klog.Infof("--- %s gossip ping statistics ---", udpConn.RemoteAddr())
+	klog.Infof("--- %s gossip ping statistics ---", target.String())
 
-	numSuccess := atomic.LoadUint64(&s.numSuccess)
-	numTimeout := atomic.LoadUint64(&s.numTimeout)
+	numSuccess := pingClient.NumOK.Load()
+	numTimeout := pingClient.NumTimeout.Load()
 	klog.Infof("%d packets transmitted, %d packets received, %.1f%% packet loss",
 		numSuccess+numTimeout, numSuccess, (1-(float64(numSuccess)/float64(numSuccess+numTimeout)))*100)
 }
 
-type pending struct {
-	c      int
-	t      time.Time
-	ping   gossip.Ping
-	cancel context.CancelFunc
-}
+func pingLoop(ctx context.Context, pinger *gossip.PingClient) {
+	var wg sync.WaitGroup
+	defer wg.Wait()
 
-type Session struct {
-	privkey ed25519.PrivateKey
-	udpConn *net.UDPConn
-	lock    sync.Mutex
-	reqs    map[[32]byte]pending
-
-	numSuccess  uint64
-	numTimeout  uint64
-	numSendFail uint64
-}
-
-func (s *Session) send(ctx context.Context) error {
-	defer s.udpConn.Close()
 	ticker := time.NewTicker(*flagDelay)
-	for c := 0; c < *flagCount || *flagCount == -1; c++ {
-		s.sendPing(ctx, c)
+	count := *flagCount
+	for seq := 0; seq < count || count == -1; seq++ {
 		select {
-		case <-ticker.C:
 		case <-ctx.Done():
-			return ctx.Err()
+			return
+		case <-ticker.C:
+			wg.Add(1)
+			go sendPing(ctx, &wg, pinger, seq)
 		}
 	}
-	return errors.New("done")
 }
 
-func (s *Session) sendPing(ctx context.Context, c int) {
-	t := time.Now()
+func sendPing(ctx context.Context, wg *sync.WaitGroup, pinger *gossip.PingClient, seq int) {
+	defer wg.Done()
 
-	var token [32]byte
-	if _, err := rand.Read(token[:]); err != nil {
-		panic(err)
-	}
+	ctx, cancel := context.WithTimeout(ctx, *flagTimeout)
+	defer cancel()
 
-	ping := gossip.NewPing(token, s.privkey)
-	pingMsg := gossip.Message__Ping{Value: ping}
-	frame, err := pingMsg.BincodeSerialize()
-	if err != nil {
-		panic(err)
-	}
-
-	_, _, err = s.udpConn.WriteMsgUDP(frame, nil, nil)
-	if err != nil {
-		klog.Warningf("Send ping: %s", err)
-		atomic.AddUint64(&s.numSendFail, 1)
+	start := time.Now()
+	_, responder, err := pinger.Ping(ctx, target)
+	if err == nil {
+		klog.Infof("Pong from %s seq=%d time=%v", responder, seq, time.Since(start))
+	} else if errors.Is(err, context.Canceled) {
 		return
+	} else if errors.Is(err, context.DeadlineExceeded) {
+		klog.Infof("Request timeout for seq %d", seq)
+	} else {
+		klog.Warning(err)
 	}
-
-	pongToken := gossip.HashPingToken(ping.Token)
-	pingCtx, pingCancel := context.WithTimeout(ctx, *flagTimeout)
-	go func() {
-		<-pingCtx.Done()
-		if err := pingCtx.Err(); err == context.DeadlineExceeded {
-			s.lock.Lock()
-			defer s.lock.Unlock()
-			delete(s.reqs, pongToken)
-			klog.V(3).Infof("Request timeout for seq %d", c)
-			atomic.AddUint64(&s.numTimeout, 1)
-		}
-	}()
-
-	s.lock.Lock()
-	s.reqs[pongToken] = pending{
-		c:      c,
-		t:      t,
-		ping:   ping,
-		cancel: pingCancel,
-	}
-	s.lock.Unlock()
-}
-
-func (s *Session) receive(ctx context.Context) error {
-	for ctx.Err() == nil {
-		var packet [4 + gossip.PingSize]byte
-		n, remote, err := s.udpConn.ReadFromUDPAddrPort(packet[:])
-		klog.V(7).Infof("Packet from %s", remote)
-		if n >= len(packet) {
-			s.handlePong(packet[:], remote)
-		}
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (s *Session) handlePong(packet []byte, remote netip.AddrPort) {
-	msg, err := gossip.BincodeDeserializeMessage(packet)
-	if err != nil {
-		return
-	}
-	pongMsg, ok := msg.(*gossip.Message__Pong)
-	if !ok {
-		return
-	}
-
-	s.lock.Lock()
-	defer s.lock.Unlock()
-	req, ok := s.reqs[pongMsg.Value.Token]
-	if !ok {
-		return
-	}
-	delete(s.reqs, pongMsg.Value.Token)
-
-	req.cancel()
-
-	klog.V(3).Infof("Pong from %s seq=%d time=%v", remote, req.c, time.Since(req.t))
-	atomic.AddUint64(&s.numSuccess, 1)
 }
