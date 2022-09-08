@@ -14,6 +14,8 @@ import (
 	"math/rand"
 )
 
+const MaxBloomSize = 928
+
 func NewBloom(numBits uint64, keys []uint64) *Bloom {
 	bits := make([]uint64, (numBits+63)/64)
 	ret := &Bloom{
