@@ -1,6 +1,11 @@
 package shred
 
-import bin "github.com/gagliardetto/binary"
+import (
+	"encoding/base64"
+
+	bin "github.com/gagliardetto/binary"
+	"github.com/gagliardetto/solana-go"
+)
 
 type LegacyCode struct {
 	Common  CommonHeader
@@ -8,7 +13,7 @@ type LegacyCode struct {
 }
 
 const (
-	LegacyHeaderSize  = 88
+	LegacyHeaderSize  = 86
 	LegacyPayloadSize = 1228
 )
 
@@ -68,10 +73,7 @@ func (s *LegacyData) DataHeader() *DataHeader {
 }
 
 func (s *LegacyData) Data() ([]byte, bool) {
-	if int(s.Header.Size) > len(s.Payload) {
-		return nil, false // TODO more length checks
-	}
-	return s.Payload[LegacyHeaderSize:], true
+	return s.Payload[LegacyHeaderSize:1143], true
 }
 
 func (s *LegacyData) DataComplete() bool {
@@ -80,4 +82,25 @@ func (s *LegacyData) DataComplete() bool {
 
 func (s *LegacyData) ReferenceTick() uint8 {
 	return s.Header.Flags & FlagShredTickReferenceMask
+}
+
+func (s *LegacyData) MarshalYAML() (any, error) {
+	item := struct {
+		Signature   solana.Signature
+		Variant     uint8
+		Slot        uint64
+		Index       uint32
+		Version     uint16
+		FECSetIndex uint32
+		Payload     string
+	}{
+		Signature:   s.Common.Signature,
+		Variant:     s.Common.Variant,
+		Slot:        s.Common.Slot,
+		Index:       s.Common.Index,
+		Version:     s.Common.Version,
+		FECSetIndex: s.Common.FECSetIndex,
+		Payload:     base64.StdEncoding.EncodeToString(s.Payload),
+	}
+	return item, nil
 }

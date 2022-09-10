@@ -7,9 +7,9 @@ func (p Pubkey) MarshalText() ([]byte, error) {
 }
 
 func (h Hash) MarshalText() ([]byte, error) {
-	return []byte(solana.Hash(h).String()), nil
+	return solana.Hash(h).MarshalText()
 }
 
 func (s Signature) MarshalText() ([]byte, error) {
-	return []byte(solana.Signature(s).String()), nil
+	return solana.Signature(s).MarshalText()
 }

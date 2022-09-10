@@ -40,8 +40,8 @@ func (s *SlotMeta) entryRanges() []entryRange {
 	indexes := sliceSortedByRange[uint32](s.EntryEndIndexes, 0, uint32(s.Consumed))
 	ranges := make([]entryRange, len(indexes))
 	begin := uint32(0)
-	for _, index := range s.EntryEndIndexes {
-		ranges = append(ranges, entryRange{begin, index})
+	for i, index := range s.EntryEndIndexes {
+		ranges[i] = entryRange{begin, index}
 		begin = index + 1
 	}
 	return ranges
@@ -70,18 +70,21 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) ([]shred.Entry, e
 	var entries []shred.Entry
 	ranges := meta.entryRanges()
 	for _, r := range ranges {
-		parts := shreds[r.startIdx:r.endIdx]
+		parts := shreds[r.startIdx : r.endIdx+1]
 		entryBytes, err := shred.Concat(parts)
 		if err != nil {
 			return nil, err
 		}
 		dec := bin.NewBinDecoder(entryBytes)
-		var entry shred.Entry
-		if err := dec.Decode(&entry); err != nil {
+		var subEntries struct {
+			NumEntries uint64 `bin:"sizeof=Entries"`
+			Entries    []shred.Entry
+		}
+		if err := dec.Decode(&subEntries); err != nil {
 			return nil, fmt.Errorf("cannot decode entry at %d:[%d-%d]: %w",
 				meta.Slot, r.startIdx, r.endIdx, err)
 		}
-		entries = append(entries, entry)
+		entries = append(entries, subEntries.Entries...)
 	}
 	return entries, nil
 }
@@ -174,11 +177,12 @@ func (d *DB) getAllShreds(
 	prefix := MakeShredKey(slot, 0)
 	iter.Seek(prefix[:])
 	var shreds []shred.Shred
-	for iter.ValidForPrefix(prefix[:]) {
+	for iter.ValidForPrefix(prefix[:8]) {
 		s := shred.NewShredFromSerialized(iter.Value().Data())
 		if s != nil {
 			shreds = append(shreds, s)
 		}
+		iter.Next()
 	}
 	return shreds, nil
 }

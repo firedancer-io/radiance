@@ -2,6 +2,7 @@ package blockstore
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 
 	"github.com/linxGnu/grocksdb"
@@ -23,13 +24,19 @@ type SlotMeta struct {
 	EntryEndIndexes    []uint32 `yaml:"completed_data_indexes,flow"`
 }
 
-func ParseSlotKey(key []byte) (uint64, error) {
-	return binary.BigEndian.Uint64(key), nil
-}
-
 // MakeSlotKey creates the RocksDB key for CfMeta, CfRoot.
 func MakeSlotKey(slot uint64) (key [8]byte) {
 	binary.BigEndian.PutUint64(key[0:8], slot)
+	return
+}
+
+// ParseSlotKey decodes the RocksDB keys in CfMeta, CfRoot.
+func ParseSlotKey(key []byte) (slot uint64, ok bool) {
+	ok = len(key) == 8
+	if !ok {
+		return
+	}
+	slot = binary.BigEndian.Uint64(key)
 	return
 }
 
@@ -42,7 +49,11 @@ func (d *DB) MaxRoot() (uint64, error) {
 	if !iter.Valid() {
 		return 0, ErrNotFound
 	}
-	return ParseSlotKey(iter.Key().Data())
+	slot, ok := ParseSlotKey(iter.Key().Data())
+	if !ok {
+		return 0, fmt.Errorf("invalid key in root cf")
+	}
+	return slot, nil
 }
 
 // GetSlotMeta returns the shredding metadata of a given slot.

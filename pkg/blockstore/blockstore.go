@@ -136,7 +136,7 @@ func open(path string, secondaryPath string) (*DB, error) {
 		return nil, fmt.Errorf("expected %d handles, got %d", len(cfNames), len(cfHandles))
 	}
 
-	// Write handle slots into DB object
+	// Write handles into DB object
 	for i, slot := range handleSlots {
 		*slot = cfHandles[i]
 	}

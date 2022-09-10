@@ -18,7 +18,26 @@ import (
 var Cmd = cobra.Command{
 	Use:   "dump-shreds <rocksdb> <out> <slots>",
 	Short: "Dump shreds to file system",
-	Args:  cobra.ExactArgs(3),
+	Long: `dump-shreds writes raw code and data shreds from RocksDB to the file system.
+Slots can be specified as integers or ranges separated by comma.
+
+Creates file paths ./<out>/<slot>/<type><index>
+  type is either 'd' (data) or 'c' (code)
+
+File paths are written to stdout.`,
+	Example: `    dump-shreds ./rocksdb ./shreds 1,2,100:200
+      ./shreds/1/d000
+      ./shreds/1/d001
+      ...
+      ./shreds/2/d000
+      ./shreds/2/d001
+      ...
+      ./shreds/100/d000
+      ./shreds/100/d001
+      ...
+      ./shreds/101/d000
+      ./shreds/101/d001`,
+	Args: cobra.ExactArgs(3),
 }
 
 func init() {
@@ -85,6 +104,7 @@ func dumpShreds(
 		if err := os.WriteFile(p, iter.Value().Data(), 0644); err != nil {
 			return err
 		}
+		fmt.Println(p)
 		iter.Next()
 	}
 	return nil
