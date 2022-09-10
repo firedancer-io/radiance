@@ -1,6 +1,7 @@
 package blockstore
 
 import (
+	"github.com/certusone/radiance/cmd/radiance/blockstore/dumpshreds"
 	"github.com/spf13/cobra"
 )
 
@@ -10,5 +11,7 @@ var Cmd = cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand()
+	Cmd.AddCommand(
+		&dumpshreds.Cmd,
+	)
 }
