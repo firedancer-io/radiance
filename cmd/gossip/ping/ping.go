@@ -1,39 +1,43 @@
-// Ping sends gossip pings to a Solana node.
-package main
+package ping
 
 import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"errors"
-	"flag"
 	"net"
 	"net/netip"
-	"os"
-	"os/signal"
 	"sync"
 	"time"
 
 	"github.com/certusone/radiance/pkg/gossip"
+	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
 )
 
+var Cmd = cobra.Command{
+	Use:   "ping",
+	Short: "Check if a node is alive and responding",
+	Args:  cobra.NoArgs,
+}
+
+var flags = Cmd.Flags()
+
 var (
-	flagCount   = flag.Int("c", -1, "Number of pings to send, -1 for infinite")
-	flagDelay   = flag.Duration("i", 1*time.Second, "Delay between pings")
-	flagTimeout = flag.Duration("timeout", 3*time.Second, "Ping timeout")
-	flagAddr    = flag.String("addr", "", "Address to ping (<host>:<port>)")
+	flagCount   = flags.Int("c", -1, "Number of pings to send, -1 for infinite")
+	flagDelay   = flags.Duration("i", 1*time.Second, "Delay between pings")
+	flagTimeout = flags.Duration("timeout", 3*time.Second, "Ping timeout")
+	flagAddr    = flags.String("addr", "", "Address to ping (<host>:<port>)")
 )
 
 var target netip.AddrPort
 
 func init() {
-	klog.InitFlags(nil)
-	flag.Parse()
+	Cmd.Run = run
 }
 
-func main() {
+func run(c *cobra.Command, _ []string) {
 	if *flagAddr == "" {
 		klog.Exit("No address to ping specified")
 	}
@@ -43,8 +47,6 @@ func main() {
 		klog.Exitf("invalid target address: %s", err)
 	}
 	target = udpAddr.AddrPort()
-
-	ctx := context.Background()
 
 	_, identity, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -64,7 +66,7 @@ func main() {
 
 	klog.Infof("GOSSIP PING %s (%s)", *flagAddr, target.String())
 
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, cancel := context.WithCancel(c.Context())
 	defer cancel()
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {

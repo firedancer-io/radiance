@@ -1,34 +1,38 @@
-// Pull downloads CRDS from a peer.
-package main
+package pull
 
 import (
 	"context"
 	"crypto/ed25519"
 	"crypto/rand"
-	"flag"
 	"net"
 	"net/netip"
-	"os"
-	"os/signal"
 	"time"
 
 	"github.com/certusone/radiance/pkg/gossip"
+	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
 )
 
+var Cmd = cobra.Command{
+	Use:   "pull",
+	Short: "Pull CRDS from a node",
+	Args:  cobra.NoArgs,
+}
+
+var flags = Cmd.Flags()
+
 var (
-	flagAddr = flag.String("addr", "", "Address to ping (<host>:<port>)")
+	flagAddr = flags.String("addr", "", "Address to ping (<host>:<port>)")
 )
 
 var target netip.AddrPort
 
 func init() {
-	klog.InitFlags(nil)
-	flag.Parse()
+	Cmd.Run = run
 }
 
-func main() {
+func run(c *cobra.Command, _ []string) {
 	if *flagAddr == "" {
 		klog.Exit("No address specified")
 	}
@@ -38,8 +42,6 @@ func main() {
 		klog.Exitf("invalid target address: %s", err)
 	}
 	target = udpAddr.AddrPort()
-
-	ctx := context.Background()
 
 	_, identity, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -61,7 +63,7 @@ func main() {
 	}
 	client := gossip.NewDriver(handler, conn)
 
-	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt)
+	ctx, cancel := context.WithCancel(c.Context())
 	defer cancel()
 	group, ctx := errgroup.WithContext(ctx)
 	group.Go(func() error {
