@@ -7,15 +7,15 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/certusone/radiance/cmd/gossip/ping"
-	"github.com/certusone/radiance/cmd/gossip/pull"
+	"github.com/certusone/radiance/cmd/radiance/blockstore"
+	"github.com/certusone/radiance/cmd/radiance/gossip"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )
 
 var cmd = cobra.Command{
-	Use:   "gossip",
-	Short: "Interact with Solana gossip networks",
+	Use:   "radiance",
+	Short: "Solana Go playground",
 }
 
 func init() {
@@ -24,8 +24,8 @@ func init() {
 	cmd.PersistentFlags().AddGoFlagSet(klogFlags)
 
 	cmd.AddCommand(
-		&ping.Cmd,
-		&pull.Cmd,
+		&blockstore.Cmd,
+		&gossip.Cmd,
 	)
 }
 
