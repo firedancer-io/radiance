@@ -86,7 +86,6 @@ func main() {
 	mux.Handle("/", newHandler())
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, req *http.Request) {
-		// TODO: return aggregate health from the load balancer pool?
 		klog.V(1).Infof("[%s] %s %s %v", req.RemoteAddr, req.Method, req.URL, req.Header)
 		w.Write([]byte("ok"))
 	})
