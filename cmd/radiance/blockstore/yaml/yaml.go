@@ -33,7 +33,13 @@ func init() {
 	Cmd.Run = run
 }
 
-func run(_ *cobra.Command, args []string) {
+func run(c *cobra.Command, args []string) {
+	go func() {
+		// No need for clean shutdown, exit quickly
+		<-c.Context().Done()
+		os.Exit(0)
+	}()
+
 	rocksDB := args[0]
 
 	printColumnFamilies(rocksDB)
@@ -46,12 +52,16 @@ func run(_ *cobra.Command, args []string) {
 
 	printRoot(db)
 
-	slots, ok := util.ParseInts(*flagSlots)
-	if !ok {
-		klog.Exitf("Invalid slots specifier: %s", *flagSlots)
-	}
-	if len(slots) > 0 {
-		dumpSlots(db, slots)
+	if *flagSlots == "all" {
+		dumpAllSlots(db)
+	} else {
+		slots, ok := util.ParseInts(*flagSlots)
+		if !ok {
+			klog.Exitf("Invalid slots specifier: %s", *flagSlots)
+		}
+		if len(slots) > 0 {
+			dumpSlots(db, slots)
+		}
 	}
 
 	if klog.Stats.Error.Lines() > 0 {
@@ -79,6 +89,25 @@ func printRoot(db *blockstore.DB) {
 		return
 	}
 	fmt.Println("root:", root)
+}
+
+func dumpAllSlots(db *blockstore.DB) {
+	iter := db.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), db.CfMeta)
+	iter.SeekToFirst()
+	defer iter.Close()
+	hasHeader := false
+	for iter.Valid() {
+		if !hasHeader {
+			fmt.Println("slots:")
+			hasHeader = true
+		}
+		slot, ok := blockstore.ParseSlotKey(iter.Key().Data())
+		if !ok {
+			continue
+		}
+		dumpSlot(db, slot)
+		iter.Next()
+	}
 }
 
 func dumpSlots(db *blockstore.DB, slots util.Ints) {
