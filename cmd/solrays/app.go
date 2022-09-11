@@ -20,6 +20,8 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"k8s.io/klog/v2"
+
+	"github.com/certusone/radiance/cmd/solrays/util"
 )
 
 var (
@@ -98,8 +100,13 @@ func main() {
 		WriteTimeout: requestTimeout,
 	}
 
-	// TLS setup
+	// Setup TLS if an hostname has been specified.
 	if *tlsHostname != "" {
+		// Proceed only if a valid hostname has been specified.
+		if util.IsValidHostname(*tlsHostname) {
+			klog.Fatalf("tlsHostname [%s] is an invalid hostname, exiting", *tlsHostname)
+		}
+
 		klog.Infof("provisioning Let's Encrypt certificate for %s", *tlsHostname)
 
 		var acmeApi string
