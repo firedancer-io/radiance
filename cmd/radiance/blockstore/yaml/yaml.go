@@ -51,6 +51,7 @@ func run(c *cobra.Command, args []string) {
 	defer db.Close()
 
 	printRoot(db)
+	printMetaRange(db)
 
 	if *flagSlots == "all" {
 		dumpAllSlots(db)
@@ -89,6 +90,27 @@ func printRoot(db *blockstore.DB) {
 		return
 	}
 	fmt.Println("root:", root)
+}
+
+func printMetaRange(db *blockstore.DB) {
+	iter := db.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), db.CfMeta)
+	defer iter.Close()
+
+	iter.SeekToFirst()
+	if iter.Valid() {
+		slot, ok := blockstore.ParseSlotKey(iter.Key().Data())
+		if ok {
+			fmt.Printf("first_slot: %d\n", slot)
+		}
+	}
+
+	iter.SeekToLast()
+	if iter.Valid() {
+		slot, ok := blockstore.ParseSlotKey(iter.Key().Data())
+		if ok {
+			fmt.Printf("last_slot: %d\n", slot)
+		}
+	}
 }
 
 func dumpAllSlots(db *blockstore.DB) {
