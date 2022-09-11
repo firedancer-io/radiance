@@ -57,7 +57,13 @@ func sliceSortedByRange[T constraints.Ordered](list []T, start T, stop T) []T {
 	return list
 }
 
-func (d *DB) GetEntries(meta *SlotMeta) ([]shred.Entry, error) {
+type Entries struct {
+	Entries []shred.Entry
+	Raw     []byte
+	Shreds  []shred.Shred
+}
+
+func (d *DB) GetEntries(meta *SlotMeta) ([]Entries, error) {
 	shreds, err := d.GetDataShreds(meta.Slot, 0, uint32(meta.Received))
 	if err != nil {
 		return nil, err
@@ -66,8 +72,7 @@ func (d *DB) GetEntries(meta *SlotMeta) ([]shred.Entry, error) {
 }
 
 // DataShredsToEntries reassembles shreds to entries containing transactions.
-func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) ([]shred.Entry, error) {
-	var entries []shred.Entry
+func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entries, err error) {
 	ranges := meta.entryRanges()
 	for _, r := range ranges {
 		parts := shreds[r.startIdx : r.endIdx+1]
@@ -84,7 +89,11 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) ([]shred.Entry, e
 			return nil, fmt.Errorf("cannot decode entry at %d:[%d-%d]: %w",
 				meta.Slot, r.startIdx, r.endIdx, err)
 		}
-		entries = append(entries, subEntries.Entries...)
+		entries = append(entries, Entries{
+			Entries: subEntries.Entries,
+			Raw:     entryBytes[:dec.Position()],
+			Shreds:  parts,
+		})
 	}
 	return entries, nil
 }

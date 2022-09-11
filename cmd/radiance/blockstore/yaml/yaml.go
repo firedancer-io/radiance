@@ -26,6 +26,7 @@ var (
 	flagSlots   = flags.String("slots", "", "Slots to dump")
 	flagEntries = flags.Bool("entries", false, "Also dump slot entries")
 	flagShreds  = flags.Bool("shreds", false, "Also dump shreds")
+	flagTxns    = flags.Bool("txs", false, "Also dump transactions")
 )
 
 func init() {
@@ -136,11 +137,16 @@ func dumpDataEntries(db *blockstore.DB, meta *blockstore.SlotMeta) {
 		return
 	}
 
-	fmt.Println("    entries:")
+	yamlEntries := make([]entryBatch, len(entries))
+	for i, x := range entries {
+		yamlEntries[i] = makeEntryBatch(&x, *flagTxns)
+	}
+
+	fmt.Println("    entry_batches:")
 
 	enc := newYAMLPrinter(3)
 	defer enc.Close()
-	if err := enc.Encode(entries); err != nil {
+	if err := enc.Encode(yamlEntries); err != nil {
 		panic(err.Error())
 	}
 }

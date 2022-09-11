@@ -1,10 +1,6 @@
 package shred
 
-import (
-	"encoding/json"
-
-	"github.com/gagliardetto/solana-go"
-)
+import "github.com/gagliardetto/solana-go"
 
 type Shred interface {
 	CommonHeader() *CommonHeader
@@ -73,25 +69,4 @@ type Entry struct {
 	Hash      solana.Hash
 	NumTxns   uint64 `bin:"sizeof=Txns"`
 	Txns      []solana.Transaction
-}
-
-func (e Entry) MarshalYAML() (any, error) {
-	// Hacky and slow serializer to make YAML output tolerable
-	txJSONs := make([]any, len(e.Txns))
-	for i, txn := range e.Txns {
-		txJSON, err := json.Marshal(txn)
-		if err != nil {
-			return nil, err
-		}
-		_ = json.Unmarshal(txJSON, &txJSONs[i])
-	}
-	return struct {
-		NumHashes uint64 `yaml:"num_hashes"`
-		Hash      string `yaml:"hash"`
-		Txns      []any  `yaml:"txns"`
-	}{
-		NumHashes: e.NumHashes,
-		Hash:      e.Hash.String(),
-		Txns:      txJSONs,
-	}, nil
 }
