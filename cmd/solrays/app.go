@@ -3,6 +3,16 @@ package main
 import (
 	"context"
 	"flag"
+	"net"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"path"
+	"syscall"
+	"time"
+
+	"github.com/coreos/go-systemd/v22/activation"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
@@ -10,17 +20,6 @@ import (
 	"golang.org/x/crypto/acme"
 	"golang.org/x/crypto/acme/autocert"
 	"k8s.io/klog/v2"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"path"
-	"syscall"
-	"time"
-
-	_ "net/http/pprof"
-
-	"github.com/coreos/go-systemd/activation"
 )
 
 var (
