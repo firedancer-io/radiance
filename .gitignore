@@ -2,3 +2,6 @@
 *.pb.go
 .env.prototxt
 *.log
+
+# Build artifacts
+_bin
