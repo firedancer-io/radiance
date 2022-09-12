@@ -1,15 +1,15 @@
-# solrays #
+# solrays
 
 An RPC proxy that exports call latency of a Solana RPC node.
 
-## Metrics ##
+## Metrics
 
 - `solrays_forwarded_duration_seconds` - an histogram of the duration of the calls forwarded to the Solana RPC node, per call.
 - `solrays_requests_total` - Count of total requests per call.
 - `solrays_request_errors_total` - Count of total requests that failed, e.g. malformed request or proxy can't reach the Solana RPC node.
 - `solrays_requests_status_total` - Count of response HTTP status codes, per status code.
 
-## Run ##
+## Run
 
 ```
 :; _bin/solrays -h
