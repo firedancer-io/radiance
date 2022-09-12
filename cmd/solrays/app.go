@@ -21,7 +21,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"k8s.io/klog/v2"
 
-	"github.com/certusone/radiance/cmd/solrays/util"
+	"github.com/certusone/radiance/pkg/util"
 )
 
 var (
