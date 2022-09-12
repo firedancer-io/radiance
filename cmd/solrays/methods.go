@@ -57,14 +57,6 @@ var (
 		"sendTransaction",
 		"simulateTransaction",
 
-		// Unstable
-		"blockSubscribe",
-		"blockUnsubscribe",
-		"slotsUpdatesSubscribe",
-		"slotsUpdatesUnsubscribe",
-		"voteSubscribe",
-		"voteUnsubscribe",
-
 		// Deprecated
 		"getConfirmedBlock",
 		"getConfirmedBlocks",
