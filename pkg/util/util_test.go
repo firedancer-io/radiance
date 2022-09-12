@@ -2,9 +2,13 @@ package util
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_isValidHostname(t *testing.T) {
+	assert := assert.New(t)
+
 	tests := []struct {
 		hostname string
 		want     bool
@@ -42,9 +46,8 @@ func Test_isValidHostname(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.hostname, func(t *testing.T) {
-			if got := IsValidHostname(tt.hostname); got != tt.want {
-				t.Errorf("isValidHostname(%q) = %v, want %v", tt.hostname, got, tt.want)
-			}
+			got := IsValidHostname(tt.hostname)
+			assert.EqualValues(tt.want, got, "isValidHostname(%q) = %v, want %v", tt.hostname, got, tt.want)
 		})
 	}
 }
