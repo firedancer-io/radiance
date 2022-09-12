@@ -1,12 +1,12 @@
-# radiance #
+# radiance
 
 Highly experimental Solana playing ground.
 
-## Available tooling ##
+## Available tooling
 
 - [solrays](cmd/solrays), an RPC proxy that exports call latency of a Solana RPC node.
 
-## Building ##
+## Building
 
 In order to build the available tooling, the following is required:
 - Go 1.18+
