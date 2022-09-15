@@ -1,6 +1,9 @@
 # radiance ☀️
 
-Highly experimental Solana playing ground.
+Highly experimental Solana Go playground monorepo.
+
+⚠️ **No guarantees, no support, quite possibly no documentation either.
+Ignore this repo unless you're ready to read and understand the code.** ⚠️
 
 ## Available tooling
 
