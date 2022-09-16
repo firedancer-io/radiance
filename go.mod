@@ -5,7 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/bigtable v1.16.0
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
-	github.com/coreos/go-systemd/v22 v22.3.2
+	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/gagliardetto/binary v0.7.1
 	github.com/gagliardetto/solana-go v1.6.0
 	github.com/golang/protobuf v1.5.2
