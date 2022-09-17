@@ -107,6 +107,12 @@ func (d *DB) GetDataShreds(slot uint64, startIdx, endIdx uint32) ([]shred.Shred,
 	defer iter.Close()
 	key := MakeShredKey(slot, uint64(startIdx))
 	iter.Seek(key[:])
+	return GetDataShredsFromIter(iter, slot, startIdx, endIdx)
+}
+
+// GetDataShredsFromIter is like GetDataShreds, but takes a custom iterator.
+// The iterator must be seeked to the indicated slot/startIdx.
+func GetDataShredsFromIter(iter *grocksdb.Iterator, slot uint64, startIdx, endIdx uint32) ([]shred.Shred, error) {
 	var shreds []shred.Shred
 	for i := startIdx; i < endIdx; i++ {
 		var curSlot, index uint64
