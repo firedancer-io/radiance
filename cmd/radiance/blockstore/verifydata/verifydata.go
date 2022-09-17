@@ -2,6 +2,7 @@ package verifydata
 
 import (
 	"context"
+	"io"
 	"os"
 	"runtime"
 	"sync/atomic"
@@ -9,7 +10,10 @@ import (
 
 	"github.com/certusone/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
 )
@@ -74,32 +78,60 @@ func run(c *cobra.Command, args []string) {
 
 	// stats trackers
 	var numSuccess atomic.Uint64
+	var numSkipped atomic.Uint64
 	var numFailure atomic.Uint32
 
 	// application lifetime
-	ctx := c.Context()
-	ctx, cancel := context.WithCancel(ctx)
+	rootCtx := c.Context()
+	ctx, cancel := context.WithCancel(rootCtx)
 	defer cancel()
 	group, ctx := errgroup.WithContext(ctx)
 
 	stats := func() {
-		klog.Infof("[stats] good=%d bad=%d", numSuccess.Load(), numFailure.Load())
+		klog.Infof("[stats] good=%d skipped=%d bad=%d",
+			numSuccess.Load(), numSkipped.Load(), numFailure.Load())
+	}
+
+	var barOutput io.Writer
+	isAtty := isatty.IsTerminal(os.Stderr.Fd())
+	if isAtty {
+		barOutput = os.Stderr
+	} else {
+		barOutput = io.Discard
+	}
+
+	progress := mpb.NewWithContext(ctx, mpb.WithOutput(barOutput))
+	bar := progress.New(int64(total), mpb.BarStyle(),
+		mpb.PrependDecorators(
+			decor.Spinner(nil),
+			decor.CurrentNoUnit(" %d"),
+			decor.TotalNoUnit(" / %d slots"),
+			decor.NewPercentage(" (% d)"),
+		),
+		mpb.AppendDecorators(
+			decor.Name("eta="),
+			decor.AverageETA(decor.ET_STYLE_GO),
+		))
+
+	if isAtty {
+		klog.LogToStderr(false)
+		klog.SetOutput(progress)
 	}
 
 	statInterval := *flagStatIvl
 	if statInterval > 0 {
 		ticker := time.NewTicker(statInterval)
-		group.Go(func() error {
+		go func() {
 			defer ticker.Stop()
 			for {
 				select {
 				case <-ctx.Done():
-					return nil
+					return
 				case <-ticker.C:
 					stats()
 				}
 			}
-		})
+		}()
 	}
 
 	for i := uint(0); i < workers; i++ {
@@ -114,9 +146,13 @@ func run(c *cobra.Command, args []string) {
 			break
 		}
 
+		klog.Infof("[worker %d]: range=[%d:%d]", i, wLo, wHi)
 		w := &worker{
+			id:          i,
+			bar:         bar,
 			stop:        wHi,
 			numSuccess:  &numSuccess,
+			numSkipped:  &numSkipped,
 			numFailures: &numFailure,
 			maxFailures: *flagMaxErrs,
 		}
@@ -131,9 +167,12 @@ func run(c *cobra.Command, args []string) {
 	if err := group.Wait(); err != nil {
 		klog.Errorf("Aborting: %s", err)
 		exitCode = 1
-	} else {
+	} else if err = rootCtx.Err(); err == nil {
 		klog.Info("Done!")
 		exitCode = 0
+	} else {
+		klog.Infof("Aborted: %s", err)
+		exitCode = 1
 	}
 
 	stats()

@@ -4,25 +4,33 @@ import (
 	"context"
 	"fmt"
 	"sync/atomic"
+	"time"
 
 	"github.com/certusone/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
+	"github.com/vbauerster/mpb/v8"
 	"k8s.io/klog/v2"
 )
 
 // worker does a single pass over blockstore.CfMeta and blockstore.CfDataShred concurrently.
 type worker struct {
+	id    uint
 	meta  *grocksdb.Iterator
 	shred *grocksdb.Iterator
 	// Slot range
-	stop uint64
+	current uint64
+	stop    uint64
+	ts      time.Time
 
+	bar         *mpb.Bar
 	numSuccess  *atomic.Uint64
+	numSkipped  *atomic.Uint64
 	numFailures *atomic.Uint32
 	maxFailures uint32
 }
 
 func (w *worker) init(db *blockstore.DB, start uint64) {
+	w.current = start
 	w.meta = db.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), db.CfMeta)
 	w.shred = db.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), db.CfDataShred)
 	slotKey := blockstore.MakeSlotKey(start)
@@ -62,9 +70,12 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	// Remember failure and increment failure counter before returning.
 	var metaSlot uint64
 	success := false
+	var isFull bool
 	defer func() {
+		if !isFull {
+			return
+		}
 		if success {
-			klog.V(3).Infof("slot %d: ok", metaSlot)
 			w.numSuccess.Add(1)
 		} else {
 			if w.shouldAbort(w.numFailures.Add(1)) {
@@ -79,6 +90,32 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	if !ok {
 		klog.Warningf("Skipping invalid slot key: %x", w.meta.Key().Data())
 		return
+	}
+	if metaSlot >= w.stop {
+		return false
+	}
+	defer func() {
+		if success {
+			if isFull {
+				klog.V(3).Infof("[worker %d]: slot %d: ok", w.id, metaSlot)
+			} else {
+				klog.V(3).Infof("[worker %d]: slot %d: skipped", w.id, metaSlot)
+			}
+		}
+	}()
+
+	// Update progress bar
+	step := metaSlot - w.current
+	if step == 0 {
+		step = 1
+	}
+	if metaSlot < w.current {
+		step = 0 // ???
+	}
+	w.bar.IncrInt64(int64(step))
+	w.current = metaSlot
+	if step > 1 {
+		w.numSkipped.Add(step - 1)
 	}
 
 	// Shred iterator should follow meta iter
@@ -110,6 +147,11 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	meta, err := blockstore.ParseBincode[blockstore.SlotMeta](w.meta.Value().Data())
 	if err != nil {
 		klog.Warningf("slot %d: invalid meta: %s", metaSlot, err)
+		return
+	}
+	if isFull = meta.IsFull(); !isFull {
+		w.numSkipped.Add(1)
+		success = true
 		return
 	}
 
