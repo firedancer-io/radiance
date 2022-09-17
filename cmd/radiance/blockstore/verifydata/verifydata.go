@@ -122,6 +122,7 @@ func run(c *cobra.Command, args []string) {
 		}
 		w.init(db, wLo)
 		group.Go(func() error {
+			defer w.close()
 			return w.run(ctx)
 		})
 	}
