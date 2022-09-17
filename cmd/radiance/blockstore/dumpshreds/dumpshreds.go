@@ -100,7 +100,7 @@ func dumpShreds(
 		if !ok || curSlot != slot {
 			break
 		}
-		p := filepath.Join(slotPath, fmt.Sprintf("%s%03d", namePrefix, curIndex))
+		p := filepath.Join(slotPath, fmt.Sprintf("%s%04d", namePrefix, curIndex))
 		if err := os.WriteFile(p, iter.Value().Data(), 0644); err != nil {
 			return err
 		}
