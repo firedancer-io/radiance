@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/VividCortex/ewma"
 	"github.com/certusone/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"github.com/mattn/go-isatty"
@@ -90,9 +91,22 @@ func run(c *cobra.Command, args []string) {
 	defer cancel()
 	group, ctx := errgroup.WithContext(ctx)
 
+	txRate := ewma.NewMovingAverage(7)
+	lastStatsUpdate := time.Now()
+	var lastNumTxns uint64
+	updateEWMA := func() {
+		now := time.Now()
+		sinceLast := now.Sub(lastStatsUpdate)
+		curNumTxns := numTxns.Load()
+		increase := curNumTxns - lastNumTxns
+		iRate := float64(increase) / sinceLast.Seconds()
+		txRate.Add(iRate)
+		lastNumTxns = curNumTxns
+		lastStatsUpdate = now
+	}
 	stats := func() {
-		klog.Infof("[stats] good=%d skipped=%d bad=%d",
-			numSuccess.Load(), numSkipped.Load(), numFailure.Load())
+		klog.Infof("[stats] good=%d skipped=%d bad=%d tps=%.0f",
+			numSuccess.Load(), numSkipped.Load(), numFailure.Load(), txRate.Value())
 	}
 
 	var barOutput io.Writer
@@ -123,15 +137,19 @@ func run(c *cobra.Command, args []string) {
 
 	statInterval := *flagStatIvl
 	if statInterval > 0 {
-		ticker := time.NewTicker(statInterval)
+		statTicker := time.NewTicker(statInterval)
+		rateTicker := time.NewTicker(250 * time.Millisecond)
 		go func() {
-			defer ticker.Stop()
+			defer statTicker.Stop()
+			defer rateTicker.Stop()
 			for {
 				select {
 				case <-ctx.Done():
 					return
-				case <-ticker.C:
+				case <-statTicker.C:
 					stats()
+				case <-rateTicker.C:
+					updateEWMA()
 				}
 			}
 		}()
@@ -187,9 +205,10 @@ func run(c *cobra.Command, args []string) {
 	}
 
 	stats()
-	klog.Infof("Time taken: %s", time.Since(start))
-	klog.Infof("Bytes Read: %d", numBytes.Load())
-	klog.Infof("Transaction Count: %d", numTxns.Load())
+	timeTaken := time.Since(start)
+	klog.Infof("Time taken: %s", timeTaken)
+	klog.Infof("Bytes Read: %d (%.2f MB/s)", numBytes.Load(), float64(numBytes.Load())/timeTaken.Seconds()/1000000)
+	klog.Infof("Transaction Count: %d (%.2f tps)", numTxns.Load(), float64(numTxns.Load())/timeTaken.Seconds())
 	os.Exit(exitCode)
 }
 
