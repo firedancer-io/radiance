@@ -163,8 +163,14 @@ func run(c *cobra.Command, args []string) {
 		})
 	}
 
+	err = group.Wait()
+	if isAtty {
+		klog.Flush()
+		klog.SetOutput(os.Stderr)
+	}
+
 	var exitCode int
-	if err := group.Wait(); err != nil {
+	if err != nil {
 		klog.Errorf("Aborting: %s", err)
 		exitCode = 1
 	} else if err = rootCtx.Err(); err == nil {
