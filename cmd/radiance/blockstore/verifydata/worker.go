@@ -172,7 +172,7 @@ func (w *worker) readSlot() (shouldContinue bool) {
 
 	for _, s := range shreds {
 		data, _ := s.Data()
-		numBytes += shred.LegacyHeaderSize + uint64(len(data))
+		numBytes += shred.LegacyDataHeaderSize + uint64(len(data))
 	}
 
 	// TODO Sigverify data shreds
@@ -181,6 +181,7 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	entries, err := blockstore.DataShredsToEntries(meta, shreds)
 	if err != nil {
 		klog.Warningf("slot %d: cannot decode entries: %s", metaSlot, err)
+		return
 	}
 
 	var numTxns uint64

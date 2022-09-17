@@ -4,7 +4,6 @@ import "github.com/gagliardetto/solana-go"
 
 type Shred interface {
 	CommonHeader() *CommonHeader
-	DataHeader() *DataHeader
 	Data() ([]byte, bool)
 	DataComplete() bool
 }
@@ -23,14 +22,10 @@ const (
 	FlagLastShredInSlot        = uint8(0b1100_0000)
 )
 
-const (
-	LegacyDataHeaderLen = 86
-)
-
 // NewShredFromSerialized creates a shred object from the given buffer.
 //
 // The original slice may be deallocated after this function returns.
-func NewShredFromSerialized(shred []byte) Shred {
+func NewShredFromSerialized(shred []byte, version int) Shred {
 	if len(shred) < 65 {
 		return nil
 	}
@@ -39,7 +34,11 @@ func NewShredFromSerialized(shred []byte) Shred {
 	case variant == LegacyCodeID:
 		return LegacyCodeFromPayload(shred)
 	case variant == LegacyDataID:
-		return LegacyDataFromPayload(shred)
+		if version <= 1 {
+			return LegacyDataFromPayload(shred)
+		} else {
+			return LegacyDataV2FromPayload(shred)
+		}
 	case variant&MerkleMask == MerkleCodeID:
 		return MerkleCodeFromPayload(shred)
 	case variant&MerkleMask == MerkleDataID:
@@ -61,10 +60,19 @@ type CommonHeader struct {
 type DataHeader struct {
 	ParentOffset uint16
 	Flags        uint8
-	// Size uint16 (?)
 }
 
 func (d *DataHeader) LastInSlot() bool {
+	return d.Flags&FlagLastShredInSlot != 0
+}
+
+type DataV2Header struct {
+	ParentOffset uint16
+	Flags        uint8
+	Size         uint16
+}
+
+func (d *DataV2Header) LastInSlot() bool {
 	return d.Flags&FlagLastShredInSlot != 0
 }
 
