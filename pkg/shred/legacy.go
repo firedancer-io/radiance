@@ -144,9 +144,6 @@ func (s *LegacyDataV2) DataHeader() *DataV2Header {
 	return &s.Header
 }
 
-/*[156, 65, 28, 59, 253, 19, 249]*/
-/*9c 41 1c 3b fd 13 */
-
 func (s *LegacyDataV2) Data() ([]byte, bool) {
 	if int(s.Header.Size) > len(s.Payload) {
 		return nil, false

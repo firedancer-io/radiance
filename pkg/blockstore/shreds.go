@@ -80,6 +80,9 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 		if err != nil {
 			return nil, err
 		}
+		if len(entryBytes) == 0 {
+			continue
+		}
 		dec := bin.NewBinDecoder(entryBytes)
 		var subEntries struct {
 			NumEntries uint64 `bin:"sizeof=Entries"`
