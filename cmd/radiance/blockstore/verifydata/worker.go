@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/certusone/radiance/pkg/blockstore"
+	"github.com/certusone/radiance/pkg/shred"
 	"github.com/linxGnu/grocksdb"
 	"github.com/vbauerster/mpb/v8"
 	"k8s.io/klog/v2"
@@ -27,6 +28,8 @@ type worker struct {
 	numSkipped  *atomic.Uint64
 	numFailures *atomic.Uint32
 	maxFailures uint32
+	numTxns     *atomic.Uint64
+	numBytes    *atomic.Uint64
 }
 
 func (w *worker) init(db *blockstore.DB, start uint64) {
@@ -143,6 +146,11 @@ func (w *worker) readSlot() (shouldContinue bool) {
 		}
 	}
 
+	numBytes := uint64(len(w.meta.Value().Data()))
+	defer func() {
+		w.numBytes.Add(numBytes)
+	}()
+
 	// Parse meta value.
 	meta, err := blockstore.ParseBincode[blockstore.SlotMeta](w.meta.Value().Data())
 	if err != nil {
@@ -162,13 +170,26 @@ func (w *worker) readSlot() (shouldContinue bool) {
 		return
 	}
 
+	for _, s := range shreds {
+		data, _ := s.Data()
+		numBytes += shred.LegacyHeaderSize + uint64(len(data))
+	}
+
 	// TODO Sigverify data shreds
 
 	// Deshred and parse entries.
-	_, err = blockstore.DataShredsToEntries(meta, shreds)
+	entries, err := blockstore.DataShredsToEntries(meta, shreds)
 	if err != nil {
 		klog.Warningf("slot %d: cannot decode entries: %s", metaSlot, err)
 	}
+
+	var numTxns uint64
+	for _, outer := range entries {
+		for _, e := range outer.Entries {
+			numTxns += e.NumTxns
+		}
+	}
+	w.numTxns.Add(numTxns)
 
 	// TODO Sigverify / sanitize txs
 

@@ -23,6 +23,10 @@ const (
 	FlagLastShredInSlot        = uint8(0b1100_0000)
 )
 
+const (
+	LegacyDataHeaderLen = 86
+)
+
 // NewShredFromSerialized creates a shred object from the given buffer.
 //
 // The original slice may be deallocated after this function returns.

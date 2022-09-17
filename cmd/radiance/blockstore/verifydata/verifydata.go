@@ -80,6 +80,8 @@ func run(c *cobra.Command, args []string) {
 	var numSuccess atomic.Uint64
 	var numSkipped atomic.Uint64
 	var numFailure atomic.Uint32
+	var numBytes atomic.Uint64
+	var numTxns atomic.Uint64
 
 	// application lifetime
 	rootCtx := c.Context()
@@ -155,6 +157,8 @@ func run(c *cobra.Command, args []string) {
 			numSkipped:  &numSkipped,
 			numFailures: &numFailure,
 			maxFailures: *flagMaxErrs,
+			numBytes:    &numBytes,
+			numTxns:     &numTxns,
 		}
 		w.init(db, wLo)
 		group.Go(func() error {
@@ -183,6 +187,8 @@ func run(c *cobra.Command, args []string) {
 
 	stats()
 	klog.Infof("Time taken: %s", time.Since(start))
+	klog.Infof("Bytes Read: %d", numBytes.Load())
+	klog.Infof("Transaction Count: %d", numTxns.Load())
 	os.Exit(exitCode)
 }
 
