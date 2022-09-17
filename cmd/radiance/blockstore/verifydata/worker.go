@@ -187,6 +187,13 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	for _, outer := range entries {
 		for _, e := range outer.Entries {
 			numTxns += e.NumTxns
+			if *flagDumpSigs {
+				for _, tx := range e.Txns {
+					if len(tx.Signatures) > 0 {
+						fmt.Println(tx.Signatures[0].String())
+					}
+				}
+			}
 		}
 	}
 	w.numTxns.Add(numTxns)

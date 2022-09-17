@@ -31,9 +31,10 @@ var Cmd = cobra.Command{
 var flags = Cmd.Flags()
 
 var (
-	flagWorkers = flags.UintP("workers", "w", uint(runtime.NumCPU()), "Number of goroutines to verify with")
-	flagMaxErrs = flags.Uint32("max-errors", 100, "Abort after N errors")
-	flagStatIvl = flags.Duration("stat-interval", 5*time.Second, "Stats interval")
+	flagWorkers  = flags.UintP("workers", "w", uint(runtime.NumCPU()), "Number of goroutines to verify with")
+	flagMaxErrs  = flags.Uint32("max-errors", 100, "Abort after N errors")
+	flagStatIvl  = flags.Duration("stat-interval", 5*time.Second, "Stats interval")
+	flagDumpSigs = flags.Bool("dump-sigs", false, "Print first signature of each transaction")
 )
 
 // TODO add a progress bar :3
@@ -140,7 +141,7 @@ func run(c *cobra.Command, args []string) {
 		// Find segment assigned to worker
 		wLo := cursor
 		wHi := wLo + step
-		if wHi > slotHi {
+		if wHi > slotHi || i == workers-1 {
 			wHi = slotHi
 		}
 		cursor = wHi
