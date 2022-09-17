@@ -126,7 +126,8 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	if !ok {
 		klog.Warningf("invalid shred key, syncing: %x", w.shred.Key().Data())
 	} else if shredSlot < metaSlot {
-		klog.Warningf("slot %d: not all shreds consumed", metaSlot)
+		// Probably a skipped slots
+		klog.V(4).Infof("slot %d: not all shreds consumed", metaSlot)
 	} else if shredSlot > metaSlot {
 		klog.Warningf("slot %d: missing shreds", metaSlot)
 		return
