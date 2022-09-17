@@ -131,7 +131,7 @@ func GetDataShredsFromIter(iter *grocksdb.Iterator, slot uint64, startIdx, endId
 		if index != uint64(i) {
 			return nil, fmt.Errorf("missing shred %d for slot %d", i, index)
 		}
-		s := shred.NewShredFromSerialized(iter.Value().Data())
+		s := shred.NewShredFromSerialized(iter.Value().Data(), shred.VersionByMainnetSlot(slot))
 		if s == nil {
 			return nil, fmt.Errorf("failed to deserialize shred %d/%d", slot, i)
 		}
@@ -179,7 +179,7 @@ func (d *DB) getShred(
 		return nil, err
 	}
 	defer value.Free()
-	s := shred.NewShredFromSerialized(value.Data())
+	s := shred.NewShredFromSerialized(value.Data(), shred.VersionByMainnetSlot(slot))
 	return s, nil
 }
 
@@ -193,7 +193,7 @@ func (d *DB) getAllShreds(
 	iter.Seek(prefix[:])
 	var shreds []shred.Shred
 	for iter.ValidForPrefix(prefix[:8]) {
-		s := shred.NewShredFromSerialized(iter.Value().Data())
+		s := shred.NewShredFromSerialized(iter.Value().Data(), shred.VersionByMainnetSlot(slot))
 		if s != nil {
 			shreds = append(shreds, s)
 		}
