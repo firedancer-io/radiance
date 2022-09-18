@@ -7,17 +7,54 @@ import (
 )
 
 var Cmd = cobra.Command{
-	Use:   "create <rocksdb...>",
-	Short: "Create CAR from RocksDB",
-	Args:  cobra.MaximumNArgs(1),
+	Use:   "create <epoch...>",
+	Short: "Create CAR archives from blockstore",
+	Long: "Extracts Solana ledger data from blockstore (RocksDB) databases,\n" +
+		"and outputs IPLD CARs (content-addressable archives).\n" +
+		"\n" +
+		"Produces at least one CAR per epoch.\n" +
+		"CAR archive contents are deterministic.",
 }
 
-func run(_ *cobra.Command, args []string) {
-	rocksDB := args[0]
+var flags = Cmd.Flags()
 
-	db, err := blockstore.OpenReadOnly(rocksDB)
-	if err != nil {
-		klog.Exitf("Failed to open blockstore: %s", err)
+var (
+	flagDBs = flags.StringArray("db", nil, "Path to RocksDB (can be specified multiple times)")
+)
+
+func init() {
+	Cmd.Run = run
+}
+
+func run(_ *cobra.Command, _ []string) {
+	// Open blockstores
+	dbPaths := *flagDBs
+	handles := make([]dbHandle, len(*flagDBs))
+	for i := range handles {
+		var err error
+		handles[i].db, err = blockstore.OpenReadOnly(dbPaths[i])
+		if err != nil {
+			klog.Exitf("Failed to open blockstore at %s: %s", dbPaths[i], err)
+		}
 	}
-	defer db.Close()
+
+	// Sort blockstores
+	mw := multiWalk{handles: handles}
+	defer mw.close()
+	if err := sortDBs(mw.handles); err != nil {
+		klog.Exitf("Failed to open all DBs: %s", err)
+	}
+
+	for {
+		// TODO context handling
+		meta, ok := mw.next()
+		if !ok {
+			break
+		}
+		entries, err := mw.get(meta)
+		if err != nil {
+			klog.Exitf("FATAL: Failed to get entry at slot %d: %s", meta.Slot, err)
+		}
+		_ = entries
+	}
 }

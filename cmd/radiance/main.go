@@ -8,6 +8,7 @@ import (
 	"os/signal"
 
 	"go.firedancer.io/radiance/cmd/radiance/blockstore"
+	"go.firedancer.io/radiance/cmd/radiance/car"
 	"go.firedancer.io/radiance/cmd/radiance/gossip"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
@@ -25,6 +26,7 @@ func init() {
 
 	cmd.AddCommand(
 		&blockstore.Cmd,
+		&car.Cmd,
 		&gossip.Cmd,
 	)
 }
