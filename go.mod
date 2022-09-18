@@ -5,6 +5,7 @@ go 1.18
 require (
 	cloud.google.com/go/bigtable v1.16.0
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
+	github.com/VividCortex/ewma v1.2.0
 	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/gagliardetto/binary v0.7.1
 	github.com/gagliardetto/solana-go v1.6.0
@@ -40,7 +41,6 @@ require (
 	cloud.google.com/go/iam v0.3.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.13 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
-	github.com/VividCortex/ewma v1.2.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
 	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59 // indirect
