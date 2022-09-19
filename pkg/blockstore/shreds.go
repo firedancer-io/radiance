@@ -99,8 +99,7 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 }
 
 type SubEntries struct {
-	NumEntries uint64
-	Entries    []shred.Entry
+	Entries []shred.Entry
 }
 
 func (se *SubEntries) UnmarshalWithDecoder(decoder *bin.Decoder) (err error) {
@@ -109,10 +108,12 @@ func (se *SubEntries) UnmarshalWithDecoder(decoder *bin.Decoder) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to read number of entries: %w", err)
 	}
-	se.NumEntries = uint64(numEntries)
+	if numEntries > uint64(decoder.Remaining()) {
+		return fmt.Errorf("not enough bytes to read %d entries", numEntries)
+	}
 	// read the entries:
-	se.Entries = make([]shred.Entry, se.NumEntries)
-	for i := uint64(0); i < se.NumEntries; i++ {
+	se.Entries = make([]shred.Entry, numEntries)
+	for i := uint64(0); i < numEntries; i++ {
 		if err = se.Entries[i].UnmarshalWithDecoder(decoder); err != nil {
 			return fmt.Errorf("failed to read entry %d: %w", i, err)
 		}
