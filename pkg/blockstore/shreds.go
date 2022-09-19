@@ -3,7 +3,6 @@ package blockstore
 import (
 	"encoding/binary"
 	"fmt"
-	"sync"
 
 	"github.com/certusone/radiance/pkg/shred"
 	bin "github.com/gagliardetto/binary"
@@ -72,12 +71,6 @@ func (d *DB) GetEntries(meta *SlotMeta) ([]Entries, error) {
 	return DataShredsToEntries(meta, shreds)
 }
 
-var decoderPool = sync.Pool{
-	New: func() interface{} {
-		return bin.NewBinDecoder(nil)
-	},
-}
-
 // DataShredsToEntries reassembles shreds to entries containing transactions.
 func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entries, err error) {
 	ranges := meta.entryRanges()
@@ -90,11 +83,9 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 		if len(entryBytes) == 0 {
 			continue
 		}
-		dec := decoderPool.Get().(*bin.Decoder)
-		dec.Reset(entryBytes)
+		dec := bin.NewBinDecoder(entryBytes)
 		subEntries := new(SubEntries)
 		if err := subEntries.UnmarshalWithDecoder(dec); err != nil {
-			decoderPool.Put(dec)
 			return nil, fmt.Errorf("cannot decode entry at %d:[%d-%d]: %w",
 				meta.Slot, r.startIdx, r.endIdx, err)
 		}
@@ -103,7 +94,6 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 			Raw:     entryBytes[:dec.Position()],
 			Shreds:  parts,
 		})
-		decoderPool.Put(dec)
 	}
 	return entries, nil
 }
