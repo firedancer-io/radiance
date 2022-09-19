@@ -191,6 +191,8 @@ github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/gagliardetto/binary v0.7.2-0.20220918220700-6a22eaf7d87e h1:zjzIVQW0cSNeX+kWcFZDplhORfidR5eJk+43xi9d23k=
 github.com/gagliardetto/binary v0.7.2-0.20220918220700-6a22eaf7d87e/go.mod h1:aOfYkc20U0deHaHn/LVZXiqlkDbFAX0FpTlDhsXa0S0=
+github.com/gagliardetto/binary v0.7.2-0.20220919103307-4270bf2d6707 h1:+hXU6rzuhxH2BldiRebMkAchNy46c2aYHrLsyS314dA=
+github.com/gagliardetto/binary v0.7.2-0.20220919103307-4270bf2d6707/go.mod h1:aOfYkc20U0deHaHn/LVZXiqlkDbFAX0FpTlDhsXa0S0=
 github.com/gagliardetto/gofuzz v1.2.2/go.mod h1:bkH/3hYLZrMLbfYWA0pWzXmi5TTRZnu4pMGZBkqMKvY=
 github.com/gagliardetto/solana-go v1.6.1-0.20220919093524-f869c94c374c h1:9IV9f0FYQctGzzrZjeyhFhNC7aApbP3icBAH30TTKxI=
 github.com/gagliardetto/solana-go v1.6.1-0.20220919093524-f869c94c374c/go.mod h1:a8cIq86a+lf5Q3iyU7GyUL+orUN7xKG8j71aIYy96cs=

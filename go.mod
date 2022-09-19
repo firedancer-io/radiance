@@ -7,7 +7,7 @@ require (
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
 	github.com/VividCortex/ewma v1.2.0
 	github.com/coreos/go-systemd/v22 v22.4.0
-	github.com/gagliardetto/binary v0.7.2-0.20220918220700-6a22eaf7d87e
+	github.com/gagliardetto/binary v0.7.2-0.20220919103307-4270bf2d6707
 	github.com/gagliardetto/solana-go v1.6.1-0.20220919093524-f869c94c374c
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19

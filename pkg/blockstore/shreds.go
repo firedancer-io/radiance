@@ -83,9 +83,11 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 		if len(entryBytes) == 0 {
 			continue
 		}
-		dec := bin.NewBinDecoder(entryBytes)
-		subEntries := new(SubEntries)
-		if err := subEntries.UnmarshalWithDecoder(dec); err != nil {
+		var dec bin.Decoder
+		dec.SetEncoding(bin.EncodingBin)
+		dec.Reset(entryBytes)
+		var subEntries SubEntries
+		if err := subEntries.UnmarshalWithDecoder(&dec); err != nil {
 			return nil, fmt.Errorf("cannot decode entry at %d:[%d-%d]: %w",
 				meta.Slot, r.startIdx, r.endIdx, err)
 		}
