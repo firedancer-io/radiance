@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
-	github.com/klauspost/compress v1.15.9
+	github.com/klauspost/compress v1.15.10
 	github.com/linxGnu/grocksdb v1.7.7
 	github.com/lucas-clemente/quic-go v0.27.2
 	github.com/mattn/go-isatty v0.0.16
