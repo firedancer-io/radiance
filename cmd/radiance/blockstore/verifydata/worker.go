@@ -188,7 +188,7 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	var numTxns uint64
 	for _, outer := range entries {
 		for _, e := range outer.Entries {
-			numTxns += e.NumTxns
+			numTxns += uint64(len(e.Txns))
 			if *flagDumpSigs {
 				for _, tx := range e.Txns {
 					if len(tx.Signatures) > 0 {
