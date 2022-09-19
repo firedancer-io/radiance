@@ -456,6 +456,54 @@ func TestDataShredsToEntries_Mainnet_Recent(t *testing.T) {
 	entries, err := DataShredsToEntries(meta, shreds)
 	require.NoError(t, err)
 	assert.Equal(t, 574, len(entries))
+	{
+		transactions := findTransactions(entries, 10)
+		assert.Equal(t, 10, len(transactions))
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("5ruUBRn3CNNcFneJtEaJBaUjhtHtEb6Q9Hu2ygTSA9TjLr6FtE2WGGBkt7nUAHc1fnBaL8DGMS6maeCYHpRzuY6K"),
+			transactions[0].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("REnUxGXrE22u5KsxynCoMQDuVY6eyAZFPyxg8HccHJQtr3GXQ6eA4T2ZhZyfC1NgbR1wt9EiRjYaWNgtDCSTwim"),
+			transactions[1].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("5YfaAQEZYrU84ftEGSW8i97ZfQ5aezZrvazTu6VCHFJ9xWUxYo6WwXV86diMNt1LRSNho3Ev6kvzHN9eN8z488NW"),
+			transactions[2].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("662prxNx8sgR7s3vT7Xkzj4uYG72xjA9frBfm4QFZNqbGQEhFMNjCti7zBDBnWDTjMZKV1bo53rxDrrwP9D1kGHR"),
+			transactions[3].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("43yAFJnaZm5caXfUvzXDKaeYhgYzfBYvHpwzTiEhs1uRHDWibVGSTS2eh6eZiYaZgQbjkYCR7dZ5TsKwTYFNXHi1"),
+			transactions[4].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("2wbiisDTsTQnWedDogjTU2qV2frLPt7GeS1wbn7TzziYxTU7MHCAP7po8s8yRbfU6Y59uY9hdFUKwxZK7ehZYUAW"),
+			transactions[5].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("3JbSLxaNTVTdhSp2HLjxbqNiWxdPz6dcd3Xw5sFnzyG5yFQehLQVi6UjPZ68msJALxSgDJWX9xm8YjYC9CUJMVj"),
+			transactions[6].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("2oZxvCcSqKG719R8MNguXvnRTCcUHAbyn14gnYEskB9SE1bhvzKBhrWFDAx6VyE3ac2JnzrBUcZvJLmWBK7EJ4XJ"),
+			transactions[7].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("4GFhtws8R3jD68t45fAKmoUUKtEHoicKyNK53mpgTJ778NSepZnGdZminXTmX2GzMNpqsft23VrZVn3qrHseEo7c"),
+			transactions[8].Signatures[0],
+		)
+		assert.Equal(t,
+			solana.MustSignatureFromBase58("2p5jNjuLeMufeDH4euwNXqb9fi3gFH7R6cprPVVzGozM6R7qhXTuahN8gm2J5mjHk1NJdb7WTG9a6GturYpWUPhq"),
+			transactions[9].Signatures[0],
+		)
+	}
+	{
+		transactions := findTransactions(entries, 4000)
+		assert.Equal(t, 3177, len(transactions))
+	}
 }
 
 func parseShreds(t testing.TB, raw [][]byte, version int) (shreds []shred.Shred) {
@@ -467,4 +515,20 @@ func parseShreds(t testing.TB, raw [][]byte, version int) (shreds []shred.Shred)
 		assert.Equal(t, shreds[i].CommonHeader().Index, uint32(i))
 	}
 	return shreds
+}
+
+func findTransactions(entries []Entries, limit int) []solana.Transaction {
+	transactions := make([]solana.Transaction, 0, limit)
+	for _, entry := range entries {
+		for _, e := range entry.Entries {
+			for txIndex := range e.Txns {
+				tx := e.Txns[txIndex]
+				transactions = append(transactions, tx)
+				if len(transactions) >= limit {
+					return transactions
+				}
+			}
+		}
+	}
+	return transactions
 }

@@ -3,6 +3,7 @@ package blockstore
 import (
 	"encoding/binary"
 	"fmt"
+	"sync"
 
 	"github.com/certusone/radiance/pkg/shred"
 	bin "github.com/gagliardetto/binary"
@@ -71,6 +72,12 @@ func (d *DB) GetEntries(meta *SlotMeta) ([]Entries, error) {
 	return DataShredsToEntries(meta, shreds)
 }
 
+var decoderPool = sync.Pool{
+	New: func() interface{} {
+		return bin.NewBinDecoder(nil)
+	},
+}
+
 // DataShredsToEntries reassembles shreds to entries containing transactions.
 func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entries, err error) {
 	ranges := meta.entryRanges()
@@ -83,12 +90,11 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 		if len(entryBytes) == 0 {
 			continue
 		}
-		dec := bin.NewBinDecoder(entryBytes)
-		var subEntries struct {
-			NumEntries uint64 `bin:"sizeof=Entries"`
-			Entries    []shred.Entry
-		}
-		if err := dec.Decode(&subEntries); err != nil {
+		dec := decoderPool.Get().(*bin.Decoder)
+		dec.Reset(entryBytes)
+		subEntries := new(SubEntries)
+		if err := subEntries.UnmarshalWithDecoder(dec); err != nil {
+			decoderPool.Put(dec)
 			return nil, fmt.Errorf("cannot decode entry at %d:[%d-%d]: %w",
 				meta.Slot, r.startIdx, r.endIdx, err)
 		}
@@ -97,8 +103,31 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 			Raw:     entryBytes[:dec.Position()],
 			Shreds:  parts,
 		})
+		decoderPool.Put(dec)
 	}
 	return entries, nil
+}
+
+type SubEntries struct {
+	NumEntries uint64
+	Entries    []shred.Entry
+}
+
+func (se *SubEntries) UnmarshalWithDecoder(decoder *bin.Decoder) (err error) {
+	// read the number of entries:
+	numEntries, err := decoder.ReadUint64(bin.LE)
+	if err != nil {
+		return fmt.Errorf("failed to read number of entries: %w", err)
+	}
+	se.NumEntries = uint64(numEntries)
+	// read the entries:
+	se.Entries = make([]shred.Entry, se.NumEntries)
+	for i := uint64(0); i < se.NumEntries; i++ {
+		if err = se.Entries[i].UnmarshalWithDecoder(decoder); err != nil {
+			return fmt.Errorf("failed to read entry %d: %w", i, err)
+		}
+	}
+	return
 }
 
 func (d *DB) GetAllDataShreds(slot uint64) ([]shred.Shred, error) {
