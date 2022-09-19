@@ -83,12 +83,11 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 		if len(entryBytes) == 0 {
 			continue
 		}
-		dec := bin.NewBinDecoder(entryBytes)
-		var subEntries struct {
-			NumEntries uint64 `bin:"sizeof=Entries"`
-			Entries    []shred.Entry
-		}
-		if err := dec.Decode(&subEntries); err != nil {
+		var dec bin.Decoder
+		dec.SetEncoding(bin.EncodingBin)
+		dec.Reset(entryBytes)
+		var subEntries SubEntries
+		if err := subEntries.UnmarshalWithDecoder(&dec); err != nil {
 			return nil, fmt.Errorf("cannot decode entry at %d:[%d-%d]: %w",
 				meta.Slot, r.startIdx, r.endIdx, err)
 		}
@@ -99,6 +98,29 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 		})
 	}
 	return entries, nil
+}
+
+type SubEntries struct {
+	Entries []shred.Entry
+}
+
+func (se *SubEntries) UnmarshalWithDecoder(decoder *bin.Decoder) (err error) {
+	// read the number of entries:
+	numEntries, err := decoder.ReadUint64(bin.LE)
+	if err != nil {
+		return fmt.Errorf("failed to read number of entries: %w", err)
+	}
+	if numEntries > uint64(decoder.Remaining()) {
+		return fmt.Errorf("not enough bytes to read %d entries", numEntries)
+	}
+	// read the entries:
+	se.Entries = make([]shred.Entry, numEntries)
+	for i := uint64(0); i < numEntries; i++ {
+		if err = se.Entries[i].UnmarshalWithDecoder(decoder); err != nil {
+			return fmt.Errorf("failed to read entry %d: %w", i, err)
+		}
+	}
+	return
 }
 
 func (d *DB) GetAllDataShreds(slot uint64) ([]shred.Shred, error) {
