@@ -108,7 +108,6 @@ func (en *Entry) UnmarshalWithDecoder(decoder *bin.Decoder) (err error) {
 	// read the transactions:
 	en.Txns = make([]solana.Transaction, numTxns)
 	for i := uint64(0); i < numTxns; i++ {
-		en.Txns[i] = solana.Transaction{}
 		if err = en.Txns[i].UnmarshalWithDecoder(decoder); err != nil {
 			return fmt.Errorf("failed to read transaction %d: %w", i, err)
 		}
