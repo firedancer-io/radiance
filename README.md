@@ -20,14 +20,14 @@ In order to build the available tooling, the following is required:
 
 Building all the tools _should_ be as easy as:
 ```
-:; go build -o _bin/ github.com/certusone/radiance/cmd/...
+:; go build -o _bin/ go.firedancer.io/radiance/cmd/...
 ```
 
 All binaries will be placed in `_bin/` folder.
 
 Or if you're just looking for a single tool, say `solrays`:
 ```
-:; go build -o _bin/ github.com/certusone/radiance/cmd/solrays
+:; go build -o _bin/ go.firedancer.io/radiance/cmd/solrays
 ```
 
 **NOTE:** Mind yourself, some of the tools here tools may depend on C code (and CGO), and other shenanigans,

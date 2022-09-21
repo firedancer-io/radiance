@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/protobuf/encoding/prototext"
 
-	"github.com/certusone/radiance/pkg/ledger_bigtable"
+	"go.firedancer.io/radiance/pkg/ledger_bigtable"
 )
 
 var (

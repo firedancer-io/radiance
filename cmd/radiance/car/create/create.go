@@ -1,7 +1,7 @@
 package create
 
 import (
-	"github.com/certusone/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )

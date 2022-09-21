@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 
-	"github.com/certusone/radiance/pkg/blockstore"
-	"github.com/certusone/radiance/pkg/shred"
+	"go.firedancer.io/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/shred"
 )
 
 // entryBatch is a YAML-friendly version of blockstore.Entries.

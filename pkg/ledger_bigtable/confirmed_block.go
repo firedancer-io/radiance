@@ -6,7 +6,7 @@ import (
 	"cloud.google.com/go/bigtable"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/certusone/radiance/third_party/solana_proto/confirmed_block"
+	"go.firedancer.io/radiance/third_party/solana_proto/confirmed_block"
 )
 
 const (

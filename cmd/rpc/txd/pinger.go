@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	envv1 "github.com/certusone/radiance/proto/env/v1"
+	envv1 "go.firedancer.io/radiance/proto/env/v1"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/gagliardetto/solana-go/rpc/ws"

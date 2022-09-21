@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/certusone/radiance/fixtures"
-	"github.com/certusone/radiance/pkg/sbf"
-	"github.com/certusone/radiance/pkg/sbf/loader"
+	"go.firedancer.io/radiance/fixtures"
+	"go.firedancer.io/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbf/loader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

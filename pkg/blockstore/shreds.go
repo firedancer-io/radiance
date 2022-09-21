@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/certusone/radiance/pkg/shred"
+	"go.firedancer.io/radiance/pkg/shred"
 	bin "github.com/gagliardetto/binary"
 	"github.com/linxGnu/grocksdb"
 	"golang.org/x/exp/constraints"

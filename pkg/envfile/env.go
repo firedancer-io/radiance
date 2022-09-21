@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	envv1 "github.com/certusone/radiance/proto/env/v1"
+	envv1 "go.firedancer.io/radiance/proto/env/v1"
 	"google.golang.org/protobuf/encoding/prototext"
 )
 

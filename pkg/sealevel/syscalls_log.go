@@ -3,8 +3,8 @@ package sealevel
 import (
 	"fmt"
 
-	"github.com/certusone/radiance/pkg/sbf"
-	"github.com/certusone/radiance/pkg/sbf/cu"
+	"go.firedancer.io/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbf/cu"
 	"github.com/gagliardetto/solana-go"
 )
 

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/VividCortex/ewma"
-	"github.com/certusone/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"

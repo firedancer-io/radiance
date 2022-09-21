@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/certusone/radiance/pkg/runtime"
+	"go.firedancer.io/radiance/pkg/runtime"
 	bin "github.com/gagliardetto/binary"
 )
 

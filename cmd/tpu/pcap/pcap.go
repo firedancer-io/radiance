@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/certusone/radiance/pkg/tpu"
+	"go.firedancer.io/radiance/pkg/tpu"
 	"github.com/gagliardetto/solana-go"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"

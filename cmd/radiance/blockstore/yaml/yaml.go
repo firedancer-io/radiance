@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/certusone/radiance/cmd/radiance/blockstore/util"
-	"github.com/certusone/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore/util"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"github.com/segmentio/textio"
 	"github.com/spf13/cobra"

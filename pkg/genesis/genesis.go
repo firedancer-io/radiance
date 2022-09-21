@@ -3,7 +3,7 @@ package genesis
 import (
 	"time"
 
-	"github.com/certusone/radiance/pkg/runtime"
+	"go.firedancer.io/radiance/pkg/runtime"
 )
 
 // Genesis contains the genesis state of a Solana ledger.

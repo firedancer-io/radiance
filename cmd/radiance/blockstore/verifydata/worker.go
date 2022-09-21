@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/certusone/radiance/pkg/blockstore"
-	"github.com/certusone/radiance/pkg/shred"
+	"go.firedancer.io/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/shred"
 	"github.com/linxGnu/grocksdb"
 	"github.com/vbauerster/mpb/v8"
 	"k8s.io/klog/v2"

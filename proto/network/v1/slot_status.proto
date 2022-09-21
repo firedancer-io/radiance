@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto.network.v1;
 
-option go_package = "github.com/certusone/radiance/proto/network;networkv1";
+option go_package = "go.firedancer.io/radiance/proto/network;networkv1";
 
 // See client/src/rpc_response.rs.
 message SlotStatus {

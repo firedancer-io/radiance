@@ -3,7 +3,7 @@ package loader
 import (
 	"testing"
 
-	"github.com/certusone/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbf"
 	"github.com/stretchr/testify/assert"
 )
 

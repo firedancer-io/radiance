@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/certusone/radiance/pkg/archiveutil"
+	"go.firedancer.io/radiance/pkg/archiveutil"
 	bin "github.com/gagliardetto/binary"
 )
 

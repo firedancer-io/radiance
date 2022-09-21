@@ -1,4 +1,4 @@
-module github.com/certusone/radiance
+module go.firedancer.io/radiance
 
 go 1.18
 

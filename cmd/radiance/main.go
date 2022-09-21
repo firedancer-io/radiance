@@ -7,8 +7,8 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/certusone/radiance/cmd/radiance/blockstore"
-	"github.com/certusone/radiance/cmd/radiance/gossip"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore"
+	"go.firedancer.io/radiance/cmd/radiance/gossip"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
 )

@@ -8,7 +8,7 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/certusone/radiance/pkg/gossip"
+	"go.firedancer.io/radiance/pkg/gossip"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"

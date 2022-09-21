@@ -1,6 +1,6 @@
 package sealevel
 
-import "github.com/certusone/radiance/pkg/sbf"
+import "go.firedancer.io/radiance/pkg/sbf"
 
 var registry = Syscalls()
 

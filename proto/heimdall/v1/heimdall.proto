@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package heimdall;
 
-option go_package = "github.com/certusone/radiance/proto/heimdall;heimdallv1";
+option go_package = "go.firedancer.io/radiance/proto/heimdall;heimdallv1";
 
 message Observation{
   uint64 bankSlot = 1;

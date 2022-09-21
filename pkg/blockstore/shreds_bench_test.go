@@ -3,7 +3,7 @@ package blockstore
 import (
 	"testing"
 
-	"github.com/certusone/radiance/fixtures"
+	"go.firedancer.io/radiance/fixtures"
 )
 
 func BenchmarkDataShredsToEntries_mainnet102815960(b *testing.B) {

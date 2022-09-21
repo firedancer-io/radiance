@@ -3,8 +3,8 @@ package blockstore
 import (
 	"testing"
 
-	"github.com/certusone/radiance/fixtures"
-	"github.com/certusone/radiance/pkg/shred"
+	"go.firedancer.io/radiance/fixtures"
+	"go.firedancer.io/radiance/pkg/shred"
 	"github.com/gagliardetto/solana-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
