@@ -5,11 +5,11 @@ import (
 	"os"
 	"strings"
 
-	"go.firedancer.io/radiance/cmd/radiance/blockstore/util"
-	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"github.com/segmentio/textio"
 	"github.com/spf13/cobra"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore/util"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 )
@@ -27,6 +27,7 @@ var (
 	flagEntries = flags.Bool("entries", false, "Also dump slot entries")
 	flagShreds  = flags.Bool("shreds", false, "Also dump shreds")
 	flagTxns    = flags.Bool("txs", false, "Also dump transactions")
+	flagRoots   = flags.Bool("roots", false, "Dump roots table")
 )
 
 func init() {
@@ -51,6 +52,9 @@ func run(c *cobra.Command, args []string) {
 	defer db.Close()
 
 	printRoot(db)
+	if *flagRoots {
+		dumpRoots(db)
+	}
 	printMetaRange(db)
 
 	if *flagSlots == "all" {
@@ -90,6 +94,28 @@ func printRoot(db *blockstore.DB) {
 		return
 	}
 	fmt.Println("root:", root)
+}
+
+func dumpRoots(db *blockstore.DB) {
+	opts := grocksdb.NewDefaultReadOptions()
+	iter := db.DB.NewIteratorCF(opts, db.CfRoot)
+	defer iter.Close()
+	iter.SeekToFirst()
+
+	if !iter.Valid() {
+		fmt.Println("roots: []")
+		return
+	}
+
+	fmt.Println("roots:")
+	for iter.Valid() {
+		slot, ok := blockstore.ParseSlotKey(iter.Key().Data())
+		if !ok {
+			continue
+		}
+		iter.Next()
+		fmt.Printf("  - %d\n", slot)
+	}
 }
 
 func printMetaRange(db *blockstore.DB) {
