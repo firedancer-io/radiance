@@ -30,9 +30,9 @@ type block struct {
 func newBlockFomRaw(data []byte, contentType uint64) block {
 	cidBuilder := cid.V1Builder{
 		Codec:  contentType,
-		MhType: multicodec.Sha2_256,
+		MhType: uint64(multicodec.Sha2_256),
 	}
-	id, err = cidBuilder.Sum(data)
+	id, err := cidBuilder.Sum(data)
 	if err != nil {
 		// Something is wrong with go-cid if this fails.
 		panic("failed to construct CID: " + err.Error())
@@ -64,8 +64,8 @@ func newWriter(out io.Writer) (*writer, error) {
 	// We don't know the root CID.
 	// As per best practices we write the
 	// "zero-length "identity" multihash with "raw" codec"
-	root, _ := cid.Cast([]byte{0x01, 0x55, 0x00, 0x00})
-	if root == nil {
+	root, err := cid.Cast([]byte{0x01, 0x55, 0x00, 0x00})
+	if err != nil {
 		panic("failed to create zero-length identity multihash with raw codec lmfao")
 	}
 
@@ -83,38 +83,39 @@ func newWriter(out io.Writer) (*writer, error) {
 }
 
 // writeBlock writes out a length-CID-value tuple.
-func (w *writer) writeBlock(b block) error {
-	if _, err := w.out.Write(leb128.FromUInt64(b.length)); err != nil {
+func (w *writer) writeBlock(b block) (err error) {
+	if _, err = w.out.Write(leb128.FromUInt64(uint64(b.length))); err != nil {
 		return err
 	}
-	if _, err := w.out.Write(b.cid.Bytes()); err != nil {
+	if _, err = w.out.Write(b.cid.Bytes()); err != nil {
 		return err
 	}
-	return w.out.Write(b.data)
+	_, err = w.out.Write(b.data)
+	return
 }
 
 // countingWriter wraps writer, but counts number of written bytes.
 // Not thread safe.
 type countingWriter struct {
 	io.Writer
-	n *uint64
+	n *int64
 }
 
 func newCountingWriter(w io.Writer) countingWriter {
 	return countingWriter{
 		Writer: w,
-		n:      new(uint64),
+		n:      new(int64),
 	}
 }
 
 func (c countingWriter) Write(data []byte) (n int, err error) {
 	n, err = c.Writer.Write(data)
-	*c.n += n
+	*c.n += int64(n)
 	return
 }
 
 // written returns number of bytes written so far.
-func (c countingWriter) written() int {
+func (c countingWriter) written() int64 {
 	return *c.n
 }
 

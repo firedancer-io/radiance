@@ -30,8 +30,6 @@ var Cmd = cobra.Command{
 //       github.com/ipld/go-car/v2 is not helpful because it wants to traverse a complete IPLD link system.
 //       However we create an IPLD link system (Merkle-DAG) on the fly in a single pass as we read the chain.
 //       CARv1 is simple enough that we can roll a custom block writer, so no big deal. Vec<(len, cid, data)>
-//       We only need to reserve sufficient space for the CARv1 header at the beginning of the file.
-//       Of course, the root CID is not known yet, so we leave a placeholder hash value and fill it in on completion.
 //       |
 //       The procedure needs to respect Filecoin's 32GB sector size and split data across multiple CARs if needed.
 //       We use Solana blocks as an atomic unit that is never split across CARs.
@@ -42,10 +40,6 @@ var Cmd = cobra.Command{
 //       In theory, the ledger data extraction process for even a single CAR can be parallelized, at questionable gains.
 //       We can synchronize multiple RocksDB iterators that jump over each other block-by-block.
 //       CAR writing cannot be parallelized because of strict ordering requirements (determinism).
-//       |
-//       Open question: Do we want to use CARv2 indexes? Probably yes.
-//       Will complicate our bespoke CAR writing approach though and make it less maintainable.
-//       Maybe we can construct indexes in-memory using go-car while we are writing CARv1 and then append then once done.
 
 // TODO: there is a number of things [above] that are conceptually incorrect -- @ribasushi
 
@@ -66,13 +60,6 @@ func run(c *cobra.Command, args []string) {
 	if err != nil {
 		klog.Exitf("Invalid epoch arg: %s", epochStr)
 	}
-
-	// TODO mainnet history later on requires multiple CAR files per epoch
-	f, err := os.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
-	if err != nil {
-		klog.Exit(err)
-	}
-	defer f.Close()
 
 	// Open blockstores
 	dbPaths := *flagDBs
@@ -103,6 +90,18 @@ func run(c *cobra.Command, args []string) {
 		klog.Exitf("Need %d slots but got %d", epochLen, slotsAvailable)
 	}
 
+	// TODO mainnet history later on requires multiple CAR files per epoch
+	f, err := os.OpenFile(outPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
+	if err != nil {
+		klog.Exit(err)
+	}
+	defer f.Close()
+
+	carOut, err := newWriter(f)
+	if err != nil {
+		klog.Exitf("Cannot create CARv1 file: %s", err)
+	}
+
 	ctx := c.Context()
 
 	for ctx.Err() == nil {
@@ -117,7 +116,21 @@ func run(c *cobra.Command, args []string) {
 		if err != nil {
 			klog.Exitf("FATAL: Failed to get entry at slot %d: %s", meta.Slot, err)
 		}
-		_ = entries
-		panic("unimplemented")
+
+		// TODO: Write entries too
+		for _, batch := range entries {
+			for _, entry := range batch.Entries {
+				for _, tx := range entry.Txns {
+					txData, err := tx.MarshalBinary()
+					if err != nil {
+						klog.Exitf("FATAL: Cannot serialize transaction: %s", err)
+					}
+					block := newBlockFomRaw(txData, SolanaTx)
+					if err := carOut.writeBlock(block); err != nil {
+						klog.Exitf("FATAL: Cannot write block to CAR: %s", err)
+					}
+				}
+			}
+		}
 	}
 }
