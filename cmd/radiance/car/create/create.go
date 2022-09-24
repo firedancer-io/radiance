@@ -4,9 +4,10 @@ import (
 	"os"
 	"strconv"
 
-	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/spf13/cobra"
 	"k8s.io/klog/v2"
+
+	"go.firedancer.io/radiance/pkg/blockstore"
 )
 
 var Cmd = cobra.Command{

@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"k8s.io/klog/v2"
 )
 
