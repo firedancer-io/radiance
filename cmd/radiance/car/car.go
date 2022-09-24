@@ -1,7 +1,7 @@
 package car
 
 import (
-	"github.com/certusone/radiance/cmd/radiance/car/create"
+	"go.firedancer.io/radiance/cmd/radiance/car/create"
 	"github.com/spf13/cobra"
 )
 

@@ -4,17 +4,50 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/certusone/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"k8s.io/klog/v2"
 )
-
-// TODO: Multiplexer should stop iterating when non-rooted slots are reached
 
 // multiWalk walks blocks in ascending order over multiple RocksDB databases.
 type multiWalk struct {
 	iter    *grocksdb.Iterator
 	handles []dbHandle // sorted
+}
+
+// seek skips ahead to a specific slot.
+// The caller must call multiWalk.next after seek.
+func (m *multiWalk) seek(slot uint64) bool {
+	for len(m.handles) > 0 {
+		h := m.handles[0]
+		if slot < h.start {
+			// trying to seek to slot below lowest available
+			return false
+		}
+		if slot <= h.stop {
+			h.start = slot
+			return true
+		}
+		m.pop()
+	}
+	return false
+}
+
+// len returns the number of contiguous slots that lay ahead.
+func (m *multiWalk) len() (total uint64) {
+	if len(m.handles) == 0 {
+		return 0
+	}
+	start := m.handles[0].start
+	for _, h := range m.handles {
+		if h.start > start {
+			return
+		}
+		stop := h.stop + 1
+		total += stop - start
+		start = stop
+	}
+	return
 }
 
 // next seeks to the next slot.
@@ -31,10 +64,7 @@ func (m *multiWalk) next() (meta *blockstore.SlotMeta, ok bool) {
 	}
 	if !m.iter.Valid() {
 		// Close current DB and go to next
-		m.iter.Close()
-		m.iter = nil
-		h.db.Close()
-		m.handles = m.handles[1:]
+		m.pop()
 		return m.next() // TODO tail recursion optimization?
 	}
 
@@ -43,6 +73,11 @@ func (m *multiWalk) next() (meta *blockstore.SlotMeta, ok bool) {
 	if !ok {
 		klog.Exitf("Invalid slot key: %x", m.iter.Key().Data())
 	}
+	if slot > h.stop {
+		m.pop()
+		return m.next()
+	}
+	h.start = slot
 
 	// Get value at current position.
 	meta, err := blockstore.ParseBincode[blockstore.SlotMeta](m.iter.Value().Data())
@@ -74,6 +109,14 @@ func (m *multiWalk) get(meta *blockstore.SlotMeta) ([]blockstore.Entries, error)
 	return h.db.GetEntries(meta)
 }
 
+// pop closes the current open DB.
+func (m *multiWalk) pop() {
+	m.iter.Close()
+	m.iter = nil
+	m.handles[0].db.Close()
+	m.handles = m.handles[1:]
+}
+
 func (m *multiWalk) close() {
 	if m.iter != nil {
 		m.iter.Close()
@@ -86,20 +129,26 @@ func (m *multiWalk) close() {
 }
 
 type dbHandle struct {
-	start uint64
 	db    *blockstore.DB
+	start uint64
+	stop  uint64 // inclusive
 }
 
 // sortDBs detects bounds of each DB and sorts handles.
 func sortDBs(h []dbHandle) error {
 	for i, db := range h {
-		// Find lowest available slot in DB.
+		// Find lowest and highest available slot in DB.
 		start, err := getLowestCompletedSlot(db.db)
+		if err != nil {
+			return err
+		}
+		stop, err := db.db.MaxRoot()
 		if err != nil {
 			return err
 		}
 		h[i] = dbHandle{
 			start: start,
+			stop:  stop,
 			db:    db.db,
 		}
 	}
