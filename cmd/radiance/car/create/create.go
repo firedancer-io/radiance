@@ -5,6 +5,8 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"go.firedancer.io/radiance/pkg/ipld/car"
+	"go.firedancer.io/radiance/pkg/ipld/ipldgen"
 	"k8s.io/klog/v2"
 
 	"go.firedancer.io/radiance/pkg/blockstore"
@@ -26,10 +28,6 @@ var Cmd = cobra.Command{
 //       Our plan is to transform epochs of Solana history (432000 slots) into batches of CAR files.
 //       The CAR output must be byte-by-byte deterministic with regard to Solana's authenticated ledger content.
 //       In other words, regardless of which node operator runs this tool, they should always get the same CAR file.
-//       |
-//       github.com/ipld/go-car/v2 is not helpful because it wants to traverse a complete IPLD link system.
-//       However we create an IPLD link system (Merkle-DAG) on the fly in a single pass as we read the chain.
-//       CARv1 is simple enough that we can roll a custom block writer, so no big deal. Vec<(len, cid, data)>
 //       |
 //       The procedure needs to respect Filecoin's 32GB sector size and split data across multiple CARs if needed.
 //       We use Solana blocks as an atomic unit that is never split across CARs.
@@ -83,11 +81,15 @@ func run(c *cobra.Command, args []string) {
 	const epochLen = 432000
 	start := epoch * epochLen
 	stop := start + epochLen
-	mw.seek(start)
+	if !mw.seek(start) {
+		klog.Exitf("Slot %d not available in any DB", start)
+	}
+	// TODO: This is not robust; if the DB starts in the middle of the epoch, the first slots are going to be skipped.
 	klog.Infof("Starting at slot %d", start)
 	slotsAvailable := mw.len()
 	if slotsAvailable < epochLen {
-		klog.Exitf("Need %d slots but got %d", epochLen, slotsAvailable)
+		klog.Exitf("Need slots [%d:%d] (epoch %d) but only have up to %d",
+			start, stop, epoch, start+slotsAvailable)
 	}
 
 	// TODO mainnet history later on requires multiple CAR files per epoch
@@ -97,7 +99,7 @@ func run(c *cobra.Command, args []string) {
 	}
 	defer f.Close()
 
-	carOut, err := newWriter(f)
+	carOut, err := car.NewWriter(f)
 	if err != nil {
 		klog.Exitf("Cannot create CARv1 file: %s", err)
 	}
@@ -117,20 +119,39 @@ func run(c *cobra.Command, args []string) {
 			klog.Exitf("FATAL: Failed to get entry at slot %d: %s", meta.Slot, err)
 		}
 
-		// TODO: Write entries too
-		for _, batch := range entries {
-			for _, entry := range batch.Entries {
-				for _, tx := range entry.Txns {
-					txData, err := tx.MarshalBinary()
-					if err != nil {
-						klog.Exitf("FATAL: Cannot serialize transaction: %s", err)
-					}
-					block := newBlockFomRaw(txData, SolanaTx)
-					if err := carOut.writeBlock(block); err != nil {
-						klog.Exitf("FATAL: Cannot write block to CAR: %s", err)
-					}
+		asm := ipldgen.NewBlockAssembler(carOut, meta.Slot)
+
+		entryNum := 0
+		klog.V(3).Infof("Slot %d", meta.Slot)
+		for i, batch := range entries {
+			klog.V(6).Infof("Slot %d batch %d", meta.Slot, i)
+
+			for j, entry := range batch.Entries {
+				pos := ipldgen.EntryPos{
+					Slot:       meta.Slot,
+					EntryIndex: entryNum,
+					Batch:      i,
+					BatchIndex: j,
+					LastShred:  -1,
 				}
+				if j == len(batch.Entries)-1 {
+					// We map "last shred of batch" to each "last entry of batch"
+					// so we can reconstruct the shred/entry-batch assignments.
+					pos.LastShred = int(batch.Shreds[len(batch.Shreds)-1].CommonHeader().Index)
+				}
+
+				if err := asm.WriteEntry(entry, pos); err != nil {
+					klog.Exitf("Failed to write slot %d shred %d (batch %d index %d): %s",
+						meta.Slot, entryNum, i, j, err)
+				}
+
+				entryNum++
 			}
+		}
+
+		// TODO roll up into ledger entries
+		if _, err := asm.Finish(); err != nil {
+			klog.Exitf("Failed to write block: %s", err)
 		}
 	}
 }
