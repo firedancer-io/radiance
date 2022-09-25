@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -15,9 +16,13 @@ import (
 	"k8s.io/klog/v2"
 )
 
-// TargetCARSize is the maximum size of a CAR file.
-// ipldgen will attempt to pack CARs as large as possible.
-const TargetCARSize = 1 << 36
+// MaxCARSize is the maximum size of a CARv1 file.
+//
+// Dictated by Filecoin's preferred sector size (currently 32 GiB).
+// cargen will attempt to pack CARs as large as possible but never exceed.
+//
+// Filecoin miners may append CARv2 indexes, which would exceed the total CAR size.
+const MaxCARSize = 1 << 36
 
 type Worker struct {
 	dir   string
@@ -83,28 +88,65 @@ func (w *Worker) step() (next bool, err error) {
 	if err != nil {
 		return false, fmt.Errorf("failed to get entry at slot %d: %w", meta.Slot, err)
 	}
+	if err := w.ensureHandle(meta.Slot); err != nil {
+		return false, err
+	}
 	if err := w.writeSlot(meta.Slot, entries); err != nil {
 		return false, err
 	}
-	// TODO Split CARs
+	if err := w.splitHandle(meta.Slot); err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
 // ensureHandle makes sure we have a CAR handle that we can write to.
 func (w *Worker) ensureHandle(slot uint64) error {
 	if w.handle.ok() {
+		w.handle.lastOffset = w.handle.writer.Written()
 		return nil
 	}
 	return w.handle.open(w.dir, w.epoch, slot)
 }
 
+// splitHandle creates a new CAR file if the current one is oversized.
+//
+// Internally moves blocks that exceed max CAR size from old to new file.
+func (w *Worker) splitHandle(slot uint64) error {
+	size := w.handle.writer.Written()
+	if size <= MaxCARSize {
+		return nil
+	}
+	// CAR is too large and needs to be split.
+	klog.Infof("CAR file %s too large, splitting...", w.handle.file.Name())
+	// Create new target CAR.
+	var newCAR carHandle
+	if err := newCAR.open(w.dir, w.epoch, slot); err != nil {
+		return err
+	}
+	// Seek old CAR back to before block.
+	w.handle.writer = nil
+	if _, err := w.handle.file.Seek(w.handle.lastOffset, io.SeekStart); err != nil {
+		return fmt.Errorf("failed to rewind CAR: %w", err)
+	}
+	// Move block from old to new.
+	if _, err := io.Copy(newCAR.writer, w.handle.file); err != nil {
+		return fmt.Errorf("failed to move block between CARs: %w", err)
+	}
+	// Truncate old handle to make it fit max size.
+	if err := w.handle.file.Truncate(w.handle.lastOffset); err != nil {
+		return fmt.Errorf("failed to truncate old CAR (%s) to %d bytes: %w",
+			w.handle.file.Name(), w.handle.lastOffset, err)
+	}
+	// Swap handles.
+	w.handle.close()
+	w.handle = newCAR
+	return nil
+}
+
 // writeSlot writes a filled Solana slot to the CAR.
 // Creates multiple IPLD blocks internally.
 func (w *Worker) writeSlot(slot uint64, entries []blockstore.Entries) error {
-	if err := w.ensureHandle(slot); err != nil {
-		return err
-	}
-
 	asm := ipldgen.NewBlockAssembler(w.handle.writer, slot)
 
 	entryNum := 0
@@ -156,7 +198,7 @@ func (c *carHandle) open(dir string, epoch uint64, slot uint64) error {
 	p := filepath.Join(dir, fmt.Sprintf("ledger-e%d-s%d.car", epoch, slot))
 	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
-		return fmt.Errorf("failed to create CAR at %s: %w", p, err)
+		return fmt.Errorf("failed to create CAR: %w", err)
 	}
 	writer, err := car.NewWriter(f)
 	if err != nil {
@@ -167,6 +209,7 @@ func (c *carHandle) open(dir string, epoch uint64, slot uint64) error {
 		writer:     writer,
 		lastOffset: 0,
 	}
+	klog.Infof("Created new CAR file %s", f.Name())
 	return nil
 }
 
