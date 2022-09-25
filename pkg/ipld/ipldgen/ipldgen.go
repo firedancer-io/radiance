@@ -1,3 +1,4 @@
+// Package ipldgen transforms Solana ledger data into IPLD DAGs.
 package ipldgen
 
 import (
@@ -39,10 +40,6 @@ const CIDLen = 39
 // TargetBlockSize is the target size of variable-length IPLD blocks (e.g. link lists).
 // Don't set this to the IPFS max block size, as we might overrun by a few kB.
 const TargetBlockSize = 1 << 19
-
-// TargetCARSize is the maximum size of a CAR file.
-// ipldgen will attempt to pack CARs as large as possible.
-const TargetCARSize = 1 << 36
 
 // lengthPrefixSize is the max practical size of an array length prefix.
 const lengthPrefixSize = 4
