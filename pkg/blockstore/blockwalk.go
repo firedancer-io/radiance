@@ -10,8 +10,9 @@ import (
 
 // BlockWalk walks blocks in ascending order over multiple RocksDB databases.
 type BlockWalk struct {
-	iter    *grocksdb.Iterator
 	handles []WalkHandle // sorted
+
+	root *grocksdb.Iterator
 }
 
 func NewBlockWalk(handles []WalkHandle) (*BlockWalk, error) {
@@ -62,22 +63,22 @@ func (m *BlockWalk) Next() (meta *SlotMeta, ok bool) {
 		return nil, false
 	}
 	h := m.handles[0]
-	if m.iter == nil {
+	if m.root == nil {
 		// Open Next database
-		m.iter = h.DB.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), h.DB.CfMeta)
+		m.root = h.DB.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), h.DB.CfRoot)
 		key := MakeSlotKey(h.Start)
-		m.iter.Seek(key[:])
+		m.root.Seek(key[:])
 	}
-	if !m.iter.Valid() {
+	if !m.root.Valid() {
 		// Close current DB and go to Next
 		m.pop()
 		return m.Next() // TODO tail recursion optimization?
 	}
 
 	// Get key at current position.
-	slot, ok := ParseSlotKey(m.iter.Key().Data())
+	slot, ok := ParseSlotKey(m.root.Key().Data())
 	if !ok {
-		klog.Exitf("Invalid slot key: %x", m.iter.Key().Data())
+		klog.Exitf("Invalid slot key: %x", m.root.Key().Data())
 	}
 	if slot > h.Stop {
 		m.pop()
@@ -86,7 +87,8 @@ func (m *BlockWalk) Next() (meta *SlotMeta, ok bool) {
 	h.Start = slot
 
 	// Get value at current position.
-	meta, err := ParseBincode[SlotMeta](m.iter.Value().Data())
+	var err error
+	meta, err = h.DB.GetSlotMeta(slot)
 	if err != nil {
 		// Invalid slot metas are irrecoverable.
 		// The CAR generation process must stop here.
@@ -94,16 +96,8 @@ func (m *BlockWalk) Next() (meta *SlotMeta, ok bool) {
 		return nil, false
 	}
 
-	// Seek iterator to Next slot in chain.
-	if len(meta.NextSlots) != 1 {
-		// TODO: Does NextSlots indicate the canonical chain?
-		klog.Errorf("FATAL: don't know which slot comes after %d, possible values: %v", slot, meta.NextSlots)
-		return nil, false
-	}
-
 	// Seek iterator to Next entry.
-	key := MakeSlotKey(meta.NextSlots[0])
-	m.iter.Seek(key[:])
+	m.root.Next()
 
 	return meta, true
 }
@@ -117,16 +111,16 @@ func (m *BlockWalk) Entries(meta *SlotMeta) ([]Entries, error) {
 
 // pop closes the current open DB.
 func (m *BlockWalk) pop() {
-	m.iter.Close()
-	m.iter = nil
+	m.root.Close()
+	m.root = nil
 	m.handles[0].DB.Close()
 	m.handles = m.handles[1:]
 }
 
 func (m *BlockWalk) Close() {
-	if m.iter != nil {
-		m.iter.Close()
-		m.iter = nil
+	if m.root != nil {
+		m.root.Close()
+		m.root = nil
 	}
 	for _, h := range m.handles {
 		h.DB.Close()
