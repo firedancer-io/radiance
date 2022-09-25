@@ -2,6 +2,7 @@
 package cargen
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -151,7 +152,7 @@ func (w *Worker) ensureHandle(slot uint64) error {
 // splitHandle creates a new CAR file if the current one is oversized.
 //
 // Internally moves blocks that exceed max CAR size from old to new file.
-func (w *Worker) splitHandle(slot uint64) error {
+func (w *Worker) splitHandle(slot uint64) (err error) {
 	size := w.handle.writer.Written()
 	if size <= MaxCARSize {
 		return nil
@@ -165,22 +166,22 @@ func (w *Worker) splitHandle(slot uint64) error {
 	}
 	// Seek old CAR back to before block.
 	w.handle.writer = nil
-	if _, err := w.handle.file.Seek(w.handle.lastOffset, io.SeekStart); err != nil {
+	if _, err = w.handle.file.Seek(w.handle.lastOffset, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to rewind CAR: %w", err)
 	}
 	// Move block from old to new.
-	if _, err := io.Copy(newCAR.writer, w.handle.file); err != nil {
+	if _, err = io.Copy(newCAR.writer, w.handle.file); err != nil {
 		return fmt.Errorf("failed to move block between CARs: %w", err)
 	}
 	// Truncate old handle to make it fit max size.
-	if err := w.handle.file.Truncate(w.handle.lastOffset); err != nil {
+	if err = w.handle.file.Truncate(w.handle.lastOffset); err != nil {
 		return fmt.Errorf("failed to truncate old CAR (%s) to %d bytes: %w",
 			w.handle.file.Name(), w.handle.lastOffset, err)
 	}
 	// Swap handles.
-	w.handle.close()
+	err = w.handle.close()
 	w.handle = newCAR
-	return nil
+	return err
 }
 
 // writeSlot writes a filled Solana slot to the CAR.
@@ -226,9 +227,12 @@ func (w *Worker) writeSlot(slot uint64, entries []blockstore.Entries) error {
 
 type carHandle struct {
 	file       *os.File
+	cache      *bufio.Writer
 	writer     *car.Writer
 	lastOffset int64
 }
+
+const writeBufSize = 16384
 
 func (c *carHandle) open(dir string, epoch uint64, slot uint64) error {
 	if c.ok() {
@@ -239,12 +243,14 @@ func (c *carHandle) open(dir string, epoch uint64, slot uint64) error {
 	if err != nil {
 		return fmt.Errorf("failed to create CAR: %w", err)
 	}
-	writer, err := car.NewWriter(f)
+	cache := bufio.NewWriterSize(f, writeBufSize)
+	writer, err := car.NewWriter(cache)
 	if err != nil {
 		return fmt.Errorf("failed to start CAR at %s: %w", p, err)
 	}
 	*c = carHandle{
 		file:       f,
+		cache:      cache,
 		writer:     writer,
 		lastOffset: 0,
 	}
@@ -256,7 +262,11 @@ func (c *carHandle) ok() bool {
 	return c.writer != nil
 }
 
-func (c *carHandle) close() {
-	_ = c.file.Close()
+func (c *carHandle) close() (err error) {
+	if err = c.cache.Flush(); err != nil {
+		return err
+	}
+	err = c.file.Close()
 	*c = carHandle{}
+	return
 }
