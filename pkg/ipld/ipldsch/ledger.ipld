@@ -1,0 +1,29 @@
+type Ledger struct {
+  startSlot Int
+  numSlots  Int
+  nodes     [ Link ]
+} representation map
+
+type Block struct {
+  slot     Int
+  entries  [ Link ]
+} representation map
+
+type Entry struct {
+  slot Int
+  idx  Int
+
+  batch     Int
+  batchIdx  Int
+  lastShred Int
+
+  numHashes  Int
+  hash       Hash
+  txs        TransactionList
+} representation map
+
+type Hash bytes
+
+type TransactionList [ Link ]
+
+type Transaction bytes
