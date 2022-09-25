@@ -24,6 +24,42 @@ import (
 // Filecoin miners may append CARv2 indexes, which would exceed the total CAR size.
 const MaxCARSize = 1 << 36
 
+// Worker extracts Solana blocks from blockstore and produces CAR files.
+//
+// # Data Source
+//
+// Solana validator RocksDB archives serve as input.
+// Any gaps in history will be detected and thrown as an error.
+//
+// The worker uses a blockstore.BlockWalk to seamlessly iterate over multiple RocksDBs if needed.
+// This is useful if an epoch is split across multiple archives.
+//
+// # Epochs
+//
+// Each worker processes a single epoch of Solana history (432000 slots) in rooted order.
+//
+// Transforming a single epoch, which takes about a day on mainnet, should take a few hours to transform into CAR.
+//
+// Because of epoch alignment, it is safe to run multiple workers in parallel on distinct epochs.
+// Therefore, the CAR generation process can be trivially parallelized by launching multiple instances.
+//
+// The CAR output will be byte-by-byte deterministic with regard to Solana's authenticated ledger content.
+// In other words, regardless of which node operator runs this tool, they should always get the same CAR file.
+//
+// # Blocks
+//
+// Each block will be parsed and turned into an IPLD graph.
+//
+// The procedure respects MaxCARSize and splits data across multiple CARs if needed.
+// This allows us to assign a slot range to each CAR for the reader's convenience, at negligible alignment cost.
+//
+// # Output
+//
+// Each run produces one or more car files in the target directory,
+// named `ledger-e{epoch}-s{slot}.car`, where slot is the first slot number in the epoch.
+//
+// The interlinked IPLD blocks are internally encoded with DAG-CBOR.
+// Except for the ipldgen.SolanaTx "leaf" nodes, which are encoded using bincode (native).
 type Worker struct {
 	dir   string
 	walk  *blockstore.BlockWalk
@@ -33,6 +69,9 @@ type Worker struct {
 	handle carHandle
 }
 
+// NewWorker creates a new worker to transform an epoch from blockstore.BlockWalk into CAR files in the given dir.
+//
+// Creates the directory if it doesn't exist yet.
 func NewWorker(dir string, epoch uint64, walk *blockstore.BlockWalk) (*Worker, error) {
 	if err := os.Mkdir(dir, 0777); err != nil && !errors.Is(err, fs.ErrExist) {
 		return nil, err

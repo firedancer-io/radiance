@@ -22,24 +22,6 @@ var Cmd = cobra.Command{
 	Args: cobra.ExactArgs(1),
 }
 
-// TODO: Actually write the CAR!
-//       |
-//       Our plan is to transform epochs of Solana history (432000 slots) into batches of CAR files.
-//       The CAR output must be byte-by-byte deterministic with regard to Solana's authenticated ledger content.
-//       In other words, regardless of which node operator runs this tool, they should always get the same CAR file.
-//       |
-//       The procedure needs to respect Filecoin's 32GB sector size and split data across multiple CARs if needed.
-//       We use Solana blocks as an atomic unit that is never split across CARs.
-//       This allows us to assign a slot range to each CAR for the reader's convenience, at negligible alignment cost.
-//       |
-//       Transforming a single epoch, which takes about a day on mainnet, should take a few hours to transform into CAR.
-//       Because of epoch alignment, the CAR generation process can be trivially parallelized by launching multiple instances.
-//       In theory, the ledger data extraction process for even a single CAR can be parallelized, at questionable gains.
-//       We can synchronize multiple RocksDB iterators that jump over each other block-by-block.
-//       CAR writing cannot be parallelized because of strict ordering requirements (determinism).
-
-// TODO: there is a number of things [above] that are conceptually incorrect -- @ribasushi
-
 var flags = Cmd.Flags()
 
 var (
