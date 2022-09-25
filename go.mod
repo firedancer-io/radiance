@@ -15,13 +15,16 @@ require (
 	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipld/go-car v0.5.0
+	github.com/ipld/go-ipld-prime v0.16.0
 	github.com/klauspost/compress v1.15.10
 	github.com/linxGnu/grocksdb v1.7.7
 	github.com/lucas-clemente/quic-go v0.27.2
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multicodec v0.6.0
+	github.com/multiformats/go-multihash v0.1.0
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20220519162058-e5cd3c3b3f3a
+	github.com/pkg/profile v1.2.1
 	github.com/prometheus/client_golang v1.13.0
 	github.com/segmentio/textio v1.2.0
 	github.com/slok/go-http-metrics v0.10.0
@@ -93,7 +96,6 @@ require (
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
 	github.com/ipfs/go-verifcid v0.0.1 // indirect
 	github.com/ipld/go-codec-dagpb v1.3.1 // indirect
-	github.com/ipld/go-ipld-prime v0.16.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -116,7 +118,6 @@ require (
 	github.com/multiformats/go-base32 v0.0.3 // indirect
 	github.com/multiformats/go-base36 v0.1.0 // indirect
 	github.com/multiformats/go-multibase v0.0.3 // indirect
-	github.com/multiformats/go-multihash v0.1.0 // indirect
 	github.com/multiformats/go-varint v0.0.6 // indirect
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.16.4 // indirect

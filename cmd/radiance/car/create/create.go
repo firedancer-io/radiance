@@ -3,7 +3,9 @@ package create
 import (
 	"path/filepath"
 	"strconv"
+	"time"
 
+	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/ipld/cargen"
 	"k8s.io/klog/v2"
@@ -27,6 +29,9 @@ var flags = Cmd.Flags()
 var (
 	flagOut = flags.StringP("out", "o", "", "Output directory")
 	flagDBs = flags.StringArray("db", nil, "Path to RocksDB (can be specified multiple times)")
+
+	flagProfilePath = flags.String("profile-path", "", "Path to record profile to (empty to use temp dir)")
+	flagProfileDur  = flags.Duration("profile-duration", 0, "Record Go pprof (0 to disable)")
 )
 
 func init() {
@@ -34,6 +39,8 @@ func init() {
 }
 
 func run(c *cobra.Command, args []string) {
+	start := time.Now()
+
 	outPath := filepath.Clean(*flagOut)
 	epochStr := args[0]
 	epoch, err := strconv.ParseUint(epochStr, 10, 32)
@@ -65,9 +72,21 @@ func run(c *cobra.Command, args []string) {
 		klog.Exitf("Failed to init cargen: %s", err)
 	}
 
+	// Invoke pprof profiler.
+	if *flagProfileDur > 0 {
+		go func() {
+			p := profile.Start(profile.ProfilePath(*flagProfilePath))
+			defer p.Stop()
+			time.Sleep(*flagProfileDur)
+		}()
+	}
+
 	ctx := c.Context()
 	if err = w.Run(ctx); err != nil {
 		klog.Exitf("FATAL: %s", err)
 	}
 	klog.Info("DONE")
+
+	timeTaken := time.Since(start)
+	klog.Infof("Time taken: %s", timeTaken)
 }
