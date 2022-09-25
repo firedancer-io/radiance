@@ -7,6 +7,13 @@ Ignore this repo unless you're ready to read and understand the code.** ⚠️
 
 ## Available tooling
 
+- [radiance](cmd/radiance)
+  - `blockstore`: Solana validator RocksDB tool
+    - `dumpshreds`: Dump raw shreds from RocksDB
+    - `verifydata`: Check data integrity (parse every tx)
+    - `yaml`: Dump shreds, entries, txs as YAML
+  - `car`: IPLD Content Addressable Archives
+    - `create`: Create replayable CAR archives from validator RocksDB
 - [solrays](cmd/solrays), an RPC proxy that exports call latency of a Solana RPC node.
 
 ## Building
