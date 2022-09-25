@@ -21,3 +21,13 @@ then
   rm -f ./pkg/gossip/schema.go.bak
   go fmt ./pkg/gossip/schema.go
 fi
+
+# go install github.com/ipld/go-ipldtool
+if command -v ipld &> /dev/null
+then
+  ipld schema codegen \
+    --generator=go-gengo \
+    --package=ipldsch \
+    --output=./pkg/ipld/ipldsch \
+    ./pkg/ipld/ipldsch/ledger.ipld
+fi
