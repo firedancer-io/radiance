@@ -5,3 +5,12 @@
 
 # Build artifacts
 _bin
+
+# Data
+*.car
+*.sst
+LOG*
+LOCK
+CURRENT
+MANIFEST-*
+OPTIONS-*
