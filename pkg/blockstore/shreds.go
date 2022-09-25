@@ -3,10 +3,11 @@ package blockstore
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 
-	"go.firedancer.io/radiance/pkg/shred"
 	bin "github.com/gagliardetto/binary"
 	"github.com/linxGnu/grocksdb"
+	"go.firedancer.io/radiance/pkg/shred"
 	"golang.org/x/exp/constraints"
 )
 
@@ -61,6 +62,13 @@ type Entries struct {
 	Entries []shred.Entry
 	Raw     []byte
 	Shreds  []shred.Shred
+}
+
+func (e *Entries) Slot() uint64 {
+	if len(e.Shreds) == 0 {
+		return math.MaxUint64
+	}
+	return e.Shreds[0].CommonHeader().Slot
 }
 
 func (d *DB) GetEntries(meta *SlotMeta) ([]Entries, error) {
