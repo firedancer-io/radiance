@@ -71,8 +71,6 @@ func main() {
 		KeyLogWriter:       dbg,
 	}
 
-	c := 0
-
 	for c := 0; c < *flagCount || *flagCount == -1; c++ {
 		c := c
 		t := time.Now()
