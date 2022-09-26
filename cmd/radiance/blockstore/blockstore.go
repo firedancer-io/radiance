@@ -1,10 +1,12 @@
+//go:build rocksdb
+
 package blockstore
 
 import (
+	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/dumpshreds"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/verifydata"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/yaml"
-	"github.com/spf13/cobra"
 )
 
 var Cmd = cobra.Command{

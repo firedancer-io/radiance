@@ -1,3 +1,5 @@
+//go:build rocksdb
+
 package dumpshreds
 
 import (
@@ -8,10 +10,10 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"go.firedancer.io/radiance/cmd/radiance/blockstore/util"
-	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"github.com/spf13/cobra"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore/util"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"k8s.io/klog/v2"
 )
 

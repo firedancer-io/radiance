@@ -1,3 +1,5 @@
+//go:build rocksdb
+
 package verifydata
 
 import (
@@ -9,12 +11,12 @@ import (
 	"time"
 
 	"github.com/VividCortex/ewma"
-	"go.firedancer.io/radiance/pkg/blockstore"
 	"github.com/linxGnu/grocksdb"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
+	"go.firedancer.io/radiance/pkg/blockstore"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog/v2"
 )

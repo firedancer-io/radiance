@@ -1,3 +1,5 @@
+//go:build rocksdb
+
 package verifydata
 
 import (
@@ -6,10 +8,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.firedancer.io/radiance/pkg/blockstore"
-	"go.firedancer.io/radiance/pkg/shred"
 	"github.com/linxGnu/grocksdb"
 	"github.com/vbauerster/mpb/v8"
+	"go.firedancer.io/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/shred"
 	"k8s.io/klog/v2"
 )
 

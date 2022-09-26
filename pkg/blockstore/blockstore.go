@@ -1,3 +1,5 @@
+//go:build rocksdb
+
 // Package blockstore is a read-only client for the Solana blockstore database.
 //
 // For the reference implementation in Rust, see here:
