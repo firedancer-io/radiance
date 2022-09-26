@@ -19,7 +19,7 @@ Ignore this repo unless you're ready to read and understand the code.** ⚠️
 ## Building
 
 In order to build the available tooling, the following is required:
-- Go 1.18+
+- Go 1.19+
 - Run
   ```
   ./generate.sh
