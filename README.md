@@ -46,6 +46,7 @@ Then, build the rocksdb C library:
 
     cd third_party/rocksdb
     make -j $(nproc) static_lib
+    cd -
 
 Finally, build the `radiance` command:
 
