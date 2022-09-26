@@ -1,3 +1,5 @@
+//go:build rocksdb
+
 package car
 
 import (
