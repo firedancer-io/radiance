@@ -18,8 +18,8 @@ Ignore this repo unless you're ready to read and understand the code.** ⚠️
 
 ## Building
 
-In order to build the available tooling, the following is required:
-- Go 1.19+
+Radiance can be built with standard Go tooling (Go 1.19+ is required).
+
 - Run
   ```
   ./generate.sh
@@ -36,6 +36,3 @@ Or if you're just looking for a single tool, say `solrays`:
 ```
 :; go build -o _bin/ go.firedancer.io/radiance/cmd/solrays
 ```
-
-**NOTE:** Mind yourself, some of the tools here tools may depend on C code (and CGO), and other shenanigans,
-so you may have to adapt accordingly.
