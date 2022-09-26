@@ -1,3 +1,5 @@
+//go:build rocksdb
+
 // Package cargen transforms blockstores into CAR files.
 package cargen
 
@@ -161,11 +163,15 @@ func (w *Worker) splitHandle(slot uint64) (err error) {
 	klog.Infof("CAR file %s too large, splitting...", w.handle.file.Name())
 	// Create new target CAR.
 	var newCAR carHandle
-	if err := newCAR.open(w.dir, w.epoch, slot); err != nil {
+	if err = newCAR.open(w.dir, w.epoch, slot); err != nil {
 		return err
 	}
 	// Seek old CAR back to before block.
 	w.handle.writer = nil
+	if err = w.handle.cache.Flush(); err != nil {
+		return fmt.Errorf("failed to flush CAR cache: %w", err)
+	}
+	klog.Infof("Seeking to offset %d and copying rest", w.handle.lastOffset)
 	if _, err = w.handle.file.Seek(w.handle.lastOffset, io.SeekStart); err != nil {
 		return fmt.Errorf("failed to rewind CAR: %w", err)
 	}
