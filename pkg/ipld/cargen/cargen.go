@@ -245,7 +245,7 @@ func (c *carHandle) open(dir string, epoch uint64, slot uint64) error {
 		return fmt.Errorf("handle not closed")
 	}
 	p := filepath.Join(dir, fmt.Sprintf("ledger-e%d-s%d.car", epoch, slot))
-	f, err := os.OpenFile(p, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0666)
+	f, err := os.OpenFile(p, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		return fmt.Errorf("failed to create CAR: %w", err)
 	}
