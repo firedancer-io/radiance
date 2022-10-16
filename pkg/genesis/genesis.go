@@ -30,3 +30,9 @@ type BuiltinProgram struct {
 	Key    string
 	Pubkey [32]byte
 }
+
+func (g *Genesis) FillAccounts(state runtime.Accounts) {
+	for _, acc := range g.Accounts {
+		state.SetAccount(&acc.Pubkey, &acc.Account)
+	}
+}
