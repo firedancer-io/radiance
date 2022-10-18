@@ -7,10 +7,11 @@ import (
 	"os"
 	"os/signal"
 
+	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore"
 	"go.firedancer.io/radiance/cmd/radiance/car"
 	"go.firedancer.io/radiance/cmd/radiance/gossip"
-	"github.com/spf13/cobra"
+	"go.firedancer.io/radiance/cmd/radiance/replay"
 	"k8s.io/klog/v2"
 )
 
@@ -28,6 +29,7 @@ func init() {
 		&blockstore.Cmd,
 		&car.Cmd,
 		&gossip.Cmd,
+		&replay.Cmd,
 	)
 }
 

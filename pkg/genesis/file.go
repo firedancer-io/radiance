@@ -1,40 +1,72 @@
 package genesis
 
 import (
+	"archive/tar"
+	"crypto/sha256"
 	"fmt"
 	"io"
+	"os"
 
-	"go.firedancer.io/radiance/pkg/archiveutil"
 	bin "github.com/gagliardetto/binary"
+	"go.firedancer.io/radiance/pkg/archiveutil"
 )
 
-// ReadGenesisFromArchive reads a `genesis.tar.bz2` file.
-func ReadGenesisFromArchive(archive io.Reader) (*Genesis, error) {
-	tar, err := archiveutil.OpenTar(archive)
+// ReadGenesisFromFile is a convenience wrapper for ReadGenesisFromArchive.
+func ReadGenesisFromFile(fpath string) (genesis *Genesis, hash *[32]byte, err error) {
+	f, err := os.Open(fpath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	hdr, err := tar.Next()
+	defer f.Close()
+	return ReadGenesisFromArchive(f)
+}
+
+// ReadGenesisFromArchive reads a `genesis.tar.bz2` file.
+func ReadGenesisFromArchive(archive io.Reader) (genesis *Genesis, hash *[32]byte, err error) {
+	var files *tar.Reader
+	var hdr *tar.Header
+	files, err = archiveutil.OpenTar(archive)
 	if err != nil {
-		return nil, err
+		return
+	}
+	hdr, err = files.Next()
+	if err != nil {
+		return
 	}
 	if hdr.Name != "genesis.bin" {
-		return nil, fmt.Errorf("first file is not genesis.bin")
+		err = fmt.Errorf("first file is not genesis.bin")
+		return
 	}
+
+	// Read and hash first file
 	const maxSize = 10_000_001
-	rd := io.LimitReader(tar, maxSize)
-	genesisBytes, err := io.ReadAll(rd)
+	var rd io.Reader
+	rd = files
+	hasher := sha256.New()
+	rd = io.TeeReader(rd, hasher)
+	rd = io.LimitReader(rd, maxSize)
+
+	// Decode content
+	var genesisBytes []byte
+	genesisBytes, err = io.ReadAll(rd)
 	if err != nil {
-		return nil, err
+		return
 	}
-	if len(genesisBytes) == maxSize {
-		return nil, fmt.Errorf("genesis.bin too large")
+	if len(genesisBytes) >= maxSize {
+		err = fmt.Errorf("genesis.bin too large")
+		return
 	}
-	genesis := new(Genesis)
+	genesis = new(Genesis)
 	dec := bin.NewBinDecoder(genesisBytes)
 	err = dec.Decode(genesis)
-	if err == nil && dec.HasRemaining() {
-		err = fmt.Errorf("not all of genesis.bin was read (%d bytes remaining)", dec.Remaining())
+	if err == nil {
+		if dec.HasRemaining() {
+			err = fmt.Errorf("not all of genesis.bin was read (%d bytes remaining)", dec.Remaining())
+		} else {
+			hash = new([32]byte)
+			hasher.Sum(hash[:0])
+		}
 	}
-	return genesis, err
+
+	return
 }
