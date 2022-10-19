@@ -13,6 +13,9 @@ import (
 	"go.firedancer.io/radiance/cmd/radiance/gossip"
 	"go.firedancer.io/radiance/cmd/radiance/replay"
 	"k8s.io/klog/v2"
+
+	// Load in instruction pretty-printing
+	_ "github.com/gagliardetto/solana-go/programs/vote"
 )
 
 var cmd = cobra.Command{

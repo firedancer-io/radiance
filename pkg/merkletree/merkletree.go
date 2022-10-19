@@ -39,11 +39,11 @@ type Nodes struct {
 
 // GetRoot returns the root hash.
 // Returns zero if tree is empty.
-func (n *Nodes) GetRoot() (out [32]byte) {
-	if len(n.Nodes) > 0 {
-		out = n.Nodes[len(n.Nodes)-1]
+func (n *Nodes) GetRoot() (out *[32]byte) {
+	if len(n.Nodes) == 0 {
+		return nil
 	}
-	return
+	return &n.Nodes[len(n.Nodes)-1]
 }
 
 // TODO provide a method for memory-efficient Merkle construction when only the root is requested.

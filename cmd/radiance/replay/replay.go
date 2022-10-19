@@ -3,11 +3,11 @@ package replay
 import (
 	"bytes"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gagliardetto/solana-go"
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/blockstore"
 	"go.firedancer.io/radiance/pkg/genesis"
+	"go.firedancer.io/radiance/pkg/merkletree"
 	"go.firedancer.io/radiance/pkg/runtime"
 	"go.firedancer.io/radiance/pkg/runtime/poh"
 	"k8s.io/klog/v2"
@@ -85,9 +85,26 @@ replay:
 			for j, entry := range batch.Entries {
 				klog.V(7).Infof("Replay slot=%d entry=%02d/%02d hash=%s txs=%d",
 					slot, i, j, entry.Hash, len(entry.Txns))
-				chain.Hash(entry.NumHashes)
-				for _, tx := range entry.Txns {
-					spew.Dump(tx)
+				if entry.NumHashes == 0 {
+					klog.Errorf("Invalid entry: Zero PoH iterations")
+					break replay
+				}
+				if len(entry.Txns) != 0 {
+					chain.Hash(entry.NumHashes - 1)
+
+					var txSigs [][]byte
+					for _, tx := range entry.Txns {
+						if len(tx.Signatures) == 0 {
+							klog.Errorf("Invalid tx: Zero signatures")
+							break replay
+						}
+						txSigs = append(txSigs, tx.Signatures[0][:])
+					}
+
+					sigTree := merkletree.HashNodes(txSigs)
+					chain.Record(sigTree.GetRoot())
+				} else {
+					chain.Hash(entry.NumHashes)
 				}
 				if !bytes.Equal(entry.Hash[:], chain.Entry.Hash[:]) {
 					klog.Errorf("PoH mismatch! expected %s, actual %s",
