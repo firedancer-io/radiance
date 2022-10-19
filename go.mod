@@ -2,21 +2,25 @@ module go.firedancer.io/radiance
 
 go 1.18
 
+// Vote instruction support
+replace github.com/gagliardetto/solana-go => github.com/ripatel-jump/solana-go v0.0.0-20221019012627-2c3d04688523
+
 require (
 	cloud.google.com/go/bigtable v1.16.0
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
 	github.com/VividCortex/ewma v1.2.0
 	github.com/coreos/go-systemd/v22 v22.4.0
+	github.com/davecgh/go-spew v1.1.1
 	github.com/filecoin-project/go-leb128 v0.0.0-20190212224330-8d79a5489543
-	github.com/gagliardetto/binary v0.7.2-0.20220919103307-4270bf2d6707
-	github.com/gagliardetto/solana-go v1.6.1-0.20220919093524-f869c94c374c
+	github.com/gagliardetto/binary v0.7.2
+	github.com/gagliardetto/solana-go v1.6.1-0.20221018174950-475b9d64e462
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipld/go-car v0.5.0
 	github.com/ipld/go-ipld-prime v0.16.0
-	github.com/klauspost/compress v1.15.10
+	github.com/klauspost/compress v1.15.11
 	github.com/linxGnu/grocksdb v1.7.7
 	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/mattn/go-isatty v0.0.16
@@ -33,10 +37,10 @@ require (
 	github.com/stretchr/testify v1.8.0
 	github.com/twmb/franz-go v1.7.1
 	github.com/vbauerster/mpb/v8 v8.0.2
-	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7
+	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8
+	golang.org/x/sys v0.1.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/klog/v2 v2.80.1
@@ -46,7 +50,7 @@ require (
 	cloud.google.com/go v0.102.1 // indirect
 	cloud.google.com/go/compute v1.7.0 // indirect
 	cloud.google.com/go/iam v0.3.0 // indirect
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.13 // indirect
+	contrib.go.opencensus.io/exporter/stackdriver v0.13.14 // indirect
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
@@ -56,10 +60,8 @@ require (
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/cheekybits/genny v1.0.0 // indirect
 	github.com/cncf/udpa/go v0.0.0-20220112060539-c52dc94e7fbe // indirect
 	github.com/cncf/xds/go v0.0.0-20220520190051-1e77728a1eaa // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dfuse-io/logging v0.0.0-20210109005628-b97a57253f70 // indirect
 	github.com/envoyproxy/go-control-plane v0.10.2-0.20220325020618-49ff273808a1 // indirect
 	github.com/envoyproxy/protoc-gen-validate v0.6.7 // indirect
@@ -102,8 +104,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
-	github.com/marten-seemann/qtls-go1-16 v0.1.5 // indirect
-	github.com/marten-seemann/qtls-go1-17 v0.1.2 // indirect
 	github.com/marten-seemann/qtls-go1-18 v0.1.2 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -137,7 +137,7 @@ require (
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.2.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20200123233031-1cdf64d27158 // indirect
@@ -150,7 +150,7 @@ require (
 	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
 	golang.org/x/net v0.0.0-20220923203811-8be639271d50 // indirect
 	golang.org/x/oauth2 v0.0.0-20220608161450-d0670ef3b1eb // indirect
-	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
+	golang.org/x/term v0.0.0-20221017184919-83659145692c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 	golang.org/x/tools v0.1.12 // indirect
