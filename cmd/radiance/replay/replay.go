@@ -2,14 +2,15 @@ package replay
 
 import (
 	"bytes"
+	"encoding/hex"
 
 	"github.com/gagliardetto/solana-go"
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/blockstore"
 	"go.firedancer.io/radiance/pkg/genesis"
 	"go.firedancer.io/radiance/pkg/merkletree"
+	"go.firedancer.io/radiance/pkg/poh"
 	"go.firedancer.io/radiance/pkg/runtime"
-	"go.firedancer.io/radiance/pkg/runtime/poh"
 	"k8s.io/klog/v2"
 )
 
@@ -45,7 +46,7 @@ func run(c *cobra.Command, _ []string) {
 	if err != nil {
 		klog.Exitf("Failed to read genesis: %s", err)
 	}
-	klog.V(2).Infof("Genesis hash: %s", solana.Hash(*genesisHash))
+	klog.V(2).Infof("Genesis hash: %s", hex.EncodeToString(genesisHash[:]))
 
 	// Load initial accounts into memory.
 	// Obviously, an in-memory database won't cut it for later stages of replay.
@@ -67,11 +68,11 @@ func run(c *cobra.Command, _ []string) {
 
 	// PoH delay function (SHA-256 hash chain).
 	var chain poh.State
-	chain.Entry.Hash = *genesisHash
+	chain = *genesisHash
 
 replay:
 	for slot := uint64(0); true; slot++ {
-		klog.V(2).Infof("Slot %d", slot)
+		klog.V(2).Infof("Slot %d: %x", slot, chain)
 		meta, ok := walker.Next()
 		if !ok {
 			break
@@ -81,16 +82,18 @@ replay:
 			klog.Errorf("Failed to get entries of block %d: %s", slot, err)
 			break
 		}
+		cum := uint64(0) // Cumulative hash count between mixins
 		for i, batch := range entries {
 			for j, entry := range batch.Entries {
-				klog.V(7).Infof("Replay slot=%d entry=%02d/%02d hash=%s txs=%d",
-					slot, i, j, entry.Hash, len(entry.Txns))
+				cum += entry.NumHashes
+				klog.V(7).Infof("Replay slot=%d entry=%02d/%02d hash=%s cum=%d txs=%d",
+					slot, i, j, hex.EncodeToString(entry.Hash[:]), cum, len(entry.Txns))
 				if entry.NumHashes == 0 {
 					klog.Errorf("Invalid entry: Zero PoH iterations")
 					break replay
 				}
 				if len(entry.Txns) != 0 {
-					chain.Hash(entry.NumHashes - 1)
+					chain.Hash(uint(entry.NumHashes - 1))
 
 					var txSigs [][]byte
 					for _, tx := range entry.Txns {
@@ -102,13 +105,15 @@ replay:
 					}
 
 					sigTree := merkletree.HashNodes(txSigs)
+					klog.V(7).Infof("Mixin: %x", sigTree.GetRoot()[:])
 					chain.Record(sigTree.GetRoot())
+					cum = 0
 				} else {
-					chain.Hash(entry.NumHashes)
+					chain.Hash(uint(entry.NumHashes))
 				}
-				if !bytes.Equal(entry.Hash[:], chain.Entry.Hash[:]) {
+				if !bytes.Equal(entry.Hash[:], chain[:]) {
 					klog.Errorf("PoH mismatch! expected %s, actual %s",
-						entry.Hash, solana.Hash(chain.Entry.Hash))
+						entry.Hash, solana.Hash(chain))
 					break replay
 				}
 			}
