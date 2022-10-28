@@ -22,7 +22,8 @@ then
   go fmt ./pkg/gossip/schema.go
 fi
 
-# go install github.com/ipld/go-ipldtool
+# go install github.com/ipld/go-ipldtool/cmd/ipldtool@latest
+#   (requires "$(go env GOPATH)"/bin in $PATH)
 if command -v ipld &> /dev/null
 then
   ipld schema codegen \
