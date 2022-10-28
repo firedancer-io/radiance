@@ -4,6 +4,8 @@
 
 # Build artifacts
 _bin
+/radiance
+/cmd/radiance/radiance
 
 # Data
 *.car
