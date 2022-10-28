@@ -33,12 +33,14 @@ type typeSlab struct {
 	Hash__Repr            _Hash__ReprPrototype
 	Int                   _Int__Prototype
 	Int__Repr             _Int__ReprPrototype
-	Ledger                _Ledger__Prototype
-	Ledger__Repr          _Ledger__ReprPrototype
 	Link                  _Link__Prototype
 	Link__Repr            _Link__ReprPrototype
 	List__Link            _List__Link__Prototype
 	List__Link__Repr      _List__Link__ReprPrototype
+	List__Shredding       _List__Shredding__Prototype
+	List__Shredding__Repr _List__Shredding__ReprPrototype
+	Shredding             _Shredding__Prototype
+	Shredding__Repr       _Shredding__ReprPrototype
 	String                _String__Prototype
 	String__Repr          _String__ReprPrototype
 	Transaction           _Transaction__Prototype
@@ -52,8 +54,9 @@ type typeSlab struct {
 // Block matches the IPLD Schema type "Block".  It has struct type-kind, and may be interrogated like map kind.
 type Block = *_Block
 type _Block struct {
-	slot    _Int
-	entries _List__Link
+	slot      _Int
+	entries   _List__Link
+	shredding _List__Shredding
 }
 
 // Bool matches the IPLD Schema type "Bool".  It has bool kind.
@@ -69,9 +72,6 @@ type Entry = *_Entry
 type _Entry struct {
 	slot      _Int
 	idx       _Int
-	batch     _Int
-	batchIdx  _Int
-	lastShred _Int
 	numHashes _Int
 	hash      _Hash
 	txs       _TransactionList
@@ -89,14 +89,6 @@ type _Hash struct{ x []byte }
 type Int = *_Int
 type _Int struct{ x int64 }
 
-// Ledger matches the IPLD Schema type "Ledger".  It has struct type-kind, and may be interrogated like map kind.
-type Ledger = *_Ledger
-type _Ledger struct {
-	startSlot _Int
-	numSlots  _Int
-	nodes     _List__Link
-}
-
 // Link matches the IPLD Schema type "Link".  It has link kind.
 type Link = *_Link
 type _Link struct{ x datamodel.Link }
@@ -105,6 +97,19 @@ type _Link struct{ x datamodel.Link }
 type List__Link = *_List__Link
 type _List__Link struct {
 	x []_Link
+}
+
+// List__Shredding matches the IPLD Schema type "List__Shredding".  It has list kind.
+type List__Shredding = *_List__Shredding
+type _List__Shredding struct {
+	x []_Shredding
+}
+
+// Shredding matches the IPLD Schema type "Shredding".  It has struct type-kind, and may be interrogated like map kind.
+type Shredding = *_Shredding
+type _Shredding struct {
+	entryEndIdx _Int
+	shredEndIdx _Int
 }
 
 // String matches the IPLD Schema type "String".  It has string kind.

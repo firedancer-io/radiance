@@ -28,10 +28,6 @@ const (
 	// RadianceBlock describes a slot and points to entries.
 	// DAG-CBOR, non-standard.
 	RadianceBlock = 0xc00104
-
-	// RadianceLedger is a Merkle node linking together a segment of the ledger.
-	// DAG-CBOR, non-standard.
-	RadianceLedger = 0xc00105
 )
 
 // CIDLen is the serialized size in bytes of a Solana/Radiance CID.
@@ -45,9 +41,15 @@ const TargetBlockSize = 1 << 19
 const lengthPrefixSize = 4
 
 type BlockAssembler struct {
-	writer  car.OutStream
-	slot    uint64
-	entries []cidlink.Link
+	writer    car.OutStream
+	slot      uint64
+	entries   []cidlink.Link
+	shredding []shredding
+}
+
+type shredding struct {
+	entryEndIdx uint
+	shredEndIdx uint
 }
 
 func NewBlockAssembler(writer car.OutStream, slot uint64) *BlockAssembler {
@@ -77,6 +79,13 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 		return err
 	}
 
+	if pos.LastShred > 0 {
+		b.shredding = append(b.shredding, shredding{
+			entryEndIdx: uint(pos.EntryIndex),
+			shredEndIdx: uint(pos.LastShred),
+		})
+	}
+
 	var nodeAsm datamodel.NodeAssembler
 
 	nodeAsm, err = entryMap.AssembleEntry("slot")
@@ -92,30 +101,6 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 		return err
 	}
 	if err = nodeAsm.AssignInt(int64(pos.EntryIndex)); err != nil {
-		return err
-	}
-
-	nodeAsm, err = entryMap.AssembleEntry("batch")
-	if err != nil {
-		return err
-	}
-	if err = nodeAsm.AssignInt(int64(pos.Batch)); err != nil {
-		return err
-	}
-
-	nodeAsm, err = entryMap.AssembleEntry("batchIdx")
-	if err != nil {
-		return err
-	}
-	if err = nodeAsm.AssignInt(int64(pos.BatchIndex)); err != nil {
-		return err
-	}
-
-	nodeAsm, err = entryMap.AssembleEntry("lastShred")
-	if err != nil {
-		return err
-	}
-	if err = nodeAsm.AssignInt(int64(pos.LastShred)); err != nil {
 		return err
 	}
 
@@ -173,11 +158,38 @@ func (b *BlockAssembler) Finish() (link cidlink.Link, err error) {
 		return link, err
 	}
 
+	nodeAsm, err = entryMap.AssembleEntry("shredding")
+	if err != nil {
+		return link, err
+	}
+	list, err := nodeAsm.BeginList(int64(len(b.shredding)))
+	if err != nil {
+		return link, err
+	}
+	for _, s := range b.shredding {
+		tuple, err := list.AssembleValue().BeginList(2)
+		if err != nil {
+			return link, err
+		}
+		if err = tuple.AssembleValue().AssignInt(int64(s.entryEndIdx)); err != nil {
+			return link, err
+		}
+		if err = tuple.AssembleValue().AssignInt(int64(s.shredEndIdx)); err != nil {
+			return link, err
+		}
+		if err = tuple.Finish(); err != nil {
+			return link, err
+		}
+	}
+	if err = list.Finish(); err != nil {
+		return link, err
+	}
+
 	nodeAsm, err = entryMap.AssembleEntry("entries")
 	if err != nil {
 		return link, err
 	}
-	list, err := nodeAsm.BeginList(int64(len(b.entries)))
+	list, err = nodeAsm.BeginList(int64(len(b.entries)))
 	if err != nil {
 		return link, err
 	}

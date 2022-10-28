@@ -14,6 +14,9 @@ func (n _Block) FieldSlot() Int {
 func (n _Block) FieldEntries() List__Link {
 	return &n.entries
 }
+func (n _Block) FieldShredding() List__Shredding {
+	return &n.shredding
+}
 
 type _Block__Maybe struct {
 	m schema.Maybe
@@ -50,8 +53,9 @@ func (m MaybeBlock) Must() Block {
 }
 
 var (
-	fieldName__Block_Slot    = _String{"slot"}
-	fieldName__Block_Entries = _String{"entries"}
+	fieldName__Block_Slot      = _String{"slot"}
+	fieldName__Block_Entries   = _String{"entries"}
+	fieldName__Block_Shredding = _String{"shredding"}
 )
 var _ datamodel.Node = (Block)(&_Block{})
 var _ schema.TypedNode = (Block)(&_Block{})
@@ -65,6 +69,8 @@ func (n Block) LookupByString(key string) (datamodel.Node, error) {
 		return &n.slot, nil
 	case "entries":
 		return &n.entries, nil
+	case "shredding":
+		return &n.shredding, nil
 	default:
 		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfString(key)}
 	}
@@ -92,7 +98,7 @@ type _Block__MapItr struct {
 }
 
 func (itr *_Block__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 2 {
+	if itr.idx >= 3 {
 		return nil, nil, datamodel.ErrIteratorOverread{}
 	}
 	switch itr.idx {
@@ -102,6 +108,9 @@ func (itr *_Block__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) 
 	case 1:
 		k = &fieldName__Block_Entries
 		v = &itr.n.entries
+	case 2:
+		k = &fieldName__Block_Shredding
+		v = &itr.n.shredding
 	default:
 		panic("unreachable")
 	}
@@ -109,14 +118,14 @@ func (itr *_Block__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) 
 	return
 }
 func (itr *_Block__MapItr) Done() bool {
-	return itr.idx >= 2
+	return itr.idx >= 3
 }
 
 func (Block) ListIterator() datamodel.ListIterator {
 	return nil
 }
 func (Block) Length() int64 {
-	return 2
+	return 3
 }
 func (Block) IsAbsent() bool {
 	return false
@@ -177,9 +186,10 @@ type _Block__Assembler struct {
 	s     int
 	f     int
 
-	cm         schema.Maybe
-	ca_slot    _Int__Assembler
-	ca_entries _List__Link__Assembler
+	cm           schema.Maybe
+	ca_slot      _Int__Assembler
+	ca_entries   _List__Link__Assembler
+	ca_shredding _List__Shredding__Assembler
 }
 
 func (na *_Block__Assembler) reset() {
@@ -187,12 +197,14 @@ func (na *_Block__Assembler) reset() {
 	na.s = 0
 	na.ca_slot.reset()
 	na.ca_entries.reset()
+	na.ca_shredding.reset()
 }
 
 var (
 	fieldBit__Block_Slot        = 1 << 0
 	fieldBit__Block_Entries     = 1 << 1
-	fieldBits__Block_sufficient = 0 + 1<<0 + 1<<1
+	fieldBit__Block_Shredding   = 1 << 2
+	fieldBits__Block_sufficient = 0 + 1<<0 + 1<<1 + 1<<2
 )
 
 func (na *_Block__Assembler) BeginMap(int64) (datamodel.MapAssembler, error) {
@@ -306,6 +318,16 @@ func (ma *_Block__Assembler) valueFinishTidy() bool {
 		default:
 			return false
 		}
+	case 2:
+		switch ma.cm {
+		case schema.Maybe_Value:
+			ma.ca_shredding.w = nil
+			ma.cm = schema.Maybe_Absent
+			ma.state = maState_initial
+			return true
+		default:
+			return false
+		}
 	default:
 		panic("unreachable")
 	}
@@ -346,6 +368,16 @@ func (ma *_Block__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		ma.ca_entries.w = &ma.w.entries
 		ma.ca_entries.m = &ma.cm
 		return &ma.ca_entries, nil
+	case "shredding":
+		if ma.s&fieldBit__Block_Shredding != 0 {
+			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Block_Shredding}
+		}
+		ma.s += fieldBit__Block_Shredding
+		ma.state = maState_midValue
+		ma.f = 2
+		ma.ca_shredding.w = &ma.w.shredding
+		ma.ca_shredding.m = &ma.cm
+		return &ma.ca_shredding, nil
 	}
 	return nil, schema.ErrInvalidKey{TypeName: "ipldsch.Block", Key: &_String{k}}
 }
@@ -390,6 +422,10 @@ func (ma *_Block__Assembler) AssembleValue() datamodel.NodeAssembler {
 		ma.ca_entries.w = &ma.w.entries
 		ma.ca_entries.m = &ma.cm
 		return &ma.ca_entries
+	case 2:
+		ma.ca_shredding.w = &ma.w.shredding
+		ma.ca_shredding.m = &ma.cm
+		return &ma.ca_shredding
 	default:
 		panic("unreachable")
 	}
@@ -416,6 +452,9 @@ func (ma *_Block__Assembler) Finish() error {
 		}
 		if ma.s&fieldBit__Block_Entries == 0 {
 			err.Missing = append(err.Missing, "entries")
+		}
+		if ma.s&fieldBit__Block_Shredding == 0 {
+			err.Missing = append(err.Missing, "shredding")
 		}
 		return err
 	}
@@ -471,6 +510,14 @@ func (ka *_Block__KeyAssembler) AssignString(k string) error {
 		ka.state = maState_expectValue
 		ka.f = 1
 		return nil
+	case "shredding":
+		if ka.s&fieldBit__Block_Shredding != 0 {
+			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Block_Shredding}
+		}
+		ka.s += fieldBit__Block_Shredding
+		ka.state = maState_expectValue
+		ka.f = 2
+		return nil
 	default:
 		return schema.ErrInvalidKey{TypeName: "ipldsch.Block", Key: &_String{k}}
 	}
@@ -500,72 +547,78 @@ func (n Block) Representation() datamodel.Node {
 
 type _Block__Repr _Block
 
-var (
-	fieldName__Block_Slot_serial    = _String{"slot"}
-	fieldName__Block_Entries_serial = _String{"entries"}
-)
 var _ datamodel.Node = &_Block__Repr{}
 
 func (_Block__Repr) Kind() datamodel.Kind {
-	return datamodel.Kind_Map
+	return datamodel.Kind_List
 }
-func (n *_Block__Repr) LookupByString(key string) (datamodel.Node, error) {
-	switch key {
-	case "slot":
-		return n.slot.Representation(), nil
-	case "entries":
-		return n.entries.Representation(), nil
-	default:
-		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfString(key)}
-	}
+func (_Block__Repr) LookupByString(string) (datamodel.Node, error) {
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.LookupByString("")
 }
 func (n *_Block__Repr) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
-	ks, err := key.AsString()
+	ki, err := key.AsInt()
 	if err != nil {
 		return nil, err
 	}
-	return n.LookupByString(ks)
+	return n.LookupByIndex(ki)
 }
-func (_Block__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.LookupByIndex(0)
+func (n *_Block__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
+	switch idx {
+	case 0:
+		return n.slot.Representation(), nil
+	case 1:
+		return n.entries.Representation(), nil
+	case 2:
+		return n.shredding.Representation(), nil
+	default:
+		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(idx)}
+	}
 }
 func (n _Block__Repr) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
-	return n.LookupByString(seg.String())
+	i, err := seg.Index()
+	if err != nil {
+		return nil, datamodel.ErrInvalidSegmentForList{TypeName: "ipldsch.Block.Repr", TroubleSegment: seg, Reason: err}
+	}
+	return n.LookupByIndex(i)
 }
-func (n *_Block__Repr) MapIterator() datamodel.MapIterator {
-	return &_Block__ReprMapItr{n, 0}
+func (_Block__Repr) MapIterator() datamodel.MapIterator {
+	return nil
+}
+func (n *_Block__Repr) ListIterator() datamodel.ListIterator {
+	return &_Block__ReprListItr{n, 0}
 }
 
-type _Block__ReprMapItr struct {
+type _Block__ReprListItr struct {
 	n   *_Block__Repr
 	idx int
 }
 
-func (itr *_Block__ReprMapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 2 {
-		return nil, nil, datamodel.ErrIteratorOverread{}
+func (itr *_Block__ReprListItr) Next() (idx int64, v datamodel.Node, err error) {
+	if itr.idx >= 3 {
+		return -1, nil, datamodel.ErrIteratorOverread{}
 	}
 	switch itr.idx {
 	case 0:
-		k = &fieldName__Block_Slot_serial
+		idx = int64(itr.idx)
 		v = itr.n.slot.Representation()
 	case 1:
-		k = &fieldName__Block_Entries_serial
+		idx = int64(itr.idx)
 		v = itr.n.entries.Representation()
+	case 2:
+		idx = int64(itr.idx)
+		v = itr.n.shredding.Representation()
 	default:
 		panic("unreachable")
 	}
 	itr.idx++
 	return
 }
-func (itr *_Block__ReprMapItr) Done() bool {
-	return itr.idx >= 2
+func (itr *_Block__ReprListItr) Done() bool {
+	return itr.idx >= 3
 }
-func (_Block__Repr) ListIterator() datamodel.ListIterator {
-	return nil
-}
+
 func (rn *_Block__Repr) Length() int64 {
-	l := 2
+	l := 3
 	return int64(l)
 }
 func (_Block__Repr) IsAbsent() bool {
@@ -575,22 +628,22 @@ func (_Block__Repr) IsNull() bool {
 	return false
 }
 func (_Block__Repr) AsBool() (bool, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.AsBool()
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.AsBool()
 }
 func (_Block__Repr) AsInt() (int64, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.AsInt()
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.AsInt()
 }
 func (_Block__Repr) AsFloat() (float64, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.AsFloat()
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.AsFloat()
 }
 func (_Block__Repr) AsString() (string, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.AsString()
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.AsString()
 }
 func (_Block__Repr) AsBytes() ([]byte, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.AsBytes()
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.AsBytes()
 }
 func (_Block__Repr) AsLink() (datamodel.Link, error) {
-	return mixins.Map{TypeName: "ipldsch.Block.Repr"}.AsLink()
+	return mixins.List{TypeName: "ipldsch.Block.Repr"}.AsLink()
 }
 func (_Block__Repr) Prototype() datamodel.NodePrototype {
 	return _Block__ReprPrototype{}
@@ -623,22 +676,26 @@ func (nb *_Block__ReprBuilder) Reset() {
 type _Block__ReprAssembler struct {
 	w     *_Block
 	m     *schema.Maybe
-	state maState
-	s     int
+	state laState
 	f     int
 
-	cm         schema.Maybe
-	ca_slot    _Int__ReprAssembler
-	ca_entries _List__Link__ReprAssembler
+	cm           schema.Maybe
+	ca_slot      _Int__ReprAssembler
+	ca_entries   _List__Link__ReprAssembler
+	ca_shredding _List__Shredding__ReprAssembler
 }
 
 func (na *_Block__ReprAssembler) reset() {
-	na.state = maState_initial
-	na.s = 0
+	na.state = laState_initial
+	na.f = 0
 	na.ca_slot.reset()
 	na.ca_entries.reset()
+	na.ca_shredding.reset()
 }
-func (na *_Block__ReprAssembler) BeginMap(int64) (datamodel.MapAssembler, error) {
+func (_Block__ReprAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.BeginMap(0)
+}
+func (na *_Block__ReprAssembler) BeginList(int64) (datamodel.ListAssembler, error) {
 	switch *na.m {
 	case schema.Maybe_Value, schema.Maybe_Null:
 		panic("invalid state: cannot assign into assembler that's already finished")
@@ -651,16 +708,13 @@ func (na *_Block__ReprAssembler) BeginMap(int64) (datamodel.MapAssembler, error)
 	}
 	return na, nil
 }
-func (_Block__ReprAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.BeginList(0)
-}
 func (na *_Block__ReprAssembler) AssignNull() error {
 	switch *na.m {
 	case allowNull:
 		*na.m = schema.Maybe_Null
 		return nil
 	case schema.Maybe_Absent:
-		return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr.Repr"}.AssignNull()
+		return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr.Repr"}.AssignNull()
 	case schema.Maybe_Value, schema.Maybe_Null:
 		panic("invalid state: cannot assign into assembler that's already finished")
 	case midvalue:
@@ -669,22 +723,22 @@ func (na *_Block__ReprAssembler) AssignNull() error {
 	panic("unreachable")
 }
 func (_Block__ReprAssembler) AssignBool(bool) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.AssignBool(false)
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.AssignBool(false)
 }
 func (_Block__ReprAssembler) AssignInt(int64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.AssignInt(0)
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.AssignInt(0)
 }
 func (_Block__ReprAssembler) AssignFloat(float64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.AssignFloat(0)
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.AssignFloat(0)
 }
 func (_Block__ReprAssembler) AssignString(string) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.AssignString("")
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.AssignString("")
 }
 func (_Block__ReprAssembler) AssignBytes([]byte) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.AssignBytes(nil)
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.AssignBytes(nil)
 }
 func (_Block__ReprAssembler) AssignLink(datamodel.Link) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Block.Repr"}.AssignLink(nil)
+	return mixins.ListAssembler{TypeName: "ipldsch.Block.Repr"}.AssignLink(nil)
 }
 func (na *_Block__ReprAssembler) AssignNode(v datamodel.Node) error {
 	if v.IsNull() {
@@ -706,16 +760,13 @@ func (na *_Block__ReprAssembler) AssignNode(v datamodel.Node) error {
 		*na.m = schema.Maybe_Value
 		return nil
 	}
-	if v.Kind() != datamodel.Kind_Map {
-		return datamodel.ErrWrongKind{TypeName: "ipldsch.Block.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustMap, ActualKind: v.Kind()}
+	if v.Kind() != datamodel.Kind_List {
+		return datamodel.ErrWrongKind{TypeName: "ipldsch.Block.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustList, ActualKind: v.Kind()}
 	}
-	itr := v.MapIterator()
+	itr := v.ListIterator()
 	for !itr.Done() {
-		k, v, err := itr.Next()
+		_, v, err := itr.Next()
 		if err != nil {
-			return err
-		}
-		if err := na.AssembleKey().AssignNode(k); err != nil {
 			return err
 		}
 		if err := na.AssembleValue().AssignNode(v); err != nil {
@@ -727,22 +778,34 @@ func (na *_Block__ReprAssembler) AssignNode(v datamodel.Node) error {
 func (_Block__ReprAssembler) Prototype() datamodel.NodePrototype {
 	return _Block__ReprPrototype{}
 }
-func (ma *_Block__ReprAssembler) valueFinishTidy() bool {
-	switch ma.f {
+func (la *_Block__ReprAssembler) valueFinishTidy() bool {
+	switch la.f {
 	case 0:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
 		}
 	case 1:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
+			return true
+		default:
+			return false
+		}
+	case 2:
+		switch la.cm {
+		case schema.Maybe_Value:
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
@@ -751,186 +814,55 @@ func (ma *_Block__ReprAssembler) valueFinishTidy() bool {
 		panic("unreachable")
 	}
 }
-func (ma *_Block__ReprAssembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
-	switch ma.state {
-	case maState_initial:
+func (la *_Block__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
+	switch la.state {
+	case laState_initial:
 		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleEntry cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleEntry cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleEntry cannot be called when in the middle of assembling a value")
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: AssembleValue cannot be called when still in the middle of assembling the previous value")
 		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleEntry cannot be called on an assembler that's already finished")
-	}
-	switch k {
-	case "slot":
-		if ma.s&fieldBit__Block_Slot != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Block_Slot_serial}
-		}
-		ma.s += fieldBit__Block_Slot
-		ma.state = maState_midValue
-		ma.f = 0
-		ma.ca_slot.w = &ma.w.slot
-		ma.ca_slot.m = &ma.cm
-		return &ma.ca_slot, nil
-	case "entries":
-		if ma.s&fieldBit__Block_Entries != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Block_Entries_serial}
-		}
-		ma.s += fieldBit__Block_Entries
-		ma.state = maState_midValue
-		ma.f = 1
-		ma.ca_entries.w = &ma.w.entries
-		ma.ca_entries.m = &ma.cm
-		return &ma.ca_entries, nil
-	default:
-	}
-	return nil, schema.ErrInvalidKey{TypeName: "ipldsch.Block.Repr", Key: &_String{k}}
-}
-func (ma *_Block__ReprAssembler) AssembleKey() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleKey cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleKey cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleKey cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleKey cannot be called on an assembler that's already finished")
-	}
-	ma.state = maState_midKey
-	return (*_Block__ReprKeyAssembler)(ma)
-}
-func (ma *_Block__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		panic("invalid state: AssembleValue cannot be called when no key is primed")
-	case maState_midKey:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		// carry on
-	case maState_midValue:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling another value")
-	case maState_finished:
+	case laState_finished:
 		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
 	}
-	ma.state = maState_midValue
-	switch ma.f {
+	if la.f >= 3 {
+		return _ErrorThunkAssembler{schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(3)}}
+	}
+	la.state = laState_midValue
+	switch la.f {
 	case 0:
-		ma.ca_slot.w = &ma.w.slot
-		ma.ca_slot.m = &ma.cm
-		return &ma.ca_slot
+		la.ca_slot.w = &la.w.slot
+		la.ca_slot.m = &la.cm
+		return &la.ca_slot
 	case 1:
-		ma.ca_entries.w = &ma.w.entries
-		ma.ca_entries.m = &ma.cm
-		return &ma.ca_entries
+		la.ca_entries.w = &la.w.entries
+		la.ca_entries.m = &la.cm
+		return &la.ca_entries
+	case 2:
+		la.ca_shredding.w = &la.w.shredding
+		la.ca_shredding.m = &la.cm
+		return &la.ca_shredding
 	default:
 		panic("unreachable")
 	}
 }
-func (ma *_Block__ReprAssembler) Finish() error {
-	switch ma.state {
-	case maState_initial:
+func (la *_Block__ReprAssembler) Finish() error {
+	switch la.state {
+	case laState_initial:
 		// carry on
-	case maState_midKey:
-		panic("invalid state: Finish cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		panic("invalid state: Finish cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
+	case laState_midValue:
+		if !la.valueFinishTidy() {
 			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
 		} // if tidy success: carry on
-	case maState_finished:
+	case laState_finished:
 		panic("invalid state: Finish cannot be called on an assembler that's already finished")
 	}
-	if ma.s&fieldBits__Block_sufficient != fieldBits__Block_sufficient {
-		err := schema.ErrMissingRequiredField{Missing: make([]string, 0)}
-		if ma.s&fieldBit__Block_Slot == 0 {
-			err.Missing = append(err.Missing, "slot")
-		}
-		if ma.s&fieldBit__Block_Entries == 0 {
-			err.Missing = append(err.Missing, "entries")
-		}
-		return err
-	}
-	ma.state = maState_finished
-	*ma.m = schema.Maybe_Value
+	la.state = laState_finished
+	*la.m = schema.Maybe_Value
 	return nil
 }
-func (ma *_Block__ReprAssembler) KeyPrototype() datamodel.NodePrototype {
-	return _String__Prototype{}
-}
-func (ma *_Block__ReprAssembler) ValuePrototype(k string) datamodel.NodePrototype {
-	panic("todo structbuilder mapassembler repr valueprototype")
-}
-
-type _Block__ReprKeyAssembler _Block__ReprAssembler
-
-func (_Block__ReprKeyAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.BeginMap(0)
-}
-func (_Block__ReprKeyAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.BeginList(0)
-}
-func (na *_Block__ReprKeyAssembler) AssignNull() error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.AssignNull()
-}
-func (_Block__ReprKeyAssembler) AssignBool(bool) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.AssignBool(false)
-}
-func (_Block__ReprKeyAssembler) AssignInt(int64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.AssignInt(0)
-}
-func (_Block__ReprKeyAssembler) AssignFloat(float64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.AssignFloat(0)
-}
-func (ka *_Block__ReprKeyAssembler) AssignString(k string) error {
-	if ka.state != maState_midKey {
-		panic("misuse: KeyAssembler held beyond its valid lifetime")
-	}
-	switch k {
-	case "slot":
-		if ka.s&fieldBit__Block_Slot != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Block_Slot_serial}
-		}
-		ka.s += fieldBit__Block_Slot
-		ka.state = maState_expectValue
-		ka.f = 0
-		return nil
-	case "entries":
-		if ka.s&fieldBit__Block_Entries != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Block_Entries_serial}
-		}
-		ka.s += fieldBit__Block_Entries
-		ka.state = maState_expectValue
-		ka.f = 1
-		return nil
-	}
-	return schema.ErrInvalidKey{TypeName: "ipldsch.Block.Repr", Key: &_String{k}}
-}
-func (_Block__ReprKeyAssembler) AssignBytes([]byte) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.AssignBytes(nil)
-}
-func (_Block__ReprKeyAssembler) AssignLink(datamodel.Link) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Block.Repr.KeyAssembler"}.AssignLink(nil)
-}
-func (ka *_Block__ReprKeyAssembler) AssignNode(v datamodel.Node) error {
-	if v2, err := v.AsString(); err != nil {
-		return err
-	} else {
-		return ka.AssignString(v2)
-	}
-}
-func (_Block__ReprKeyAssembler) Prototype() datamodel.NodePrototype {
-	return _String__Prototype{}
+func (la *_Block__ReprAssembler) ValuePrototype(_ int64) datamodel.NodePrototype {
+	panic("todo structbuilder tuplerepr valueprototype")
 }
 
 func (n Bool) Bool() bool {
@@ -1349,15 +1281,6 @@ func (n _Entry) FieldSlot() Int {
 func (n _Entry) FieldIdx() Int {
 	return &n.idx
 }
-func (n _Entry) FieldBatch() Int {
-	return &n.batch
-}
-func (n _Entry) FieldBatchIdx() Int {
-	return &n.batchIdx
-}
-func (n _Entry) FieldLastShred() Int {
-	return &n.lastShred
-}
 func (n _Entry) FieldNumHashes() Int {
 	return &n.numHashes
 }
@@ -1405,9 +1328,6 @@ func (m MaybeEntry) Must() Entry {
 var (
 	fieldName__Entry_Slot      = _String{"slot"}
 	fieldName__Entry_Idx       = _String{"idx"}
-	fieldName__Entry_Batch     = _String{"batch"}
-	fieldName__Entry_BatchIdx  = _String{"batchIdx"}
-	fieldName__Entry_LastShred = _String{"lastShred"}
 	fieldName__Entry_NumHashes = _String{"numHashes"}
 	fieldName__Entry_Hash      = _String{"hash"}
 	fieldName__Entry_Txs       = _String{"txs"}
@@ -1424,12 +1344,6 @@ func (n Entry) LookupByString(key string) (datamodel.Node, error) {
 		return &n.slot, nil
 	case "idx":
 		return &n.idx, nil
-	case "batch":
-		return &n.batch, nil
-	case "batchIdx":
-		return &n.batchIdx, nil
-	case "lastShred":
-		return &n.lastShred, nil
 	case "numHashes":
 		return &n.numHashes, nil
 	case "hash":
@@ -1463,7 +1377,7 @@ type _Entry__MapItr struct {
 }
 
 func (itr *_Entry__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 8 {
+	if itr.idx >= 5 {
 		return nil, nil, datamodel.ErrIteratorOverread{}
 	}
 	switch itr.idx {
@@ -1474,21 +1388,12 @@ func (itr *_Entry__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) 
 		k = &fieldName__Entry_Idx
 		v = &itr.n.idx
 	case 2:
-		k = &fieldName__Entry_Batch
-		v = &itr.n.batch
-	case 3:
-		k = &fieldName__Entry_BatchIdx
-		v = &itr.n.batchIdx
-	case 4:
-		k = &fieldName__Entry_LastShred
-		v = &itr.n.lastShred
-	case 5:
 		k = &fieldName__Entry_NumHashes
 		v = &itr.n.numHashes
-	case 6:
+	case 3:
 		k = &fieldName__Entry_Hash
 		v = &itr.n.hash
-	case 7:
+	case 4:
 		k = &fieldName__Entry_Txs
 		v = &itr.n.txs
 	default:
@@ -1498,14 +1403,14 @@ func (itr *_Entry__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) 
 	return
 }
 func (itr *_Entry__MapItr) Done() bool {
-	return itr.idx >= 8
+	return itr.idx >= 5
 }
 
 func (Entry) ListIterator() datamodel.ListIterator {
 	return nil
 }
 func (Entry) Length() int64 {
-	return 8
+	return 5
 }
 func (Entry) IsAbsent() bool {
 	return false
@@ -1569,9 +1474,6 @@ type _Entry__Assembler struct {
 	cm           schema.Maybe
 	ca_slot      _Int__Assembler
 	ca_idx       _Int__Assembler
-	ca_batch     _Int__Assembler
-	ca_batchIdx  _Int__Assembler
-	ca_lastShred _Int__Assembler
 	ca_numHashes _Int__Assembler
 	ca_hash      _Hash__Assembler
 	ca_txs       _TransactionList__Assembler
@@ -1582,9 +1484,6 @@ func (na *_Entry__Assembler) reset() {
 	na.s = 0
 	na.ca_slot.reset()
 	na.ca_idx.reset()
-	na.ca_batch.reset()
-	na.ca_batchIdx.reset()
-	na.ca_lastShred.reset()
 	na.ca_numHashes.reset()
 	na.ca_hash.reset()
 	na.ca_txs.reset()
@@ -1593,13 +1492,10 @@ func (na *_Entry__Assembler) reset() {
 var (
 	fieldBit__Entry_Slot        = 1 << 0
 	fieldBit__Entry_Idx         = 1 << 1
-	fieldBit__Entry_Batch       = 1 << 2
-	fieldBit__Entry_BatchIdx    = 1 << 3
-	fieldBit__Entry_LastShred   = 1 << 4
-	fieldBit__Entry_NumHashes   = 1 << 5
-	fieldBit__Entry_Hash        = 1 << 6
-	fieldBit__Entry_Txs         = 1 << 7
-	fieldBits__Entry_sufficient = 0 + 1<<0 + 1<<1 + 1<<2 + 1<<3 + 1<<4 + 1<<5 + 1<<6 + 1<<7
+	fieldBit__Entry_NumHashes   = 1 << 2
+	fieldBit__Entry_Hash        = 1 << 3
+	fieldBit__Entry_Txs         = 1 << 4
+	fieldBits__Entry_sufficient = 0 + 1<<0 + 1<<1 + 1<<2 + 1<<3 + 1<<4
 )
 
 func (na *_Entry__Assembler) BeginMap(int64) (datamodel.MapAssembler, error) {
@@ -1716,7 +1612,7 @@ func (ma *_Entry__Assembler) valueFinishTidy() bool {
 	case 2:
 		switch ma.cm {
 		case schema.Maybe_Value:
-			ma.ca_batch.w = nil
+			ma.ca_numHashes.w = nil
 			ma.cm = schema.Maybe_Absent
 			ma.state = maState_initial
 			return true
@@ -1726,36 +1622,6 @@ func (ma *_Entry__Assembler) valueFinishTidy() bool {
 	case 3:
 		switch ma.cm {
 		case schema.Maybe_Value:
-			ma.ca_batchIdx.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 4:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.ca_lastShred.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 5:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.ca_numHashes.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 6:
-		switch ma.cm {
-		case schema.Maybe_Value:
 			ma.ca_hash.w = nil
 			ma.cm = schema.Maybe_Absent
 			ma.state = maState_initial
@@ -1763,7 +1629,7 @@ func (ma *_Entry__Assembler) valueFinishTidy() bool {
 		default:
 			return false
 		}
-	case 7:
+	case 4:
 		switch ma.cm {
 		case schema.Maybe_Value:
 			ma.ca_txs.w = nil
@@ -1813,43 +1679,13 @@ func (ma *_Entry__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		ma.ca_idx.w = &ma.w.idx
 		ma.ca_idx.m = &ma.cm
 		return &ma.ca_idx, nil
-	case "batch":
-		if ma.s&fieldBit__Entry_Batch != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Batch}
-		}
-		ma.s += fieldBit__Entry_Batch
-		ma.state = maState_midValue
-		ma.f = 2
-		ma.ca_batch.w = &ma.w.batch
-		ma.ca_batch.m = &ma.cm
-		return &ma.ca_batch, nil
-	case "batchIdx":
-		if ma.s&fieldBit__Entry_BatchIdx != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_BatchIdx}
-		}
-		ma.s += fieldBit__Entry_BatchIdx
-		ma.state = maState_midValue
-		ma.f = 3
-		ma.ca_batchIdx.w = &ma.w.batchIdx
-		ma.ca_batchIdx.m = &ma.cm
-		return &ma.ca_batchIdx, nil
-	case "lastShred":
-		if ma.s&fieldBit__Entry_LastShred != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_LastShred}
-		}
-		ma.s += fieldBit__Entry_LastShred
-		ma.state = maState_midValue
-		ma.f = 4
-		ma.ca_lastShred.w = &ma.w.lastShred
-		ma.ca_lastShred.m = &ma.cm
-		return &ma.ca_lastShred, nil
 	case "numHashes":
 		if ma.s&fieldBit__Entry_NumHashes != 0 {
 			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_NumHashes}
 		}
 		ma.s += fieldBit__Entry_NumHashes
 		ma.state = maState_midValue
-		ma.f = 5
+		ma.f = 2
 		ma.ca_numHashes.w = &ma.w.numHashes
 		ma.ca_numHashes.m = &ma.cm
 		return &ma.ca_numHashes, nil
@@ -1859,7 +1695,7 @@ func (ma *_Entry__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		}
 		ma.s += fieldBit__Entry_Hash
 		ma.state = maState_midValue
-		ma.f = 6
+		ma.f = 3
 		ma.ca_hash.w = &ma.w.hash
 		ma.ca_hash.m = &ma.cm
 		return &ma.ca_hash, nil
@@ -1869,7 +1705,7 @@ func (ma *_Entry__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		}
 		ma.s += fieldBit__Entry_Txs
 		ma.state = maState_midValue
-		ma.f = 7
+		ma.f = 4
 		ma.ca_txs.w = &ma.w.txs
 		ma.ca_txs.m = &ma.cm
 		return &ma.ca_txs, nil
@@ -1918,26 +1754,14 @@ func (ma *_Entry__Assembler) AssembleValue() datamodel.NodeAssembler {
 		ma.ca_idx.m = &ma.cm
 		return &ma.ca_idx
 	case 2:
-		ma.ca_batch.w = &ma.w.batch
-		ma.ca_batch.m = &ma.cm
-		return &ma.ca_batch
-	case 3:
-		ma.ca_batchIdx.w = &ma.w.batchIdx
-		ma.ca_batchIdx.m = &ma.cm
-		return &ma.ca_batchIdx
-	case 4:
-		ma.ca_lastShred.w = &ma.w.lastShred
-		ma.ca_lastShred.m = &ma.cm
-		return &ma.ca_lastShred
-	case 5:
 		ma.ca_numHashes.w = &ma.w.numHashes
 		ma.ca_numHashes.m = &ma.cm
 		return &ma.ca_numHashes
-	case 6:
+	case 3:
 		ma.ca_hash.w = &ma.w.hash
 		ma.ca_hash.m = &ma.cm
 		return &ma.ca_hash
-	case 7:
+	case 4:
 		ma.ca_txs.w = &ma.w.txs
 		ma.ca_txs.m = &ma.cm
 		return &ma.ca_txs
@@ -1967,15 +1791,6 @@ func (ma *_Entry__Assembler) Finish() error {
 		}
 		if ma.s&fieldBit__Entry_Idx == 0 {
 			err.Missing = append(err.Missing, "idx")
-		}
-		if ma.s&fieldBit__Entry_Batch == 0 {
-			err.Missing = append(err.Missing, "batch")
-		}
-		if ma.s&fieldBit__Entry_BatchIdx == 0 {
-			err.Missing = append(err.Missing, "batchIdx")
-		}
-		if ma.s&fieldBit__Entry_LastShred == 0 {
-			err.Missing = append(err.Missing, "lastShred")
 		}
 		if ma.s&fieldBit__Entry_NumHashes == 0 {
 			err.Missing = append(err.Missing, "numHashes")
@@ -2040,37 +1855,13 @@ func (ka *_Entry__KeyAssembler) AssignString(k string) error {
 		ka.state = maState_expectValue
 		ka.f = 1
 		return nil
-	case "batch":
-		if ka.s&fieldBit__Entry_Batch != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Batch}
-		}
-		ka.s += fieldBit__Entry_Batch
-		ka.state = maState_expectValue
-		ka.f = 2
-		return nil
-	case "batchIdx":
-		if ka.s&fieldBit__Entry_BatchIdx != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_BatchIdx}
-		}
-		ka.s += fieldBit__Entry_BatchIdx
-		ka.state = maState_expectValue
-		ka.f = 3
-		return nil
-	case "lastShred":
-		if ka.s&fieldBit__Entry_LastShred != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_LastShred}
-		}
-		ka.s += fieldBit__Entry_LastShred
-		ka.state = maState_expectValue
-		ka.f = 4
-		return nil
 	case "numHashes":
 		if ka.s&fieldBit__Entry_NumHashes != 0 {
 			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_NumHashes}
 		}
 		ka.s += fieldBit__Entry_NumHashes
 		ka.state = maState_expectValue
-		ka.f = 5
+		ka.f = 2
 		return nil
 	case "hash":
 		if ka.s&fieldBit__Entry_Hash != 0 {
@@ -2078,7 +1869,7 @@ func (ka *_Entry__KeyAssembler) AssignString(k string) error {
 		}
 		ka.s += fieldBit__Entry_Hash
 		ka.state = maState_expectValue
-		ka.f = 6
+		ka.f = 3
 		return nil
 	case "txs":
 		if ka.s&fieldBit__Entry_Txs != 0 {
@@ -2086,7 +1877,7 @@ func (ka *_Entry__KeyAssembler) AssignString(k string) error {
 		}
 		ka.s += fieldBit__Entry_Txs
 		ka.state = maState_expectValue
-		ka.f = 7
+		ka.f = 4
 		return nil
 	default:
 		return schema.ErrInvalidKey{TypeName: "ipldsch.Entry", Key: &_String{k}}
@@ -2117,93 +1908,75 @@ func (n Entry) Representation() datamodel.Node {
 
 type _Entry__Repr _Entry
 
-var (
-	fieldName__Entry_Slot_serial      = _String{"slot"}
-	fieldName__Entry_Idx_serial       = _String{"idx"}
-	fieldName__Entry_Batch_serial     = _String{"batch"}
-	fieldName__Entry_BatchIdx_serial  = _String{"batchIdx"}
-	fieldName__Entry_LastShred_serial = _String{"lastShred"}
-	fieldName__Entry_NumHashes_serial = _String{"numHashes"}
-	fieldName__Entry_Hash_serial      = _String{"hash"}
-	fieldName__Entry_Txs_serial       = _String{"txs"}
-)
 var _ datamodel.Node = &_Entry__Repr{}
 
 func (_Entry__Repr) Kind() datamodel.Kind {
-	return datamodel.Kind_Map
+	return datamodel.Kind_List
 }
-func (n *_Entry__Repr) LookupByString(key string) (datamodel.Node, error) {
-	switch key {
-	case "slot":
-		return n.slot.Representation(), nil
-	case "idx":
-		return n.idx.Representation(), nil
-	case "batch":
-		return n.batch.Representation(), nil
-	case "batchIdx":
-		return n.batchIdx.Representation(), nil
-	case "lastShred":
-		return n.lastShred.Representation(), nil
-	case "numHashes":
-		return n.numHashes.Representation(), nil
-	case "hash":
-		return n.hash.Representation(), nil
-	case "txs":
-		return n.txs.Representation(), nil
-	default:
-		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfString(key)}
-	}
+func (_Entry__Repr) LookupByString(string) (datamodel.Node, error) {
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.LookupByString("")
 }
 func (n *_Entry__Repr) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
-	ks, err := key.AsString()
+	ki, err := key.AsInt()
 	if err != nil {
 		return nil, err
 	}
-	return n.LookupByString(ks)
+	return n.LookupByIndex(ki)
 }
-func (_Entry__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.LookupByIndex(0)
+func (n *_Entry__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
+	switch idx {
+	case 0:
+		return n.slot.Representation(), nil
+	case 1:
+		return n.idx.Representation(), nil
+	case 2:
+		return n.numHashes.Representation(), nil
+	case 3:
+		return n.hash.Representation(), nil
+	case 4:
+		return n.txs.Representation(), nil
+	default:
+		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(idx)}
+	}
 }
 func (n _Entry__Repr) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
-	return n.LookupByString(seg.String())
+	i, err := seg.Index()
+	if err != nil {
+		return nil, datamodel.ErrInvalidSegmentForList{TypeName: "ipldsch.Entry.Repr", TroubleSegment: seg, Reason: err}
+	}
+	return n.LookupByIndex(i)
 }
-func (n *_Entry__Repr) MapIterator() datamodel.MapIterator {
-	return &_Entry__ReprMapItr{n, 0}
+func (_Entry__Repr) MapIterator() datamodel.MapIterator {
+	return nil
+}
+func (n *_Entry__Repr) ListIterator() datamodel.ListIterator {
+	return &_Entry__ReprListItr{n, 0}
 }
 
-type _Entry__ReprMapItr struct {
+type _Entry__ReprListItr struct {
 	n   *_Entry__Repr
 	idx int
 }
 
-func (itr *_Entry__ReprMapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 8 {
-		return nil, nil, datamodel.ErrIteratorOverread{}
+func (itr *_Entry__ReprListItr) Next() (idx int64, v datamodel.Node, err error) {
+	if itr.idx >= 5 {
+		return -1, nil, datamodel.ErrIteratorOverread{}
 	}
 	switch itr.idx {
 	case 0:
-		k = &fieldName__Entry_Slot_serial
+		idx = int64(itr.idx)
 		v = itr.n.slot.Representation()
 	case 1:
-		k = &fieldName__Entry_Idx_serial
+		idx = int64(itr.idx)
 		v = itr.n.idx.Representation()
 	case 2:
-		k = &fieldName__Entry_Batch_serial
-		v = itr.n.batch.Representation()
-	case 3:
-		k = &fieldName__Entry_BatchIdx_serial
-		v = itr.n.batchIdx.Representation()
-	case 4:
-		k = &fieldName__Entry_LastShred_serial
-		v = itr.n.lastShred.Representation()
-	case 5:
-		k = &fieldName__Entry_NumHashes_serial
+		idx = int64(itr.idx)
 		v = itr.n.numHashes.Representation()
-	case 6:
-		k = &fieldName__Entry_Hash_serial
+	case 3:
+		idx = int64(itr.idx)
 		v = itr.n.hash.Representation()
-	case 7:
-		k = &fieldName__Entry_Txs_serial
+	case 4:
+		idx = int64(itr.idx)
 		v = itr.n.txs.Representation()
 	default:
 		panic("unreachable")
@@ -2211,14 +1984,12 @@ func (itr *_Entry__ReprMapItr) Next() (k datamodel.Node, v datamodel.Node, _ err
 	itr.idx++
 	return
 }
-func (itr *_Entry__ReprMapItr) Done() bool {
-	return itr.idx >= 8
+func (itr *_Entry__ReprListItr) Done() bool {
+	return itr.idx >= 5
 }
-func (_Entry__Repr) ListIterator() datamodel.ListIterator {
-	return nil
-}
+
 func (rn *_Entry__Repr) Length() int64 {
-	l := 8
+	l := 5
 	return int64(l)
 }
 func (_Entry__Repr) IsAbsent() bool {
@@ -2228,22 +1999,22 @@ func (_Entry__Repr) IsNull() bool {
 	return false
 }
 func (_Entry__Repr) AsBool() (bool, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.AsBool()
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.AsBool()
 }
 func (_Entry__Repr) AsInt() (int64, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.AsInt()
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.AsInt()
 }
 func (_Entry__Repr) AsFloat() (float64, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.AsFloat()
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.AsFloat()
 }
 func (_Entry__Repr) AsString() (string, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.AsString()
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.AsString()
 }
 func (_Entry__Repr) AsBytes() ([]byte, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.AsBytes()
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.AsBytes()
 }
 func (_Entry__Repr) AsLink() (datamodel.Link, error) {
-	return mixins.Map{TypeName: "ipldsch.Entry.Repr"}.AsLink()
+	return mixins.List{TypeName: "ipldsch.Entry.Repr"}.AsLink()
 }
 func (_Entry__Repr) Prototype() datamodel.NodePrototype {
 	return _Entry__ReprPrototype{}
@@ -2276,34 +2047,30 @@ func (nb *_Entry__ReprBuilder) Reset() {
 type _Entry__ReprAssembler struct {
 	w     *_Entry
 	m     *schema.Maybe
-	state maState
-	s     int
+	state laState
 	f     int
 
 	cm           schema.Maybe
 	ca_slot      _Int__ReprAssembler
 	ca_idx       _Int__ReprAssembler
-	ca_batch     _Int__ReprAssembler
-	ca_batchIdx  _Int__ReprAssembler
-	ca_lastShred _Int__ReprAssembler
 	ca_numHashes _Int__ReprAssembler
 	ca_hash      _Hash__ReprAssembler
 	ca_txs       _TransactionList__ReprAssembler
 }
 
 func (na *_Entry__ReprAssembler) reset() {
-	na.state = maState_initial
-	na.s = 0
+	na.state = laState_initial
+	na.f = 0
 	na.ca_slot.reset()
 	na.ca_idx.reset()
-	na.ca_batch.reset()
-	na.ca_batchIdx.reset()
-	na.ca_lastShred.reset()
 	na.ca_numHashes.reset()
 	na.ca_hash.reset()
 	na.ca_txs.reset()
 }
-func (na *_Entry__ReprAssembler) BeginMap(int64) (datamodel.MapAssembler, error) {
+func (_Entry__ReprAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.BeginMap(0)
+}
+func (na *_Entry__ReprAssembler) BeginList(int64) (datamodel.ListAssembler, error) {
 	switch *na.m {
 	case schema.Maybe_Value, schema.Maybe_Null:
 		panic("invalid state: cannot assign into assembler that's already finished")
@@ -2316,16 +2083,13 @@ func (na *_Entry__ReprAssembler) BeginMap(int64) (datamodel.MapAssembler, error)
 	}
 	return na, nil
 }
-func (_Entry__ReprAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.BeginList(0)
-}
 func (na *_Entry__ReprAssembler) AssignNull() error {
 	switch *na.m {
 	case allowNull:
 		*na.m = schema.Maybe_Null
 		return nil
 	case schema.Maybe_Absent:
-		return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr.Repr"}.AssignNull()
+		return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr.Repr"}.AssignNull()
 	case schema.Maybe_Value, schema.Maybe_Null:
 		panic("invalid state: cannot assign into assembler that's already finished")
 	case midvalue:
@@ -2334,22 +2098,22 @@ func (na *_Entry__ReprAssembler) AssignNull() error {
 	panic("unreachable")
 }
 func (_Entry__ReprAssembler) AssignBool(bool) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignBool(false)
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignBool(false)
 }
 func (_Entry__ReprAssembler) AssignInt(int64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignInt(0)
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignInt(0)
 }
 func (_Entry__ReprAssembler) AssignFloat(float64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignFloat(0)
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignFloat(0)
 }
 func (_Entry__ReprAssembler) AssignString(string) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignString("")
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignString("")
 }
 func (_Entry__ReprAssembler) AssignBytes([]byte) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignBytes(nil)
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignBytes(nil)
 }
 func (_Entry__ReprAssembler) AssignLink(datamodel.Link) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignLink(nil)
+	return mixins.ListAssembler{TypeName: "ipldsch.Entry.Repr"}.AssignLink(nil)
 }
 func (na *_Entry__ReprAssembler) AssignNode(v datamodel.Node) error {
 	if v.IsNull() {
@@ -2371,16 +2135,13 @@ func (na *_Entry__ReprAssembler) AssignNode(v datamodel.Node) error {
 		*na.m = schema.Maybe_Value
 		return nil
 	}
-	if v.Kind() != datamodel.Kind_Map {
-		return datamodel.ErrWrongKind{TypeName: "ipldsch.Entry.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustMap, ActualKind: v.Kind()}
+	if v.Kind() != datamodel.Kind_List {
+		return datamodel.ErrWrongKind{TypeName: "ipldsch.Entry.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustList, ActualKind: v.Kind()}
 	}
-	itr := v.MapIterator()
+	itr := v.ListIterator()
 	for !itr.Done() {
-		k, v, err := itr.Next()
+		_, v, err := itr.Next()
 		if err != nil {
-			return err
-		}
-		if err := na.AssembleKey().AssignNode(k); err != nil {
 			return err
 		}
 		if err := na.AssembleValue().AssignNode(v); err != nil {
@@ -2392,76 +2153,54 @@ func (na *_Entry__ReprAssembler) AssignNode(v datamodel.Node) error {
 func (_Entry__ReprAssembler) Prototype() datamodel.NodePrototype {
 	return _Entry__ReprPrototype{}
 }
-func (ma *_Entry__ReprAssembler) valueFinishTidy() bool {
-	switch ma.f {
+func (la *_Entry__ReprAssembler) valueFinishTidy() bool {
+	switch la.f {
 	case 0:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
 		}
 	case 1:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
 		}
 	case 2:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
 		}
 	case 3:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
 		}
 	case 4:
-		switch ma.cm {
+		switch la.cm {
 		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 5:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 6:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 7:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
 			return true
 		default:
 			return false
@@ -2470,336 +2209,63 @@ func (ma *_Entry__ReprAssembler) valueFinishTidy() bool {
 		panic("unreachable")
 	}
 }
-func (ma *_Entry__ReprAssembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
-	switch ma.state {
-	case maState_initial:
+func (la *_Entry__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
+	switch la.state {
+	case laState_initial:
 		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleEntry cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleEntry cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleEntry cannot be called when in the middle of assembling a value")
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: AssembleValue cannot be called when still in the middle of assembling the previous value")
 		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleEntry cannot be called on an assembler that's already finished")
-	}
-	switch k {
-	case "slot":
-		if ma.s&fieldBit__Entry_Slot != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Slot_serial}
-		}
-		ma.s += fieldBit__Entry_Slot
-		ma.state = maState_midValue
-		ma.f = 0
-		ma.ca_slot.w = &ma.w.slot
-		ma.ca_slot.m = &ma.cm
-		return &ma.ca_slot, nil
-	case "idx":
-		if ma.s&fieldBit__Entry_Idx != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Idx_serial}
-		}
-		ma.s += fieldBit__Entry_Idx
-		ma.state = maState_midValue
-		ma.f = 1
-		ma.ca_idx.w = &ma.w.idx
-		ma.ca_idx.m = &ma.cm
-		return &ma.ca_idx, nil
-	case "batch":
-		if ma.s&fieldBit__Entry_Batch != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Batch_serial}
-		}
-		ma.s += fieldBit__Entry_Batch
-		ma.state = maState_midValue
-		ma.f = 2
-		ma.ca_batch.w = &ma.w.batch
-		ma.ca_batch.m = &ma.cm
-		return &ma.ca_batch, nil
-	case "batchIdx":
-		if ma.s&fieldBit__Entry_BatchIdx != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_BatchIdx_serial}
-		}
-		ma.s += fieldBit__Entry_BatchIdx
-		ma.state = maState_midValue
-		ma.f = 3
-		ma.ca_batchIdx.w = &ma.w.batchIdx
-		ma.ca_batchIdx.m = &ma.cm
-		return &ma.ca_batchIdx, nil
-	case "lastShred":
-		if ma.s&fieldBit__Entry_LastShred != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_LastShred_serial}
-		}
-		ma.s += fieldBit__Entry_LastShred
-		ma.state = maState_midValue
-		ma.f = 4
-		ma.ca_lastShred.w = &ma.w.lastShred
-		ma.ca_lastShred.m = &ma.cm
-		return &ma.ca_lastShred, nil
-	case "numHashes":
-		if ma.s&fieldBit__Entry_NumHashes != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_NumHashes_serial}
-		}
-		ma.s += fieldBit__Entry_NumHashes
-		ma.state = maState_midValue
-		ma.f = 5
-		ma.ca_numHashes.w = &ma.w.numHashes
-		ma.ca_numHashes.m = &ma.cm
-		return &ma.ca_numHashes, nil
-	case "hash":
-		if ma.s&fieldBit__Entry_Hash != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Hash_serial}
-		}
-		ma.s += fieldBit__Entry_Hash
-		ma.state = maState_midValue
-		ma.f = 6
-		ma.ca_hash.w = &ma.w.hash
-		ma.ca_hash.m = &ma.cm
-		return &ma.ca_hash, nil
-	case "txs":
-		if ma.s&fieldBit__Entry_Txs != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Txs_serial}
-		}
-		ma.s += fieldBit__Entry_Txs
-		ma.state = maState_midValue
-		ma.f = 7
-		ma.ca_txs.w = &ma.w.txs
-		ma.ca_txs.m = &ma.cm
-		return &ma.ca_txs, nil
-	default:
-	}
-	return nil, schema.ErrInvalidKey{TypeName: "ipldsch.Entry.Repr", Key: &_String{k}}
-}
-func (ma *_Entry__ReprAssembler) AssembleKey() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleKey cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleKey cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleKey cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleKey cannot be called on an assembler that's already finished")
-	}
-	ma.state = maState_midKey
-	return (*_Entry__ReprKeyAssembler)(ma)
-}
-func (ma *_Entry__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		panic("invalid state: AssembleValue cannot be called when no key is primed")
-	case maState_midKey:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		// carry on
-	case maState_midValue:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling another value")
-	case maState_finished:
+	case laState_finished:
 		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
 	}
-	ma.state = maState_midValue
-	switch ma.f {
+	if la.f >= 5 {
+		return _ErrorThunkAssembler{schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(5)}}
+	}
+	la.state = laState_midValue
+	switch la.f {
 	case 0:
-		ma.ca_slot.w = &ma.w.slot
-		ma.ca_slot.m = &ma.cm
-		return &ma.ca_slot
+		la.ca_slot.w = &la.w.slot
+		la.ca_slot.m = &la.cm
+		return &la.ca_slot
 	case 1:
-		ma.ca_idx.w = &ma.w.idx
-		ma.ca_idx.m = &ma.cm
-		return &ma.ca_idx
+		la.ca_idx.w = &la.w.idx
+		la.ca_idx.m = &la.cm
+		return &la.ca_idx
 	case 2:
-		ma.ca_batch.w = &ma.w.batch
-		ma.ca_batch.m = &ma.cm
-		return &ma.ca_batch
+		la.ca_numHashes.w = &la.w.numHashes
+		la.ca_numHashes.m = &la.cm
+		return &la.ca_numHashes
 	case 3:
-		ma.ca_batchIdx.w = &ma.w.batchIdx
-		ma.ca_batchIdx.m = &ma.cm
-		return &ma.ca_batchIdx
+		la.ca_hash.w = &la.w.hash
+		la.ca_hash.m = &la.cm
+		return &la.ca_hash
 	case 4:
-		ma.ca_lastShred.w = &ma.w.lastShred
-		ma.ca_lastShred.m = &ma.cm
-		return &ma.ca_lastShred
-	case 5:
-		ma.ca_numHashes.w = &ma.w.numHashes
-		ma.ca_numHashes.m = &ma.cm
-		return &ma.ca_numHashes
-	case 6:
-		ma.ca_hash.w = &ma.w.hash
-		ma.ca_hash.m = &ma.cm
-		return &ma.ca_hash
-	case 7:
-		ma.ca_txs.w = &ma.w.txs
-		ma.ca_txs.m = &ma.cm
-		return &ma.ca_txs
+		la.ca_txs.w = &la.w.txs
+		la.ca_txs.m = &la.cm
+		return &la.ca_txs
 	default:
 		panic("unreachable")
 	}
 }
-func (ma *_Entry__ReprAssembler) Finish() error {
-	switch ma.state {
-	case maState_initial:
+func (la *_Entry__ReprAssembler) Finish() error {
+	switch la.state {
+	case laState_initial:
 		// carry on
-	case maState_midKey:
-		panic("invalid state: Finish cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		panic("invalid state: Finish cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
+	case laState_midValue:
+		if !la.valueFinishTidy() {
 			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
 		} // if tidy success: carry on
-	case maState_finished:
+	case laState_finished:
 		panic("invalid state: Finish cannot be called on an assembler that's already finished")
 	}
-	if ma.s&fieldBits__Entry_sufficient != fieldBits__Entry_sufficient {
-		err := schema.ErrMissingRequiredField{Missing: make([]string, 0)}
-		if ma.s&fieldBit__Entry_Slot == 0 {
-			err.Missing = append(err.Missing, "slot")
-		}
-		if ma.s&fieldBit__Entry_Idx == 0 {
-			err.Missing = append(err.Missing, "idx")
-		}
-		if ma.s&fieldBit__Entry_Batch == 0 {
-			err.Missing = append(err.Missing, "batch")
-		}
-		if ma.s&fieldBit__Entry_BatchIdx == 0 {
-			err.Missing = append(err.Missing, "batchIdx")
-		}
-		if ma.s&fieldBit__Entry_LastShred == 0 {
-			err.Missing = append(err.Missing, "lastShred")
-		}
-		if ma.s&fieldBit__Entry_NumHashes == 0 {
-			err.Missing = append(err.Missing, "numHashes")
-		}
-		if ma.s&fieldBit__Entry_Hash == 0 {
-			err.Missing = append(err.Missing, "hash")
-		}
-		if ma.s&fieldBit__Entry_Txs == 0 {
-			err.Missing = append(err.Missing, "txs")
-		}
-		return err
-	}
-	ma.state = maState_finished
-	*ma.m = schema.Maybe_Value
+	la.state = laState_finished
+	*la.m = schema.Maybe_Value
 	return nil
 }
-func (ma *_Entry__ReprAssembler) KeyPrototype() datamodel.NodePrototype {
-	return _String__Prototype{}
-}
-func (ma *_Entry__ReprAssembler) ValuePrototype(k string) datamodel.NodePrototype {
-	panic("todo structbuilder mapassembler repr valueprototype")
-}
-
-type _Entry__ReprKeyAssembler _Entry__ReprAssembler
-
-func (_Entry__ReprKeyAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.BeginMap(0)
-}
-func (_Entry__ReprKeyAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.BeginList(0)
-}
-func (na *_Entry__ReprKeyAssembler) AssignNull() error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.AssignNull()
-}
-func (_Entry__ReprKeyAssembler) AssignBool(bool) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.AssignBool(false)
-}
-func (_Entry__ReprKeyAssembler) AssignInt(int64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.AssignInt(0)
-}
-func (_Entry__ReprKeyAssembler) AssignFloat(float64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.AssignFloat(0)
-}
-func (ka *_Entry__ReprKeyAssembler) AssignString(k string) error {
-	if ka.state != maState_midKey {
-		panic("misuse: KeyAssembler held beyond its valid lifetime")
-	}
-	switch k {
-	case "slot":
-		if ka.s&fieldBit__Entry_Slot != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Slot_serial}
-		}
-		ka.s += fieldBit__Entry_Slot
-		ka.state = maState_expectValue
-		ka.f = 0
-		return nil
-	case "idx":
-		if ka.s&fieldBit__Entry_Idx != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Idx_serial}
-		}
-		ka.s += fieldBit__Entry_Idx
-		ka.state = maState_expectValue
-		ka.f = 1
-		return nil
-	case "batch":
-		if ka.s&fieldBit__Entry_Batch != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Batch_serial}
-		}
-		ka.s += fieldBit__Entry_Batch
-		ka.state = maState_expectValue
-		ka.f = 2
-		return nil
-	case "batchIdx":
-		if ka.s&fieldBit__Entry_BatchIdx != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_BatchIdx_serial}
-		}
-		ka.s += fieldBit__Entry_BatchIdx
-		ka.state = maState_expectValue
-		ka.f = 3
-		return nil
-	case "lastShred":
-		if ka.s&fieldBit__Entry_LastShred != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_LastShred_serial}
-		}
-		ka.s += fieldBit__Entry_LastShred
-		ka.state = maState_expectValue
-		ka.f = 4
-		return nil
-	case "numHashes":
-		if ka.s&fieldBit__Entry_NumHashes != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_NumHashes_serial}
-		}
-		ka.s += fieldBit__Entry_NumHashes
-		ka.state = maState_expectValue
-		ka.f = 5
-		return nil
-	case "hash":
-		if ka.s&fieldBit__Entry_Hash != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Hash_serial}
-		}
-		ka.s += fieldBit__Entry_Hash
-		ka.state = maState_expectValue
-		ka.f = 6
-		return nil
-	case "txs":
-		if ka.s&fieldBit__Entry_Txs != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Txs_serial}
-		}
-		ka.s += fieldBit__Entry_Txs
-		ka.state = maState_expectValue
-		ka.f = 7
-		return nil
-	}
-	return schema.ErrInvalidKey{TypeName: "ipldsch.Entry.Repr", Key: &_String{k}}
-}
-func (_Entry__ReprKeyAssembler) AssignBytes([]byte) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.AssignBytes(nil)
-}
-func (_Entry__ReprKeyAssembler) AssignLink(datamodel.Link) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Entry.Repr.KeyAssembler"}.AssignLink(nil)
-}
-func (ka *_Entry__ReprKeyAssembler) AssignNode(v datamodel.Node) error {
-	if v2, err := v.AsString(); err != nil {
-		return err
-	} else {
-		return ka.AssignString(v2)
-	}
-}
-func (_Entry__ReprKeyAssembler) Prototype() datamodel.NodePrototype {
-	return _String__Prototype{}
+func (la *_Entry__ReprAssembler) ValuePrototype(_ int64) datamodel.NodePrototype {
+	panic("todo structbuilder tuplerepr valueprototype")
 }
 
 func (n Float) Float() float64 {
@@ -3416,1020 +2882,6 @@ var _ datamodel.Node = &_Int__Repr{}
 
 type _Int__ReprPrototype = _Int__Prototype
 type _Int__ReprAssembler = _Int__Assembler
-
-func (n _Ledger) FieldStartSlot() Int {
-	return &n.startSlot
-}
-func (n _Ledger) FieldNumSlots() Int {
-	return &n.numSlots
-}
-func (n _Ledger) FieldNodes() List__Link {
-	return &n.nodes
-}
-
-type _Ledger__Maybe struct {
-	m schema.Maybe
-	v Ledger
-}
-type MaybeLedger = *_Ledger__Maybe
-
-func (m MaybeLedger) IsNull() bool {
-	return m.m == schema.Maybe_Null
-}
-func (m MaybeLedger) IsAbsent() bool {
-	return m.m == schema.Maybe_Absent
-}
-func (m MaybeLedger) Exists() bool {
-	return m.m == schema.Maybe_Value
-}
-func (m MaybeLedger) AsNode() datamodel.Node {
-	switch m.m {
-	case schema.Maybe_Absent:
-		return datamodel.Absent
-	case schema.Maybe_Null:
-		return datamodel.Null
-	case schema.Maybe_Value:
-		return m.v
-	default:
-		panic("unreachable")
-	}
-}
-func (m MaybeLedger) Must() Ledger {
-	if !m.Exists() {
-		panic("unbox of a maybe rejected")
-	}
-	return m.v
-}
-
-var (
-	fieldName__Ledger_StartSlot = _String{"startSlot"}
-	fieldName__Ledger_NumSlots  = _String{"numSlots"}
-	fieldName__Ledger_Nodes     = _String{"nodes"}
-)
-var _ datamodel.Node = (Ledger)(&_Ledger{})
-var _ schema.TypedNode = (Ledger)(&_Ledger{})
-
-func (Ledger) Kind() datamodel.Kind {
-	return datamodel.Kind_Map
-}
-func (n Ledger) LookupByString(key string) (datamodel.Node, error) {
-	switch key {
-	case "startSlot":
-		return &n.startSlot, nil
-	case "numSlots":
-		return &n.numSlots, nil
-	case "nodes":
-		return &n.nodes, nil
-	default:
-		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfString(key)}
-	}
-}
-func (n Ledger) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
-	ks, err := key.AsString()
-	if err != nil {
-		return nil, err
-	}
-	return n.LookupByString(ks)
-}
-func (Ledger) LookupByIndex(idx int64) (datamodel.Node, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.LookupByIndex(0)
-}
-func (n Ledger) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
-	return n.LookupByString(seg.String())
-}
-func (n Ledger) MapIterator() datamodel.MapIterator {
-	return &_Ledger__MapItr{n, 0}
-}
-
-type _Ledger__MapItr struct {
-	n   Ledger
-	idx int
-}
-
-func (itr *_Ledger__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 3 {
-		return nil, nil, datamodel.ErrIteratorOverread{}
-	}
-	switch itr.idx {
-	case 0:
-		k = &fieldName__Ledger_StartSlot
-		v = &itr.n.startSlot
-	case 1:
-		k = &fieldName__Ledger_NumSlots
-		v = &itr.n.numSlots
-	case 2:
-		k = &fieldName__Ledger_Nodes
-		v = &itr.n.nodes
-	default:
-		panic("unreachable")
-	}
-	itr.idx++
-	return
-}
-func (itr *_Ledger__MapItr) Done() bool {
-	return itr.idx >= 3
-}
-
-func (Ledger) ListIterator() datamodel.ListIterator {
-	return nil
-}
-func (Ledger) Length() int64 {
-	return 3
-}
-func (Ledger) IsAbsent() bool {
-	return false
-}
-func (Ledger) IsNull() bool {
-	return false
-}
-func (Ledger) AsBool() (bool, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.AsBool()
-}
-func (Ledger) AsInt() (int64, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.AsInt()
-}
-func (Ledger) AsFloat() (float64, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.AsFloat()
-}
-func (Ledger) AsString() (string, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.AsString()
-}
-func (Ledger) AsBytes() ([]byte, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.AsBytes()
-}
-func (Ledger) AsLink() (datamodel.Link, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger"}.AsLink()
-}
-func (Ledger) Prototype() datamodel.NodePrototype {
-	return _Ledger__Prototype{}
-}
-
-type _Ledger__Prototype struct{}
-
-func (_Ledger__Prototype) NewBuilder() datamodel.NodeBuilder {
-	var nb _Ledger__Builder
-	nb.Reset()
-	return &nb
-}
-
-type _Ledger__Builder struct {
-	_Ledger__Assembler
-}
-
-func (nb *_Ledger__Builder) Build() datamodel.Node {
-	if *nb.m != schema.Maybe_Value {
-		panic("invalid state: cannot call Build on an assembler that's not finished")
-	}
-	return nb.w
-}
-func (nb *_Ledger__Builder) Reset() {
-	var w _Ledger
-	var m schema.Maybe
-	*nb = _Ledger__Builder{_Ledger__Assembler{w: &w, m: &m}}
-}
-
-type _Ledger__Assembler struct {
-	w     *_Ledger
-	m     *schema.Maybe
-	state maState
-	s     int
-	f     int
-
-	cm           schema.Maybe
-	ca_startSlot _Int__Assembler
-	ca_numSlots  _Int__Assembler
-	ca_nodes     _List__Link__Assembler
-}
-
-func (na *_Ledger__Assembler) reset() {
-	na.state = maState_initial
-	na.s = 0
-	na.ca_startSlot.reset()
-	na.ca_numSlots.reset()
-	na.ca_nodes.reset()
-}
-
-var (
-	fieldBit__Ledger_StartSlot   = 1 << 0
-	fieldBit__Ledger_NumSlots    = 1 << 1
-	fieldBit__Ledger_Nodes       = 1 << 2
-	fieldBits__Ledger_sufficient = 0 + 1<<0 + 1<<1 + 1<<2
-)
-
-func (na *_Ledger__Assembler) BeginMap(int64) (datamodel.MapAssembler, error) {
-	switch *na.m {
-	case schema.Maybe_Value, schema.Maybe_Null:
-		panic("invalid state: cannot assign into assembler that's already finished")
-	case midvalue:
-		panic("invalid state: it makes no sense to 'begin' twice on the same assembler!")
-	}
-	*na.m = midvalue
-	if na.w == nil {
-		na.w = &_Ledger{}
-	}
-	return na, nil
-}
-func (_Ledger__Assembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.BeginList(0)
-}
-func (na *_Ledger__Assembler) AssignNull() error {
-	switch *na.m {
-	case allowNull:
-		*na.m = schema.Maybe_Null
-		return nil
-	case schema.Maybe_Absent:
-		return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignNull()
-	case schema.Maybe_Value, schema.Maybe_Null:
-		panic("invalid state: cannot assign into assembler that's already finished")
-	case midvalue:
-		panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
-	}
-	panic("unreachable")
-}
-func (_Ledger__Assembler) AssignBool(bool) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignBool(false)
-}
-func (_Ledger__Assembler) AssignInt(int64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignInt(0)
-}
-func (_Ledger__Assembler) AssignFloat(float64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignFloat(0)
-}
-func (_Ledger__Assembler) AssignString(string) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignString("")
-}
-func (_Ledger__Assembler) AssignBytes([]byte) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignBytes(nil)
-}
-func (_Ledger__Assembler) AssignLink(datamodel.Link) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger"}.AssignLink(nil)
-}
-func (na *_Ledger__Assembler) AssignNode(v datamodel.Node) error {
-	if v.IsNull() {
-		return na.AssignNull()
-	}
-	if v2, ok := v.(*_Ledger); ok {
-		switch *na.m {
-		case schema.Maybe_Value, schema.Maybe_Null:
-			panic("invalid state: cannot assign into assembler that's already finished")
-		case midvalue:
-			panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
-		}
-		if na.w == nil {
-			na.w = v2
-			*na.m = schema.Maybe_Value
-			return nil
-		}
-		*na.w = *v2
-		*na.m = schema.Maybe_Value
-		return nil
-	}
-	if v.Kind() != datamodel.Kind_Map {
-		return datamodel.ErrWrongKind{TypeName: "ipldsch.Ledger", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustMap, ActualKind: v.Kind()}
-	}
-	itr := v.MapIterator()
-	for !itr.Done() {
-		k, v, err := itr.Next()
-		if err != nil {
-			return err
-		}
-		if err := na.AssembleKey().AssignNode(k); err != nil {
-			return err
-		}
-		if err := na.AssembleValue().AssignNode(v); err != nil {
-			return err
-		}
-	}
-	return na.Finish()
-}
-func (_Ledger__Assembler) Prototype() datamodel.NodePrototype {
-	return _Ledger__Prototype{}
-}
-func (ma *_Ledger__Assembler) valueFinishTidy() bool {
-	switch ma.f {
-	case 0:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.ca_startSlot.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 1:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.ca_numSlots.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 2:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.ca_nodes.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	default:
-		panic("unreachable")
-	}
-}
-func (ma *_Ledger__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleEntry cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleEntry cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleEntry cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleEntry cannot be called on an assembler that's already finished")
-	}
-	switch k {
-	case "startSlot":
-		if ma.s&fieldBit__Ledger_StartSlot != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_StartSlot}
-		}
-		ma.s += fieldBit__Ledger_StartSlot
-		ma.state = maState_midValue
-		ma.f = 0
-		ma.ca_startSlot.w = &ma.w.startSlot
-		ma.ca_startSlot.m = &ma.cm
-		return &ma.ca_startSlot, nil
-	case "numSlots":
-		if ma.s&fieldBit__Ledger_NumSlots != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_NumSlots}
-		}
-		ma.s += fieldBit__Ledger_NumSlots
-		ma.state = maState_midValue
-		ma.f = 1
-		ma.ca_numSlots.w = &ma.w.numSlots
-		ma.ca_numSlots.m = &ma.cm
-		return &ma.ca_numSlots, nil
-	case "nodes":
-		if ma.s&fieldBit__Ledger_Nodes != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_Nodes}
-		}
-		ma.s += fieldBit__Ledger_Nodes
-		ma.state = maState_midValue
-		ma.f = 2
-		ma.ca_nodes.w = &ma.w.nodes
-		ma.ca_nodes.m = &ma.cm
-		return &ma.ca_nodes, nil
-	}
-	return nil, schema.ErrInvalidKey{TypeName: "ipldsch.Ledger", Key: &_String{k}}
-}
-func (ma *_Ledger__Assembler) AssembleKey() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleKey cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleKey cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleKey cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleKey cannot be called on an assembler that's already finished")
-	}
-	ma.state = maState_midKey
-	return (*_Ledger__KeyAssembler)(ma)
-}
-func (ma *_Ledger__Assembler) AssembleValue() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		panic("invalid state: AssembleValue cannot be called when no key is primed")
-	case maState_midKey:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		// carry on
-	case maState_midValue:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling another value")
-	case maState_finished:
-		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
-	}
-	ma.state = maState_midValue
-	switch ma.f {
-	case 0:
-		ma.ca_startSlot.w = &ma.w.startSlot
-		ma.ca_startSlot.m = &ma.cm
-		return &ma.ca_startSlot
-	case 1:
-		ma.ca_numSlots.w = &ma.w.numSlots
-		ma.ca_numSlots.m = &ma.cm
-		return &ma.ca_numSlots
-	case 2:
-		ma.ca_nodes.w = &ma.w.nodes
-		ma.ca_nodes.m = &ma.cm
-		return &ma.ca_nodes
-	default:
-		panic("unreachable")
-	}
-}
-func (ma *_Ledger__Assembler) Finish() error {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: Finish cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		panic("invalid state: Finish cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: Finish cannot be called on an assembler that's already finished")
-	}
-	if ma.s&fieldBits__Ledger_sufficient != fieldBits__Ledger_sufficient {
-		err := schema.ErrMissingRequiredField{Missing: make([]string, 0)}
-		if ma.s&fieldBit__Ledger_StartSlot == 0 {
-			err.Missing = append(err.Missing, "startSlot")
-		}
-		if ma.s&fieldBit__Ledger_NumSlots == 0 {
-			err.Missing = append(err.Missing, "numSlots")
-		}
-		if ma.s&fieldBit__Ledger_Nodes == 0 {
-			err.Missing = append(err.Missing, "nodes")
-		}
-		return err
-	}
-	ma.state = maState_finished
-	*ma.m = schema.Maybe_Value
-	return nil
-}
-func (ma *_Ledger__Assembler) KeyPrototype() datamodel.NodePrototype {
-	return _String__Prototype{}
-}
-func (ma *_Ledger__Assembler) ValuePrototype(k string) datamodel.NodePrototype {
-	panic("todo structbuilder mapassembler valueprototype")
-}
-
-type _Ledger__KeyAssembler _Ledger__Assembler
-
-func (_Ledger__KeyAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.BeginMap(0)
-}
-func (_Ledger__KeyAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.BeginList(0)
-}
-func (na *_Ledger__KeyAssembler) AssignNull() error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.AssignNull()
-}
-func (_Ledger__KeyAssembler) AssignBool(bool) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.AssignBool(false)
-}
-func (_Ledger__KeyAssembler) AssignInt(int64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.AssignInt(0)
-}
-func (_Ledger__KeyAssembler) AssignFloat(float64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.AssignFloat(0)
-}
-func (ka *_Ledger__KeyAssembler) AssignString(k string) error {
-	if ka.state != maState_midKey {
-		panic("misuse: KeyAssembler held beyond its valid lifetime")
-	}
-	switch k {
-	case "startSlot":
-		if ka.s&fieldBit__Ledger_StartSlot != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_StartSlot}
-		}
-		ka.s += fieldBit__Ledger_StartSlot
-		ka.state = maState_expectValue
-		ka.f = 0
-		return nil
-	case "numSlots":
-		if ka.s&fieldBit__Ledger_NumSlots != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_NumSlots}
-		}
-		ka.s += fieldBit__Ledger_NumSlots
-		ka.state = maState_expectValue
-		ka.f = 1
-		return nil
-	case "nodes":
-		if ka.s&fieldBit__Ledger_Nodes != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_Nodes}
-		}
-		ka.s += fieldBit__Ledger_Nodes
-		ka.state = maState_expectValue
-		ka.f = 2
-		return nil
-	default:
-		return schema.ErrInvalidKey{TypeName: "ipldsch.Ledger", Key: &_String{k}}
-	}
-}
-func (_Ledger__KeyAssembler) AssignBytes([]byte) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.AssignBytes(nil)
-}
-func (_Ledger__KeyAssembler) AssignLink(datamodel.Link) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.KeyAssembler"}.AssignLink(nil)
-}
-func (ka *_Ledger__KeyAssembler) AssignNode(v datamodel.Node) error {
-	if v2, err := v.AsString(); err != nil {
-		return err
-	} else {
-		return ka.AssignString(v2)
-	}
-}
-func (_Ledger__KeyAssembler) Prototype() datamodel.NodePrototype {
-	return _String__Prototype{}
-}
-func (Ledger) Type() schema.Type {
-	return nil /*TODO:typelit*/
-}
-func (n Ledger) Representation() datamodel.Node {
-	return (*_Ledger__Repr)(n)
-}
-
-type _Ledger__Repr _Ledger
-
-var (
-	fieldName__Ledger_StartSlot_serial = _String{"startSlot"}
-	fieldName__Ledger_NumSlots_serial  = _String{"numSlots"}
-	fieldName__Ledger_Nodes_serial     = _String{"nodes"}
-)
-var _ datamodel.Node = &_Ledger__Repr{}
-
-func (_Ledger__Repr) Kind() datamodel.Kind {
-	return datamodel.Kind_Map
-}
-func (n *_Ledger__Repr) LookupByString(key string) (datamodel.Node, error) {
-	switch key {
-	case "startSlot":
-		return n.startSlot.Representation(), nil
-	case "numSlots":
-		return n.numSlots.Representation(), nil
-	case "nodes":
-		return n.nodes.Representation(), nil
-	default:
-		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfString(key)}
-	}
-}
-func (n *_Ledger__Repr) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
-	ks, err := key.AsString()
-	if err != nil {
-		return nil, err
-	}
-	return n.LookupByString(ks)
-}
-func (_Ledger__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.LookupByIndex(0)
-}
-func (n _Ledger__Repr) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
-	return n.LookupByString(seg.String())
-}
-func (n *_Ledger__Repr) MapIterator() datamodel.MapIterator {
-	return &_Ledger__ReprMapItr{n, 0}
-}
-
-type _Ledger__ReprMapItr struct {
-	n   *_Ledger__Repr
-	idx int
-}
-
-func (itr *_Ledger__ReprMapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 3 {
-		return nil, nil, datamodel.ErrIteratorOverread{}
-	}
-	switch itr.idx {
-	case 0:
-		k = &fieldName__Ledger_StartSlot_serial
-		v = itr.n.startSlot.Representation()
-	case 1:
-		k = &fieldName__Ledger_NumSlots_serial
-		v = itr.n.numSlots.Representation()
-	case 2:
-		k = &fieldName__Ledger_Nodes_serial
-		v = itr.n.nodes.Representation()
-	default:
-		panic("unreachable")
-	}
-	itr.idx++
-	return
-}
-func (itr *_Ledger__ReprMapItr) Done() bool {
-	return itr.idx >= 3
-}
-func (_Ledger__Repr) ListIterator() datamodel.ListIterator {
-	return nil
-}
-func (rn *_Ledger__Repr) Length() int64 {
-	l := 3
-	return int64(l)
-}
-func (_Ledger__Repr) IsAbsent() bool {
-	return false
-}
-func (_Ledger__Repr) IsNull() bool {
-	return false
-}
-func (_Ledger__Repr) AsBool() (bool, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.AsBool()
-}
-func (_Ledger__Repr) AsInt() (int64, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.AsInt()
-}
-func (_Ledger__Repr) AsFloat() (float64, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.AsFloat()
-}
-func (_Ledger__Repr) AsString() (string, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.AsString()
-}
-func (_Ledger__Repr) AsBytes() ([]byte, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.AsBytes()
-}
-func (_Ledger__Repr) AsLink() (datamodel.Link, error) {
-	return mixins.Map{TypeName: "ipldsch.Ledger.Repr"}.AsLink()
-}
-func (_Ledger__Repr) Prototype() datamodel.NodePrototype {
-	return _Ledger__ReprPrototype{}
-}
-
-type _Ledger__ReprPrototype struct{}
-
-func (_Ledger__ReprPrototype) NewBuilder() datamodel.NodeBuilder {
-	var nb _Ledger__ReprBuilder
-	nb.Reset()
-	return &nb
-}
-
-type _Ledger__ReprBuilder struct {
-	_Ledger__ReprAssembler
-}
-
-func (nb *_Ledger__ReprBuilder) Build() datamodel.Node {
-	if *nb.m != schema.Maybe_Value {
-		panic("invalid state: cannot call Build on an assembler that's not finished")
-	}
-	return nb.w
-}
-func (nb *_Ledger__ReprBuilder) Reset() {
-	var w _Ledger
-	var m schema.Maybe
-	*nb = _Ledger__ReprBuilder{_Ledger__ReprAssembler{w: &w, m: &m}}
-}
-
-type _Ledger__ReprAssembler struct {
-	w     *_Ledger
-	m     *schema.Maybe
-	state maState
-	s     int
-	f     int
-
-	cm           schema.Maybe
-	ca_startSlot _Int__ReprAssembler
-	ca_numSlots  _Int__ReprAssembler
-	ca_nodes     _List__Link__ReprAssembler
-}
-
-func (na *_Ledger__ReprAssembler) reset() {
-	na.state = maState_initial
-	na.s = 0
-	na.ca_startSlot.reset()
-	na.ca_numSlots.reset()
-	na.ca_nodes.reset()
-}
-func (na *_Ledger__ReprAssembler) BeginMap(int64) (datamodel.MapAssembler, error) {
-	switch *na.m {
-	case schema.Maybe_Value, schema.Maybe_Null:
-		panic("invalid state: cannot assign into assembler that's already finished")
-	case midvalue:
-		panic("invalid state: it makes no sense to 'begin' twice on the same assembler!")
-	}
-	*na.m = midvalue
-	if na.w == nil {
-		na.w = &_Ledger{}
-	}
-	return na, nil
-}
-func (_Ledger__ReprAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.BeginList(0)
-}
-func (na *_Ledger__ReprAssembler) AssignNull() error {
-	switch *na.m {
-	case allowNull:
-		*na.m = schema.Maybe_Null
-		return nil
-	case schema.Maybe_Absent:
-		return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr.Repr"}.AssignNull()
-	case schema.Maybe_Value, schema.Maybe_Null:
-		panic("invalid state: cannot assign into assembler that's already finished")
-	case midvalue:
-		panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
-	}
-	panic("unreachable")
-}
-func (_Ledger__ReprAssembler) AssignBool(bool) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.AssignBool(false)
-}
-func (_Ledger__ReprAssembler) AssignInt(int64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.AssignInt(0)
-}
-func (_Ledger__ReprAssembler) AssignFloat(float64) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.AssignFloat(0)
-}
-func (_Ledger__ReprAssembler) AssignString(string) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.AssignString("")
-}
-func (_Ledger__ReprAssembler) AssignBytes([]byte) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.AssignBytes(nil)
-}
-func (_Ledger__ReprAssembler) AssignLink(datamodel.Link) error {
-	return mixins.MapAssembler{TypeName: "ipldsch.Ledger.Repr"}.AssignLink(nil)
-}
-func (na *_Ledger__ReprAssembler) AssignNode(v datamodel.Node) error {
-	if v.IsNull() {
-		return na.AssignNull()
-	}
-	if v2, ok := v.(*_Ledger); ok {
-		switch *na.m {
-		case schema.Maybe_Value, schema.Maybe_Null:
-			panic("invalid state: cannot assign into assembler that's already finished")
-		case midvalue:
-			panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
-		}
-		if na.w == nil {
-			na.w = v2
-			*na.m = schema.Maybe_Value
-			return nil
-		}
-		*na.w = *v2
-		*na.m = schema.Maybe_Value
-		return nil
-	}
-	if v.Kind() != datamodel.Kind_Map {
-		return datamodel.ErrWrongKind{TypeName: "ipldsch.Ledger.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustMap, ActualKind: v.Kind()}
-	}
-	itr := v.MapIterator()
-	for !itr.Done() {
-		k, v, err := itr.Next()
-		if err != nil {
-			return err
-		}
-		if err := na.AssembleKey().AssignNode(k); err != nil {
-			return err
-		}
-		if err := na.AssembleValue().AssignNode(v); err != nil {
-			return err
-		}
-	}
-	return na.Finish()
-}
-func (_Ledger__ReprAssembler) Prototype() datamodel.NodePrototype {
-	return _Ledger__ReprPrototype{}
-}
-func (ma *_Ledger__ReprAssembler) valueFinishTidy() bool {
-	switch ma.f {
-	case 0:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 1:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 2:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	default:
-		panic("unreachable")
-	}
-}
-func (ma *_Ledger__ReprAssembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleEntry cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleEntry cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleEntry cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleEntry cannot be called on an assembler that's already finished")
-	}
-	switch k {
-	case "startSlot":
-		if ma.s&fieldBit__Ledger_StartSlot != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_StartSlot_serial}
-		}
-		ma.s += fieldBit__Ledger_StartSlot
-		ma.state = maState_midValue
-		ma.f = 0
-		ma.ca_startSlot.w = &ma.w.startSlot
-		ma.ca_startSlot.m = &ma.cm
-		return &ma.ca_startSlot, nil
-	case "numSlots":
-		if ma.s&fieldBit__Ledger_NumSlots != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_NumSlots_serial}
-		}
-		ma.s += fieldBit__Ledger_NumSlots
-		ma.state = maState_midValue
-		ma.f = 1
-		ma.ca_numSlots.w = &ma.w.numSlots
-		ma.ca_numSlots.m = &ma.cm
-		return &ma.ca_numSlots, nil
-	case "nodes":
-		if ma.s&fieldBit__Ledger_Nodes != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_Nodes_serial}
-		}
-		ma.s += fieldBit__Ledger_Nodes
-		ma.state = maState_midValue
-		ma.f = 2
-		ma.ca_nodes.w = &ma.w.nodes
-		ma.ca_nodes.m = &ma.cm
-		return &ma.ca_nodes, nil
-	default:
-	}
-	return nil, schema.ErrInvalidKey{TypeName: "ipldsch.Ledger.Repr", Key: &_String{k}}
-}
-func (ma *_Ledger__ReprAssembler) AssembleKey() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: AssembleKey cannot be called when in the middle of assembling another key")
-	case maState_expectValue:
-		panic("invalid state: AssembleKey cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: AssembleKey cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: AssembleKey cannot be called on an assembler that's already finished")
-	}
-	ma.state = maState_midKey
-	return (*_Ledger__ReprKeyAssembler)(ma)
-}
-func (ma *_Ledger__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
-	switch ma.state {
-	case maState_initial:
-		panic("invalid state: AssembleValue cannot be called when no key is primed")
-	case maState_midKey:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		// carry on
-	case maState_midValue:
-		panic("invalid state: AssembleValue cannot be called when in the middle of assembling another value")
-	case maState_finished:
-		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
-	}
-	ma.state = maState_midValue
-	switch ma.f {
-	case 0:
-		ma.ca_startSlot.w = &ma.w.startSlot
-		ma.ca_startSlot.m = &ma.cm
-		return &ma.ca_startSlot
-	case 1:
-		ma.ca_numSlots.w = &ma.w.numSlots
-		ma.ca_numSlots.m = &ma.cm
-		return &ma.ca_numSlots
-	case 2:
-		ma.ca_nodes.w = &ma.w.nodes
-		ma.ca_nodes.m = &ma.cm
-		return &ma.ca_nodes
-	default:
-		panic("unreachable")
-	}
-}
-func (ma *_Ledger__ReprAssembler) Finish() error {
-	switch ma.state {
-	case maState_initial:
-		// carry on
-	case maState_midKey:
-		panic("invalid state: Finish cannot be called when in the middle of assembling a key")
-	case maState_expectValue:
-		panic("invalid state: Finish cannot be called when expecting start of value assembly")
-	case maState_midValue:
-		if !ma.valueFinishTidy() {
-			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
-		} // if tidy success: carry on
-	case maState_finished:
-		panic("invalid state: Finish cannot be called on an assembler that's already finished")
-	}
-	if ma.s&fieldBits__Ledger_sufficient != fieldBits__Ledger_sufficient {
-		err := schema.ErrMissingRequiredField{Missing: make([]string, 0)}
-		if ma.s&fieldBit__Ledger_StartSlot == 0 {
-			err.Missing = append(err.Missing, "startSlot")
-		}
-		if ma.s&fieldBit__Ledger_NumSlots == 0 {
-			err.Missing = append(err.Missing, "numSlots")
-		}
-		if ma.s&fieldBit__Ledger_Nodes == 0 {
-			err.Missing = append(err.Missing, "nodes")
-		}
-		return err
-	}
-	ma.state = maState_finished
-	*ma.m = schema.Maybe_Value
-	return nil
-}
-func (ma *_Ledger__ReprAssembler) KeyPrototype() datamodel.NodePrototype {
-	return _String__Prototype{}
-}
-func (ma *_Ledger__ReprAssembler) ValuePrototype(k string) datamodel.NodePrototype {
-	panic("todo structbuilder mapassembler repr valueprototype")
-}
-
-type _Ledger__ReprKeyAssembler _Ledger__ReprAssembler
-
-func (_Ledger__ReprKeyAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.BeginMap(0)
-}
-func (_Ledger__ReprKeyAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.BeginList(0)
-}
-func (na *_Ledger__ReprKeyAssembler) AssignNull() error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.AssignNull()
-}
-func (_Ledger__ReprKeyAssembler) AssignBool(bool) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.AssignBool(false)
-}
-func (_Ledger__ReprKeyAssembler) AssignInt(int64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.AssignInt(0)
-}
-func (_Ledger__ReprKeyAssembler) AssignFloat(float64) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.AssignFloat(0)
-}
-func (ka *_Ledger__ReprKeyAssembler) AssignString(k string) error {
-	if ka.state != maState_midKey {
-		panic("misuse: KeyAssembler held beyond its valid lifetime")
-	}
-	switch k {
-	case "startSlot":
-		if ka.s&fieldBit__Ledger_StartSlot != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_StartSlot_serial}
-		}
-		ka.s += fieldBit__Ledger_StartSlot
-		ka.state = maState_expectValue
-		ka.f = 0
-		return nil
-	case "numSlots":
-		if ka.s&fieldBit__Ledger_NumSlots != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_NumSlots_serial}
-		}
-		ka.s += fieldBit__Ledger_NumSlots
-		ka.state = maState_expectValue
-		ka.f = 1
-		return nil
-	case "nodes":
-		if ka.s&fieldBit__Ledger_Nodes != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Ledger_Nodes_serial}
-		}
-		ka.s += fieldBit__Ledger_Nodes
-		ka.state = maState_expectValue
-		ka.f = 2
-		return nil
-	}
-	return schema.ErrInvalidKey{TypeName: "ipldsch.Ledger.Repr", Key: &_String{k}}
-}
-func (_Ledger__ReprKeyAssembler) AssignBytes([]byte) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.AssignBytes(nil)
-}
-func (_Ledger__ReprKeyAssembler) AssignLink(datamodel.Link) error {
-	return mixins.StringAssembler{TypeName: "ipldsch.Ledger.Repr.KeyAssembler"}.AssignLink(nil)
-}
-func (ka *_Ledger__ReprKeyAssembler) AssignNode(v datamodel.Node) error {
-	if v2, err := v.AsString(); err != nil {
-		return err
-	} else {
-		return ka.AssignString(v2)
-	}
-}
-func (_Ledger__ReprKeyAssembler) Prototype() datamodel.NodePrototype {
-	return _String__Prototype{}
-}
 
 func (n Link) Link() datamodel.Link {
 	return n.x
@@ -5225,6 +3677,1386 @@ func (la *_List__Link__ReprAssembler) Finish() error {
 }
 func (la *_List__Link__ReprAssembler) ValuePrototype(_ int64) datamodel.NodePrototype {
 	return _Link__ReprPrototype{}
+}
+
+func (n *_List__Shredding) Lookup(idx int64) Shredding {
+	if n.Length() <= idx {
+		return nil
+	}
+	v := &n.x[idx]
+	return v
+}
+func (n *_List__Shredding) LookupMaybe(idx int64) MaybeShredding {
+	if n.Length() <= idx {
+		return nil
+	}
+	v := &n.x[idx]
+	return &_Shredding__Maybe{
+		m: schema.Maybe_Value,
+		v: v,
+	}
+}
+
+var _List__Shredding__valueAbsent = _Shredding__Maybe{m: schema.Maybe_Absent}
+
+func (n List__Shredding) Iterator() *List__Shredding__Itr {
+	return &List__Shredding__Itr{n, 0}
+}
+
+type List__Shredding__Itr struct {
+	n   List__Shredding
+	idx int
+}
+
+func (itr *List__Shredding__Itr) Next() (idx int64, v Shredding) {
+	if itr.idx >= len(itr.n.x) {
+		return -1, nil
+	}
+	idx = int64(itr.idx)
+	v = &itr.n.x[itr.idx]
+	itr.idx++
+	return
+}
+func (itr *List__Shredding__Itr) Done() bool {
+	return itr.idx >= len(itr.n.x)
+}
+
+type _List__Shredding__Maybe struct {
+	m schema.Maybe
+	v _List__Shredding
+}
+type MaybeList__Shredding = *_List__Shredding__Maybe
+
+func (m MaybeList__Shredding) IsNull() bool {
+	return m.m == schema.Maybe_Null
+}
+func (m MaybeList__Shredding) IsAbsent() bool {
+	return m.m == schema.Maybe_Absent
+}
+func (m MaybeList__Shredding) Exists() bool {
+	return m.m == schema.Maybe_Value
+}
+func (m MaybeList__Shredding) AsNode() datamodel.Node {
+	switch m.m {
+	case schema.Maybe_Absent:
+		return datamodel.Absent
+	case schema.Maybe_Null:
+		return datamodel.Null
+	case schema.Maybe_Value:
+		return &m.v
+	default:
+		panic("unreachable")
+	}
+}
+func (m MaybeList__Shredding) Must() List__Shredding {
+	if !m.Exists() {
+		panic("unbox of a maybe rejected")
+	}
+	return &m.v
+}
+
+var _ datamodel.Node = (List__Shredding)(&_List__Shredding{})
+var _ schema.TypedNode = (List__Shredding)(&_List__Shredding{})
+
+func (List__Shredding) Kind() datamodel.Kind {
+	return datamodel.Kind_List
+}
+func (List__Shredding) LookupByString(string) (datamodel.Node, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.LookupByString("")
+}
+func (n List__Shredding) LookupByNode(k datamodel.Node) (datamodel.Node, error) {
+	idx, err := k.AsInt()
+	if err != nil {
+		return nil, err
+	}
+	return n.LookupByIndex(idx)
+}
+func (n List__Shredding) LookupByIndex(idx int64) (datamodel.Node, error) {
+	if n.Length() <= idx {
+		return nil, datamodel.ErrNotExists{Segment: datamodel.PathSegmentOfInt(idx)}
+	}
+	v := &n.x[idx]
+	return v, nil
+}
+func (n List__Shredding) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
+	i, err := seg.Index()
+	if err != nil {
+		return nil, datamodel.ErrInvalidSegmentForList{TypeName: "ipldsch.List__Shredding", TroubleSegment: seg, Reason: err}
+	}
+	return n.LookupByIndex(i)
+}
+func (List__Shredding) MapIterator() datamodel.MapIterator {
+	return nil
+}
+func (n List__Shredding) ListIterator() datamodel.ListIterator {
+	return &_List__Shredding__ListItr{n, 0}
+}
+
+type _List__Shredding__ListItr struct {
+	n   List__Shredding
+	idx int
+}
+
+func (itr *_List__Shredding__ListItr) Next() (idx int64, v datamodel.Node, _ error) {
+	if itr.idx >= len(itr.n.x) {
+		return -1, nil, datamodel.ErrIteratorOverread{}
+	}
+	idx = int64(itr.idx)
+	x := &itr.n.x[itr.idx]
+	v = x
+	itr.idx++
+	return
+}
+func (itr *_List__Shredding__ListItr) Done() bool {
+	return itr.idx >= len(itr.n.x)
+}
+
+func (n List__Shredding) Length() int64 {
+	return int64(len(n.x))
+}
+func (List__Shredding) IsAbsent() bool {
+	return false
+}
+func (List__Shredding) IsNull() bool {
+	return false
+}
+func (List__Shredding) AsBool() (bool, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.AsBool()
+}
+func (List__Shredding) AsInt() (int64, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.AsInt()
+}
+func (List__Shredding) AsFloat() (float64, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.AsFloat()
+}
+func (List__Shredding) AsString() (string, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.AsString()
+}
+func (List__Shredding) AsBytes() ([]byte, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.AsBytes()
+}
+func (List__Shredding) AsLink() (datamodel.Link, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding"}.AsLink()
+}
+func (List__Shredding) Prototype() datamodel.NodePrototype {
+	return _List__Shredding__Prototype{}
+}
+
+type _List__Shredding__Prototype struct{}
+
+func (_List__Shredding__Prototype) NewBuilder() datamodel.NodeBuilder {
+	var nb _List__Shredding__Builder
+	nb.Reset()
+	return &nb
+}
+
+type _List__Shredding__Builder struct {
+	_List__Shredding__Assembler
+}
+
+func (nb *_List__Shredding__Builder) Build() datamodel.Node {
+	if *nb.m != schema.Maybe_Value {
+		panic("invalid state: cannot call Build on an assembler that's not finished")
+	}
+	return nb.w
+}
+func (nb *_List__Shredding__Builder) Reset() {
+	var w _List__Shredding
+	var m schema.Maybe
+	*nb = _List__Shredding__Builder{_List__Shredding__Assembler{w: &w, m: &m}}
+}
+
+type _List__Shredding__Assembler struct {
+	w     *_List__Shredding
+	m     *schema.Maybe
+	state laState
+
+	cm schema.Maybe
+	va _Shredding__Assembler
+}
+
+func (na *_List__Shredding__Assembler) reset() {
+	na.state = laState_initial
+	na.va.reset()
+}
+func (_List__Shredding__Assembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.BeginMap(0)
+}
+func (na *_List__Shredding__Assembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
+	switch *na.m {
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: it makes no sense to 'begin' twice on the same assembler!")
+	}
+	*na.m = midvalue
+	if sizeHint < 0 {
+		sizeHint = 0
+	}
+	if sizeHint > 0 {
+		na.w.x = make([]_Shredding, 0, sizeHint)
+	}
+	return na, nil
+}
+func (na *_List__Shredding__Assembler) AssignNull() error {
+	switch *na.m {
+	case allowNull:
+		*na.m = schema.Maybe_Null
+		return nil
+	case schema.Maybe_Absent:
+		return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignNull()
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+	}
+	panic("unreachable")
+}
+func (_List__Shredding__Assembler) AssignBool(bool) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignBool(false)
+}
+func (_List__Shredding__Assembler) AssignInt(int64) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignInt(0)
+}
+func (_List__Shredding__Assembler) AssignFloat(float64) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignFloat(0)
+}
+func (_List__Shredding__Assembler) AssignString(string) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignString("")
+}
+func (_List__Shredding__Assembler) AssignBytes([]byte) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignBytes(nil)
+}
+func (_List__Shredding__Assembler) AssignLink(datamodel.Link) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding"}.AssignLink(nil)
+}
+func (na *_List__Shredding__Assembler) AssignNode(v datamodel.Node) error {
+	if v.IsNull() {
+		return na.AssignNull()
+	}
+	if v2, ok := v.(*_List__Shredding); ok {
+		switch *na.m {
+		case schema.Maybe_Value, schema.Maybe_Null:
+			panic("invalid state: cannot assign into assembler that's already finished")
+		case midvalue:
+			panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+		}
+		*na.w = *v2
+		*na.m = schema.Maybe_Value
+		return nil
+	}
+	if v.Kind() != datamodel.Kind_List {
+		return datamodel.ErrWrongKind{TypeName: "ipldsch.List__Shredding", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustList, ActualKind: v.Kind()}
+	}
+	itr := v.ListIterator()
+	for !itr.Done() {
+		_, v, err := itr.Next()
+		if err != nil {
+			return err
+		}
+		if err := na.AssembleValue().AssignNode(v); err != nil {
+			return err
+		}
+	}
+	return na.Finish()
+}
+func (_List__Shredding__Assembler) Prototype() datamodel.NodePrototype {
+	return _List__Shredding__Prototype{}
+}
+func (la *_List__Shredding__Assembler) valueFinishTidy() bool {
+	switch la.cm {
+	case schema.Maybe_Value:
+		la.va.w = nil
+		la.cm = schema.Maybe_Absent
+		la.state = laState_initial
+		la.va.reset()
+		return true
+	default:
+		return false
+	}
+}
+func (la *_List__Shredding__Assembler) AssembleValue() datamodel.NodeAssembler {
+	switch la.state {
+	case laState_initial:
+		// carry on
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: AssembleValue cannot be called when still in the middle of assembling the previous value")
+		} // if tidy success: carry on
+	case laState_finished:
+		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
+	}
+	la.w.x = append(la.w.x, _Shredding{})
+	la.state = laState_midValue
+	row := &la.w.x[len(la.w.x)-1]
+	la.va.w = row
+	la.va.m = &la.cm
+	return &la.va
+}
+func (la *_List__Shredding__Assembler) Finish() error {
+	switch la.state {
+	case laState_initial:
+		// carry on
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
+		} // if tidy success: carry on
+	case laState_finished:
+		panic("invalid state: Finish cannot be called on an assembler that's already finished")
+	}
+	la.state = laState_finished
+	*la.m = schema.Maybe_Value
+	return nil
+}
+func (la *_List__Shredding__Assembler) ValuePrototype(_ int64) datamodel.NodePrototype {
+	return _Shredding__Prototype{}
+}
+func (List__Shredding) Type() schema.Type {
+	return nil /*TODO:typelit*/
+}
+func (n List__Shredding) Representation() datamodel.Node {
+	return (*_List__Shredding__Repr)(n)
+}
+
+type _List__Shredding__Repr _List__Shredding
+
+var _ datamodel.Node = &_List__Shredding__Repr{}
+
+func (_List__Shredding__Repr) Kind() datamodel.Kind {
+	return datamodel.Kind_List
+}
+func (_List__Shredding__Repr) LookupByString(string) (datamodel.Node, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.LookupByString("")
+}
+func (nr *_List__Shredding__Repr) LookupByNode(k datamodel.Node) (datamodel.Node, error) {
+	v, err := (List__Shredding)(nr).LookupByNode(k)
+	if err != nil || v == datamodel.Null {
+		return v, err
+	}
+	return v.(Shredding).Representation(), nil
+}
+func (nr *_List__Shredding__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
+	v, err := (List__Shredding)(nr).LookupByIndex(idx)
+	if err != nil || v == datamodel.Null {
+		return v, err
+	}
+	return v.(Shredding).Representation(), nil
+}
+func (n _List__Shredding__Repr) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
+	i, err := seg.Index()
+	if err != nil {
+		return nil, datamodel.ErrInvalidSegmentForList{TypeName: "ipldsch.List__Shredding.Repr", TroubleSegment: seg, Reason: err}
+	}
+	return n.LookupByIndex(i)
+}
+func (_List__Shredding__Repr) MapIterator() datamodel.MapIterator {
+	return nil
+}
+func (nr *_List__Shredding__Repr) ListIterator() datamodel.ListIterator {
+	return &_List__Shredding__ReprListItr{(List__Shredding)(nr), 0}
+}
+
+type _List__Shredding__ReprListItr _List__Shredding__ListItr
+
+func (itr *_List__Shredding__ReprListItr) Next() (idx int64, v datamodel.Node, err error) {
+	idx, v, err = (*_List__Shredding__ListItr)(itr).Next()
+	if err != nil || v == datamodel.Null {
+		return
+	}
+	return idx, v.(Shredding).Representation(), nil
+}
+func (itr *_List__Shredding__ReprListItr) Done() bool {
+	return (*_List__Shredding__ListItr)(itr).Done()
+}
+
+func (rn *_List__Shredding__Repr) Length() int64 {
+	return int64(len(rn.x))
+}
+func (_List__Shredding__Repr) IsAbsent() bool {
+	return false
+}
+func (_List__Shredding__Repr) IsNull() bool {
+	return false
+}
+func (_List__Shredding__Repr) AsBool() (bool, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.AsBool()
+}
+func (_List__Shredding__Repr) AsInt() (int64, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.AsInt()
+}
+func (_List__Shredding__Repr) AsFloat() (float64, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.AsFloat()
+}
+func (_List__Shredding__Repr) AsString() (string, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.AsString()
+}
+func (_List__Shredding__Repr) AsBytes() ([]byte, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.AsBytes()
+}
+func (_List__Shredding__Repr) AsLink() (datamodel.Link, error) {
+	return mixins.List{TypeName: "ipldsch.List__Shredding.Repr"}.AsLink()
+}
+func (_List__Shredding__Repr) Prototype() datamodel.NodePrototype {
+	return _List__Shredding__ReprPrototype{}
+}
+
+type _List__Shredding__ReprPrototype struct{}
+
+func (_List__Shredding__ReprPrototype) NewBuilder() datamodel.NodeBuilder {
+	var nb _List__Shredding__ReprBuilder
+	nb.Reset()
+	return &nb
+}
+
+type _List__Shredding__ReprBuilder struct {
+	_List__Shredding__ReprAssembler
+}
+
+func (nb *_List__Shredding__ReprBuilder) Build() datamodel.Node {
+	if *nb.m != schema.Maybe_Value {
+		panic("invalid state: cannot call Build on an assembler that's not finished")
+	}
+	return nb.w
+}
+func (nb *_List__Shredding__ReprBuilder) Reset() {
+	var w _List__Shredding
+	var m schema.Maybe
+	*nb = _List__Shredding__ReprBuilder{_List__Shredding__ReprAssembler{w: &w, m: &m}}
+}
+
+type _List__Shredding__ReprAssembler struct {
+	w     *_List__Shredding
+	m     *schema.Maybe
+	state laState
+
+	cm schema.Maybe
+	va _Shredding__ReprAssembler
+}
+
+func (na *_List__Shredding__ReprAssembler) reset() {
+	na.state = laState_initial
+	na.va.reset()
+}
+func (_List__Shredding__ReprAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.BeginMap(0)
+}
+func (na *_List__Shredding__ReprAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
+	switch *na.m {
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: it makes no sense to 'begin' twice on the same assembler!")
+	}
+	*na.m = midvalue
+	if sizeHint < 0 {
+		sizeHint = 0
+	}
+	if sizeHint > 0 {
+		na.w.x = make([]_Shredding, 0, sizeHint)
+	}
+	return na, nil
+}
+func (na *_List__Shredding__ReprAssembler) AssignNull() error {
+	switch *na.m {
+	case allowNull:
+		*na.m = schema.Maybe_Null
+		return nil
+	case schema.Maybe_Absent:
+		return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr.Repr"}.AssignNull()
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+	}
+	panic("unreachable")
+}
+func (_List__Shredding__ReprAssembler) AssignBool(bool) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.AssignBool(false)
+}
+func (_List__Shredding__ReprAssembler) AssignInt(int64) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.AssignInt(0)
+}
+func (_List__Shredding__ReprAssembler) AssignFloat(float64) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.AssignFloat(0)
+}
+func (_List__Shredding__ReprAssembler) AssignString(string) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.AssignString("")
+}
+func (_List__Shredding__ReprAssembler) AssignBytes([]byte) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.AssignBytes(nil)
+}
+func (_List__Shredding__ReprAssembler) AssignLink(datamodel.Link) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.List__Shredding.Repr"}.AssignLink(nil)
+}
+func (na *_List__Shredding__ReprAssembler) AssignNode(v datamodel.Node) error {
+	if v.IsNull() {
+		return na.AssignNull()
+	}
+	if v2, ok := v.(*_List__Shredding); ok {
+		switch *na.m {
+		case schema.Maybe_Value, schema.Maybe_Null:
+			panic("invalid state: cannot assign into assembler that's already finished")
+		case midvalue:
+			panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+		}
+		*na.w = *v2
+		*na.m = schema.Maybe_Value
+		return nil
+	}
+	if v.Kind() != datamodel.Kind_List {
+		return datamodel.ErrWrongKind{TypeName: "ipldsch.List__Shredding.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustList, ActualKind: v.Kind()}
+	}
+	itr := v.ListIterator()
+	for !itr.Done() {
+		_, v, err := itr.Next()
+		if err != nil {
+			return err
+		}
+		if err := na.AssembleValue().AssignNode(v); err != nil {
+			return err
+		}
+	}
+	return na.Finish()
+}
+func (_List__Shredding__ReprAssembler) Prototype() datamodel.NodePrototype {
+	return _List__Shredding__ReprPrototype{}
+}
+func (la *_List__Shredding__ReprAssembler) valueFinishTidy() bool {
+	switch la.cm {
+	case schema.Maybe_Value:
+		la.va.w = nil
+		la.cm = schema.Maybe_Absent
+		la.state = laState_initial
+		la.va.reset()
+		return true
+	default:
+		return false
+	}
+}
+func (la *_List__Shredding__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
+	switch la.state {
+	case laState_initial:
+		// carry on
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: AssembleValue cannot be called when still in the middle of assembling the previous value")
+		} // if tidy success: carry on
+	case laState_finished:
+		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
+	}
+	la.w.x = append(la.w.x, _Shredding{})
+	la.state = laState_midValue
+	row := &la.w.x[len(la.w.x)-1]
+	la.va.w = row
+	la.va.m = &la.cm
+	return &la.va
+}
+func (la *_List__Shredding__ReprAssembler) Finish() error {
+	switch la.state {
+	case laState_initial:
+		// carry on
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
+		} // if tidy success: carry on
+	case laState_finished:
+		panic("invalid state: Finish cannot be called on an assembler that's already finished")
+	}
+	la.state = laState_finished
+	*la.m = schema.Maybe_Value
+	return nil
+}
+func (la *_List__Shredding__ReprAssembler) ValuePrototype(_ int64) datamodel.NodePrototype {
+	return _Shredding__ReprPrototype{}
+}
+
+func (n _Shredding) FieldEntryEndIdx() Int {
+	return &n.entryEndIdx
+}
+func (n _Shredding) FieldShredEndIdx() Int {
+	return &n.shredEndIdx
+}
+
+type _Shredding__Maybe struct {
+	m schema.Maybe
+	v Shredding
+}
+type MaybeShredding = *_Shredding__Maybe
+
+func (m MaybeShredding) IsNull() bool {
+	return m.m == schema.Maybe_Null
+}
+func (m MaybeShredding) IsAbsent() bool {
+	return m.m == schema.Maybe_Absent
+}
+func (m MaybeShredding) Exists() bool {
+	return m.m == schema.Maybe_Value
+}
+func (m MaybeShredding) AsNode() datamodel.Node {
+	switch m.m {
+	case schema.Maybe_Absent:
+		return datamodel.Absent
+	case schema.Maybe_Null:
+		return datamodel.Null
+	case schema.Maybe_Value:
+		return m.v
+	default:
+		panic("unreachable")
+	}
+}
+func (m MaybeShredding) Must() Shredding {
+	if !m.Exists() {
+		panic("unbox of a maybe rejected")
+	}
+	return m.v
+}
+
+var (
+	fieldName__Shredding_EntryEndIdx = _String{"entryEndIdx"}
+	fieldName__Shredding_ShredEndIdx = _String{"shredEndIdx"}
+)
+var _ datamodel.Node = (Shredding)(&_Shredding{})
+var _ schema.TypedNode = (Shredding)(&_Shredding{})
+
+func (Shredding) Kind() datamodel.Kind {
+	return datamodel.Kind_Map
+}
+func (n Shredding) LookupByString(key string) (datamodel.Node, error) {
+	switch key {
+	case "entryEndIdx":
+		return &n.entryEndIdx, nil
+	case "shredEndIdx":
+		return &n.shredEndIdx, nil
+	default:
+		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfString(key)}
+	}
+}
+func (n Shredding) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
+	ks, err := key.AsString()
+	if err != nil {
+		return nil, err
+	}
+	return n.LookupByString(ks)
+}
+func (Shredding) LookupByIndex(idx int64) (datamodel.Node, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.LookupByIndex(0)
+}
+func (n Shredding) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
+	return n.LookupByString(seg.String())
+}
+func (n Shredding) MapIterator() datamodel.MapIterator {
+	return &_Shredding__MapItr{n, 0}
+}
+
+type _Shredding__MapItr struct {
+	n   Shredding
+	idx int
+}
+
+func (itr *_Shredding__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
+	if itr.idx >= 2 {
+		return nil, nil, datamodel.ErrIteratorOverread{}
+	}
+	switch itr.idx {
+	case 0:
+		k = &fieldName__Shredding_EntryEndIdx
+		v = &itr.n.entryEndIdx
+	case 1:
+		k = &fieldName__Shredding_ShredEndIdx
+		v = &itr.n.shredEndIdx
+	default:
+		panic("unreachable")
+	}
+	itr.idx++
+	return
+}
+func (itr *_Shredding__MapItr) Done() bool {
+	return itr.idx >= 2
+}
+
+func (Shredding) ListIterator() datamodel.ListIterator {
+	return nil
+}
+func (Shredding) Length() int64 {
+	return 2
+}
+func (Shredding) IsAbsent() bool {
+	return false
+}
+func (Shredding) IsNull() bool {
+	return false
+}
+func (Shredding) AsBool() (bool, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.AsBool()
+}
+func (Shredding) AsInt() (int64, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.AsInt()
+}
+func (Shredding) AsFloat() (float64, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.AsFloat()
+}
+func (Shredding) AsString() (string, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.AsString()
+}
+func (Shredding) AsBytes() ([]byte, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.AsBytes()
+}
+func (Shredding) AsLink() (datamodel.Link, error) {
+	return mixins.Map{TypeName: "ipldsch.Shredding"}.AsLink()
+}
+func (Shredding) Prototype() datamodel.NodePrototype {
+	return _Shredding__Prototype{}
+}
+
+type _Shredding__Prototype struct{}
+
+func (_Shredding__Prototype) NewBuilder() datamodel.NodeBuilder {
+	var nb _Shredding__Builder
+	nb.Reset()
+	return &nb
+}
+
+type _Shredding__Builder struct {
+	_Shredding__Assembler
+}
+
+func (nb *_Shredding__Builder) Build() datamodel.Node {
+	if *nb.m != schema.Maybe_Value {
+		panic("invalid state: cannot call Build on an assembler that's not finished")
+	}
+	return nb.w
+}
+func (nb *_Shredding__Builder) Reset() {
+	var w _Shredding
+	var m schema.Maybe
+	*nb = _Shredding__Builder{_Shredding__Assembler{w: &w, m: &m}}
+}
+
+type _Shredding__Assembler struct {
+	w     *_Shredding
+	m     *schema.Maybe
+	state maState
+	s     int
+	f     int
+
+	cm             schema.Maybe
+	ca_entryEndIdx _Int__Assembler
+	ca_shredEndIdx _Int__Assembler
+}
+
+func (na *_Shredding__Assembler) reset() {
+	na.state = maState_initial
+	na.s = 0
+	na.ca_entryEndIdx.reset()
+	na.ca_shredEndIdx.reset()
+}
+
+var (
+	fieldBit__Shredding_EntryEndIdx = 1 << 0
+	fieldBit__Shredding_ShredEndIdx = 1 << 1
+	fieldBits__Shredding_sufficient = 0 + 1<<0 + 1<<1
+)
+
+func (na *_Shredding__Assembler) BeginMap(int64) (datamodel.MapAssembler, error) {
+	switch *na.m {
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: it makes no sense to 'begin' twice on the same assembler!")
+	}
+	*na.m = midvalue
+	if na.w == nil {
+		na.w = &_Shredding{}
+	}
+	return na, nil
+}
+func (_Shredding__Assembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.BeginList(0)
+}
+func (na *_Shredding__Assembler) AssignNull() error {
+	switch *na.m {
+	case allowNull:
+		*na.m = schema.Maybe_Null
+		return nil
+	case schema.Maybe_Absent:
+		return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignNull()
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+	}
+	panic("unreachable")
+}
+func (_Shredding__Assembler) AssignBool(bool) error {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignBool(false)
+}
+func (_Shredding__Assembler) AssignInt(int64) error {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignInt(0)
+}
+func (_Shredding__Assembler) AssignFloat(float64) error {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignFloat(0)
+}
+func (_Shredding__Assembler) AssignString(string) error {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignString("")
+}
+func (_Shredding__Assembler) AssignBytes([]byte) error {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignBytes(nil)
+}
+func (_Shredding__Assembler) AssignLink(datamodel.Link) error {
+	return mixins.MapAssembler{TypeName: "ipldsch.Shredding"}.AssignLink(nil)
+}
+func (na *_Shredding__Assembler) AssignNode(v datamodel.Node) error {
+	if v.IsNull() {
+		return na.AssignNull()
+	}
+	if v2, ok := v.(*_Shredding); ok {
+		switch *na.m {
+		case schema.Maybe_Value, schema.Maybe_Null:
+			panic("invalid state: cannot assign into assembler that's already finished")
+		case midvalue:
+			panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+		}
+		if na.w == nil {
+			na.w = v2
+			*na.m = schema.Maybe_Value
+			return nil
+		}
+		*na.w = *v2
+		*na.m = schema.Maybe_Value
+		return nil
+	}
+	if v.Kind() != datamodel.Kind_Map {
+		return datamodel.ErrWrongKind{TypeName: "ipldsch.Shredding", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustMap, ActualKind: v.Kind()}
+	}
+	itr := v.MapIterator()
+	for !itr.Done() {
+		k, v, err := itr.Next()
+		if err != nil {
+			return err
+		}
+		if err := na.AssembleKey().AssignNode(k); err != nil {
+			return err
+		}
+		if err := na.AssembleValue().AssignNode(v); err != nil {
+			return err
+		}
+	}
+	return na.Finish()
+}
+func (_Shredding__Assembler) Prototype() datamodel.NodePrototype {
+	return _Shredding__Prototype{}
+}
+func (ma *_Shredding__Assembler) valueFinishTidy() bool {
+	switch ma.f {
+	case 0:
+		switch ma.cm {
+		case schema.Maybe_Value:
+			ma.ca_entryEndIdx.w = nil
+			ma.cm = schema.Maybe_Absent
+			ma.state = maState_initial
+			return true
+		default:
+			return false
+		}
+	case 1:
+		switch ma.cm {
+		case schema.Maybe_Value:
+			ma.ca_shredEndIdx.w = nil
+			ma.cm = schema.Maybe_Absent
+			ma.state = maState_initial
+			return true
+		default:
+			return false
+		}
+	default:
+		panic("unreachable")
+	}
+}
+func (ma *_Shredding__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, error) {
+	switch ma.state {
+	case maState_initial:
+		// carry on
+	case maState_midKey:
+		panic("invalid state: AssembleEntry cannot be called when in the middle of assembling another key")
+	case maState_expectValue:
+		panic("invalid state: AssembleEntry cannot be called when expecting start of value assembly")
+	case maState_midValue:
+		if !ma.valueFinishTidy() {
+			panic("invalid state: AssembleEntry cannot be called when in the middle of assembling a value")
+		} // if tidy success: carry on
+	case maState_finished:
+		panic("invalid state: AssembleEntry cannot be called on an assembler that's already finished")
+	}
+	switch k {
+	case "entryEndIdx":
+		if ma.s&fieldBit__Shredding_EntryEndIdx != 0 {
+			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Shredding_EntryEndIdx}
+		}
+		ma.s += fieldBit__Shredding_EntryEndIdx
+		ma.state = maState_midValue
+		ma.f = 0
+		ma.ca_entryEndIdx.w = &ma.w.entryEndIdx
+		ma.ca_entryEndIdx.m = &ma.cm
+		return &ma.ca_entryEndIdx, nil
+	case "shredEndIdx":
+		if ma.s&fieldBit__Shredding_ShredEndIdx != 0 {
+			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Shredding_ShredEndIdx}
+		}
+		ma.s += fieldBit__Shredding_ShredEndIdx
+		ma.state = maState_midValue
+		ma.f = 1
+		ma.ca_shredEndIdx.w = &ma.w.shredEndIdx
+		ma.ca_shredEndIdx.m = &ma.cm
+		return &ma.ca_shredEndIdx, nil
+	}
+	return nil, schema.ErrInvalidKey{TypeName: "ipldsch.Shredding", Key: &_String{k}}
+}
+func (ma *_Shredding__Assembler) AssembleKey() datamodel.NodeAssembler {
+	switch ma.state {
+	case maState_initial:
+		// carry on
+	case maState_midKey:
+		panic("invalid state: AssembleKey cannot be called when in the middle of assembling another key")
+	case maState_expectValue:
+		panic("invalid state: AssembleKey cannot be called when expecting start of value assembly")
+	case maState_midValue:
+		if !ma.valueFinishTidy() {
+			panic("invalid state: AssembleKey cannot be called when in the middle of assembling a value")
+		} // if tidy success: carry on
+	case maState_finished:
+		panic("invalid state: AssembleKey cannot be called on an assembler that's already finished")
+	}
+	ma.state = maState_midKey
+	return (*_Shredding__KeyAssembler)(ma)
+}
+func (ma *_Shredding__Assembler) AssembleValue() datamodel.NodeAssembler {
+	switch ma.state {
+	case maState_initial:
+		panic("invalid state: AssembleValue cannot be called when no key is primed")
+	case maState_midKey:
+		panic("invalid state: AssembleValue cannot be called when in the middle of assembling a key")
+	case maState_expectValue:
+		// carry on
+	case maState_midValue:
+		panic("invalid state: AssembleValue cannot be called when in the middle of assembling another value")
+	case maState_finished:
+		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
+	}
+	ma.state = maState_midValue
+	switch ma.f {
+	case 0:
+		ma.ca_entryEndIdx.w = &ma.w.entryEndIdx
+		ma.ca_entryEndIdx.m = &ma.cm
+		return &ma.ca_entryEndIdx
+	case 1:
+		ma.ca_shredEndIdx.w = &ma.w.shredEndIdx
+		ma.ca_shredEndIdx.m = &ma.cm
+		return &ma.ca_shredEndIdx
+	default:
+		panic("unreachable")
+	}
+}
+func (ma *_Shredding__Assembler) Finish() error {
+	switch ma.state {
+	case maState_initial:
+		// carry on
+	case maState_midKey:
+		panic("invalid state: Finish cannot be called when in the middle of assembling a key")
+	case maState_expectValue:
+		panic("invalid state: Finish cannot be called when expecting start of value assembly")
+	case maState_midValue:
+		if !ma.valueFinishTidy() {
+			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
+		} // if tidy success: carry on
+	case maState_finished:
+		panic("invalid state: Finish cannot be called on an assembler that's already finished")
+	}
+	if ma.s&fieldBits__Shredding_sufficient != fieldBits__Shredding_sufficient {
+		err := schema.ErrMissingRequiredField{Missing: make([]string, 0)}
+		if ma.s&fieldBit__Shredding_EntryEndIdx == 0 {
+			err.Missing = append(err.Missing, "entryEndIdx")
+		}
+		if ma.s&fieldBit__Shredding_ShredEndIdx == 0 {
+			err.Missing = append(err.Missing, "shredEndIdx")
+		}
+		return err
+	}
+	ma.state = maState_finished
+	*ma.m = schema.Maybe_Value
+	return nil
+}
+func (ma *_Shredding__Assembler) KeyPrototype() datamodel.NodePrototype {
+	return _String__Prototype{}
+}
+func (ma *_Shredding__Assembler) ValuePrototype(k string) datamodel.NodePrototype {
+	panic("todo structbuilder mapassembler valueprototype")
+}
+
+type _Shredding__KeyAssembler _Shredding__Assembler
+
+func (_Shredding__KeyAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.BeginMap(0)
+}
+func (_Shredding__KeyAssembler) BeginList(sizeHint int64) (datamodel.ListAssembler, error) {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.BeginList(0)
+}
+func (na *_Shredding__KeyAssembler) AssignNull() error {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.AssignNull()
+}
+func (_Shredding__KeyAssembler) AssignBool(bool) error {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.AssignBool(false)
+}
+func (_Shredding__KeyAssembler) AssignInt(int64) error {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.AssignInt(0)
+}
+func (_Shredding__KeyAssembler) AssignFloat(float64) error {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.AssignFloat(0)
+}
+func (ka *_Shredding__KeyAssembler) AssignString(k string) error {
+	if ka.state != maState_midKey {
+		panic("misuse: KeyAssembler held beyond its valid lifetime")
+	}
+	switch k {
+	case "entryEndIdx":
+		if ka.s&fieldBit__Shredding_EntryEndIdx != 0 {
+			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Shredding_EntryEndIdx}
+		}
+		ka.s += fieldBit__Shredding_EntryEndIdx
+		ka.state = maState_expectValue
+		ka.f = 0
+		return nil
+	case "shredEndIdx":
+		if ka.s&fieldBit__Shredding_ShredEndIdx != 0 {
+			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Shredding_ShredEndIdx}
+		}
+		ka.s += fieldBit__Shredding_ShredEndIdx
+		ka.state = maState_expectValue
+		ka.f = 1
+		return nil
+	default:
+		return schema.ErrInvalidKey{TypeName: "ipldsch.Shredding", Key: &_String{k}}
+	}
+}
+func (_Shredding__KeyAssembler) AssignBytes([]byte) error {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.AssignBytes(nil)
+}
+func (_Shredding__KeyAssembler) AssignLink(datamodel.Link) error {
+	return mixins.StringAssembler{TypeName: "ipldsch.Shredding.KeyAssembler"}.AssignLink(nil)
+}
+func (ka *_Shredding__KeyAssembler) AssignNode(v datamodel.Node) error {
+	if v2, err := v.AsString(); err != nil {
+		return err
+	} else {
+		return ka.AssignString(v2)
+	}
+}
+func (_Shredding__KeyAssembler) Prototype() datamodel.NodePrototype {
+	return _String__Prototype{}
+}
+func (Shredding) Type() schema.Type {
+	return nil /*TODO:typelit*/
+}
+func (n Shredding) Representation() datamodel.Node {
+	return (*_Shredding__Repr)(n)
+}
+
+type _Shredding__Repr _Shredding
+
+var _ datamodel.Node = &_Shredding__Repr{}
+
+func (_Shredding__Repr) Kind() datamodel.Kind {
+	return datamodel.Kind_List
+}
+func (_Shredding__Repr) LookupByString(string) (datamodel.Node, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.LookupByString("")
+}
+func (n *_Shredding__Repr) LookupByNode(key datamodel.Node) (datamodel.Node, error) {
+	ki, err := key.AsInt()
+	if err != nil {
+		return nil, err
+	}
+	return n.LookupByIndex(ki)
+}
+func (n *_Shredding__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
+	switch idx {
+	case 0:
+		return n.entryEndIdx.Representation(), nil
+	case 1:
+		return n.shredEndIdx.Representation(), nil
+	default:
+		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(idx)}
+	}
+}
+func (n _Shredding__Repr) LookupBySegment(seg datamodel.PathSegment) (datamodel.Node, error) {
+	i, err := seg.Index()
+	if err != nil {
+		return nil, datamodel.ErrInvalidSegmentForList{TypeName: "ipldsch.Shredding.Repr", TroubleSegment: seg, Reason: err}
+	}
+	return n.LookupByIndex(i)
+}
+func (_Shredding__Repr) MapIterator() datamodel.MapIterator {
+	return nil
+}
+func (n *_Shredding__Repr) ListIterator() datamodel.ListIterator {
+	return &_Shredding__ReprListItr{n, 0}
+}
+
+type _Shredding__ReprListItr struct {
+	n   *_Shredding__Repr
+	idx int
+}
+
+func (itr *_Shredding__ReprListItr) Next() (idx int64, v datamodel.Node, err error) {
+	if itr.idx >= 2 {
+		return -1, nil, datamodel.ErrIteratorOverread{}
+	}
+	switch itr.idx {
+	case 0:
+		idx = int64(itr.idx)
+		v = itr.n.entryEndIdx.Representation()
+	case 1:
+		idx = int64(itr.idx)
+		v = itr.n.shredEndIdx.Representation()
+	default:
+		panic("unreachable")
+	}
+	itr.idx++
+	return
+}
+func (itr *_Shredding__ReprListItr) Done() bool {
+	return itr.idx >= 2
+}
+
+func (rn *_Shredding__Repr) Length() int64 {
+	l := 2
+	return int64(l)
+}
+func (_Shredding__Repr) IsAbsent() bool {
+	return false
+}
+func (_Shredding__Repr) IsNull() bool {
+	return false
+}
+func (_Shredding__Repr) AsBool() (bool, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.AsBool()
+}
+func (_Shredding__Repr) AsInt() (int64, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.AsInt()
+}
+func (_Shredding__Repr) AsFloat() (float64, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.AsFloat()
+}
+func (_Shredding__Repr) AsString() (string, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.AsString()
+}
+func (_Shredding__Repr) AsBytes() ([]byte, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.AsBytes()
+}
+func (_Shredding__Repr) AsLink() (datamodel.Link, error) {
+	return mixins.List{TypeName: "ipldsch.Shredding.Repr"}.AsLink()
+}
+func (_Shredding__Repr) Prototype() datamodel.NodePrototype {
+	return _Shredding__ReprPrototype{}
+}
+
+type _Shredding__ReprPrototype struct{}
+
+func (_Shredding__ReprPrototype) NewBuilder() datamodel.NodeBuilder {
+	var nb _Shredding__ReprBuilder
+	nb.Reset()
+	return &nb
+}
+
+type _Shredding__ReprBuilder struct {
+	_Shredding__ReprAssembler
+}
+
+func (nb *_Shredding__ReprBuilder) Build() datamodel.Node {
+	if *nb.m != schema.Maybe_Value {
+		panic("invalid state: cannot call Build on an assembler that's not finished")
+	}
+	return nb.w
+}
+func (nb *_Shredding__ReprBuilder) Reset() {
+	var w _Shredding
+	var m schema.Maybe
+	*nb = _Shredding__ReprBuilder{_Shredding__ReprAssembler{w: &w, m: &m}}
+}
+
+type _Shredding__ReprAssembler struct {
+	w     *_Shredding
+	m     *schema.Maybe
+	state laState
+	f     int
+
+	cm             schema.Maybe
+	ca_entryEndIdx _Int__ReprAssembler
+	ca_shredEndIdx _Int__ReprAssembler
+}
+
+func (na *_Shredding__ReprAssembler) reset() {
+	na.state = laState_initial
+	na.f = 0
+	na.ca_entryEndIdx.reset()
+	na.ca_shredEndIdx.reset()
+}
+func (_Shredding__ReprAssembler) BeginMap(sizeHint int64) (datamodel.MapAssembler, error) {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.BeginMap(0)
+}
+func (na *_Shredding__ReprAssembler) BeginList(int64) (datamodel.ListAssembler, error) {
+	switch *na.m {
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: it makes no sense to 'begin' twice on the same assembler!")
+	}
+	*na.m = midvalue
+	if na.w == nil {
+		na.w = &_Shredding{}
+	}
+	return na, nil
+}
+func (na *_Shredding__ReprAssembler) AssignNull() error {
+	switch *na.m {
+	case allowNull:
+		*na.m = schema.Maybe_Null
+		return nil
+	case schema.Maybe_Absent:
+		return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr.Repr"}.AssignNull()
+	case schema.Maybe_Value, schema.Maybe_Null:
+		panic("invalid state: cannot assign into assembler that's already finished")
+	case midvalue:
+		panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+	}
+	panic("unreachable")
+}
+func (_Shredding__ReprAssembler) AssignBool(bool) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.AssignBool(false)
+}
+func (_Shredding__ReprAssembler) AssignInt(int64) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.AssignInt(0)
+}
+func (_Shredding__ReprAssembler) AssignFloat(float64) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.AssignFloat(0)
+}
+func (_Shredding__ReprAssembler) AssignString(string) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.AssignString("")
+}
+func (_Shredding__ReprAssembler) AssignBytes([]byte) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.AssignBytes(nil)
+}
+func (_Shredding__ReprAssembler) AssignLink(datamodel.Link) error {
+	return mixins.ListAssembler{TypeName: "ipldsch.Shredding.Repr"}.AssignLink(nil)
+}
+func (na *_Shredding__ReprAssembler) AssignNode(v datamodel.Node) error {
+	if v.IsNull() {
+		return na.AssignNull()
+	}
+	if v2, ok := v.(*_Shredding); ok {
+		switch *na.m {
+		case schema.Maybe_Value, schema.Maybe_Null:
+			panic("invalid state: cannot assign into assembler that's already finished")
+		case midvalue:
+			panic("invalid state: cannot assign null into an assembler that's already begun working on recursive structures!")
+		}
+		if na.w == nil {
+			na.w = v2
+			*na.m = schema.Maybe_Value
+			return nil
+		}
+		*na.w = *v2
+		*na.m = schema.Maybe_Value
+		return nil
+	}
+	if v.Kind() != datamodel.Kind_List {
+		return datamodel.ErrWrongKind{TypeName: "ipldsch.Shredding.Repr", MethodName: "AssignNode", AppropriateKind: datamodel.KindSet_JustList, ActualKind: v.Kind()}
+	}
+	itr := v.ListIterator()
+	for !itr.Done() {
+		_, v, err := itr.Next()
+		if err != nil {
+			return err
+		}
+		if err := na.AssembleValue().AssignNode(v); err != nil {
+			return err
+		}
+	}
+	return na.Finish()
+}
+func (_Shredding__ReprAssembler) Prototype() datamodel.NodePrototype {
+	return _Shredding__ReprPrototype{}
+}
+func (la *_Shredding__ReprAssembler) valueFinishTidy() bool {
+	switch la.f {
+	case 0:
+		switch la.cm {
+		case schema.Maybe_Value:
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
+			return true
+		default:
+			return false
+		}
+	case 1:
+		switch la.cm {
+		case schema.Maybe_Value:
+			la.cm = schema.Maybe_Absent
+			la.state = laState_initial
+			la.f++
+			return true
+		default:
+			return false
+		}
+	default:
+		panic("unreachable")
+	}
+}
+func (la *_Shredding__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
+	switch la.state {
+	case laState_initial:
+		// carry on
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: AssembleValue cannot be called when still in the middle of assembling the previous value")
+		} // if tidy success: carry on
+	case laState_finished:
+		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
+	}
+	if la.f >= 2 {
+		return _ErrorThunkAssembler{schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(2)}}
+	}
+	la.state = laState_midValue
+	switch la.f {
+	case 0:
+		la.ca_entryEndIdx.w = &la.w.entryEndIdx
+		la.ca_entryEndIdx.m = &la.cm
+		return &la.ca_entryEndIdx
+	case 1:
+		la.ca_shredEndIdx.w = &la.w.shredEndIdx
+		la.ca_shredEndIdx.m = &la.cm
+		return &la.ca_shredEndIdx
+	default:
+		panic("unreachable")
+	}
+}
+func (la *_Shredding__ReprAssembler) Finish() error {
+	switch la.state {
+	case laState_initial:
+		// carry on
+	case laState_midValue:
+		if !la.valueFinishTidy() {
+			panic("invalid state: Finish cannot be called when in the middle of assembling a value")
+		} // if tidy success: carry on
+	case laState_finished:
+		panic("invalid state: Finish cannot be called on an assembler that's already finished")
+	}
+	la.state = laState_finished
+	*la.m = schema.Maybe_Value
+	return nil
+}
+func (la *_Shredding__ReprAssembler) ValuePrototype(_ int64) datamodel.NodePrototype {
+	panic("todo structbuilder tuplerepr valueprototype")
 }
 
 func (n String) String() string {

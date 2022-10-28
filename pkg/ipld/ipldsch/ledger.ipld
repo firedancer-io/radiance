@@ -1,26 +1,22 @@
-type Ledger struct {
-  startSlot Int
-  numSlots  Int
-  nodes     [ Link ]
-} representation map
-
 type Block struct {
-  slot     Int
-  entries  [ Link ]
-} representation map
+  slot      Int
+  entries   [ Link ]
+  shredding [ Shredding ]
+} representation tuple
+
+type Shredding struct {
+  entryEndIdx Int
+  shredEndIdx Int
+} representation tuple
 
 type Entry struct {
   slot Int
   idx  Int
 
-  batch     Int
-  batchIdx  Int
-  lastShred Int
-
   numHashes  Int
   hash       Hash
   txs        TransactionList
-} representation map
+} representation tuple
 
 type Hash bytes
 

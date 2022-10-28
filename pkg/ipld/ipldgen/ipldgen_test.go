@@ -8,6 +8,7 @@ import (
 	"github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.firedancer.io/radiance/pkg/ipld/car"
 )
 
 func TestCIDLen(t *testing.T) {
@@ -18,7 +19,6 @@ func TestCIDLen(t *testing.T) {
 		RadianceTxList,
 		RadianceEntry,
 		RadianceBlock,
-		RadianceLedger,
 	}
 	for _, codec := range codecs {
 		t.Run(fmt.Sprintf("Codec_%#x", codec), func(t *testing.T) {
@@ -31,4 +31,17 @@ func TestCIDLen(t *testing.T) {
 			assert.Equal(t, id.ByteLen(), CIDLen)
 		})
 	}
+}
+
+type nullCARWriter struct{}
+
+func (nullCARWriter) WriteBlock(car.Block) error {
+	return nil
+}
+
+func TestBlockAssembler_Empty(t *testing.T) {
+	asm := NewBlockAssembler(nullCARWriter{}, 42)
+	link, err := asm.Finish()
+	require.NoError(t, err)
+	t.Log(link)
 }
