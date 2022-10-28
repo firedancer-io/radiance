@@ -1,5 +1,3 @@
-//go:build rocksdb
-
 // Package cargen transforms blockstores into CAR files.
 package cargen
 
@@ -65,7 +63,7 @@ const MaxCARSize = 1 << 36
 // Except for the ipldgen.SolanaTx "leaf" nodes, which are encoded using bincode (native).
 type Worker struct {
 	dir   string
-	walk  *blockstore.BlockWalk
+	walk  blockstore.BlockWalkI
 	epoch uint64
 	stop  uint64 // exclusive
 
@@ -75,7 +73,7 @@ type Worker struct {
 // NewWorker creates a new worker to transform an epoch from blockstore.BlockWalk into CAR files in the given dir.
 //
 // Creates the directory if it doesn't exist yet.
-func NewWorker(dir string, epoch uint64, walk *blockstore.BlockWalk) (*Worker, error) {
+func NewWorker(dir string, epoch uint64, walk blockstore.BlockWalkI) (*Worker, error) {
 	if err := os.Mkdir(dir, 0777); err != nil && !errors.Is(err, fs.ErrExist) {
 		return nil, err
 	}
