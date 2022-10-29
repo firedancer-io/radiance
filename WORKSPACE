@@ -26,7 +26,7 @@ http_archive(
 )
 
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 go_rules_dependencies()
 
@@ -76,3 +76,24 @@ http_archive(
 load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
 
 rules_foreign_cc_dependencies()
+
+################################################################################
+# Dependencies                                                                 #
+################################################################################
+
+# Dep: gflags (C++)
+http_archive(
+    name = "com_github_gflags_gflags",
+    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
+    strip_prefix = "gflags-2.2.2",
+    urls = ["https://github.com/gflags/gflags/archive/v2.2.2.tar.gz"],
+)
+
+# Dep: RocksDB (C++)
+http_archive(
+    name = "com_github_facebook_rocksdb",
+    build_file = "//:third_party/rocksdb/rocksdb.bzl",
+    sha256 = "b8ac9784a342b2e314c821f6d701148912215666ac5e9bdbccd93cf3767cb611",
+    strip_prefix = "rocksdb-7.7.3",
+    urls = ["https://github.com/facebook/rocksdb/archive/v7.7.3.tar.gz"],
+)
