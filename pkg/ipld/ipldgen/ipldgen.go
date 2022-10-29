@@ -167,14 +167,22 @@ func (b *BlockAssembler) Finish() (link cidlink.Link, err error) {
 		return link, err
 	}
 	for _, s := range b.shredding {
-		tuple, err := list.AssembleValue().BeginList(2)
+		tuple, err := list.AssembleValue().BeginMap(2)
 		if err != nil {
 			return link, err
 		}
-		if err = tuple.AssembleValue().AssignInt(int64(s.entryEndIdx)); err != nil {
+		entry, err := tuple.AssembleEntry("entryEndIdx")
+		if err != nil {
 			return link, err
 		}
-		if err = tuple.AssembleValue().AssignInt(int64(s.shredEndIdx)); err != nil {
+		if err = entry.AssignInt(int64(s.entryEndIdx)); err != nil {
+			return link, err
+		}
+		entry, err = tuple.AssembleEntry("shredEndIdx")
+		if err != nil {
+			return link, err
+		}
+		if err = entry.AssignInt(int64(s.shredEndIdx)); err != nil {
 			return link, err
 		}
 		if err = tuple.Finish(); err != nil {
