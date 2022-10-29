@@ -100,6 +100,7 @@ func NewWorker(dir string, epoch uint64, walk blockstore.BlockWalkI) (*Worker, e
 	w := &Worker{
 		dir:     dir,
 		walk:    walk,
+		epoch:   epoch,
 		stop:    stop,
 		CARSize: MaxCARSize,
 	}
@@ -114,6 +115,11 @@ func (w *Worker) Run(ctx context.Context) error {
 		}
 		if !next {
 			break
+		}
+	}
+	if w.handle.ok() {
+		if err := w.handle.close(); err != nil {
+			return err
 		}
 	}
 	return ctx.Err()
@@ -189,6 +195,9 @@ func (w *Worker) splitHandle(slot uint64) (err error) {
 	// Swap handles.
 	err = w.handle.close()
 	w.handle = newCAR
+	if written := w.handle.writer.Written(); written > int64(w.CARSize) {
+		klog.Errorf("Slot %d exceeds size of a single CAR (%d > %d)", slot, written, w.CARSize)
+	}
 	return err
 }
 
@@ -214,6 +223,10 @@ func (w *Worker) writeSlot(meta *blockstore.SlotMeta, entries [][]shred.Entry) e
 			if j == len(batch)-1 {
 				// We map "last shred of batch" to each "last entry of batch"
 				// so we can reconstruct the shred/entry-batch assignments.
+				if i >= len(meta.EntryEndIndexes) {
+					return fmt.Errorf("out-of-bounds batch index %d (have %d batches in slot %d)",
+						i, len(meta.EntryEndIndexes), slot)
+				}
 				pos.LastShred = int(meta.EntryEndIndexes[i])
 			}
 
