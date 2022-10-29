@@ -86,7 +86,7 @@ replay:
 		}
 		cum := uint64(0) // Cumulative hash count between mixins
 		for i, batch := range entries {
-			for j, entry := range batch.Entries {
+			for j, entry := range batch {
 				cum += entry.NumHashes
 				klog.V(7).Infof("Replay slot=%d entry=%02d/%02d hash=%s cum=%d txs=%d",
 					slot, i, j, hex.EncodeToString(entry.Hash[:]), cum, len(entry.Txns))

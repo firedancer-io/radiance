@@ -14,6 +14,7 @@ import (
 	"go.firedancer.io/radiance/pkg/blockstore"
 	"go.firedancer.io/radiance/pkg/ipld/car"
 	"go.firedancer.io/radiance/pkg/ipld/ipldgen"
+	"go.firedancer.io/radiance/pkg/shred"
 	"k8s.io/klog/v2"
 )
 
@@ -134,7 +135,7 @@ func (w *Worker) step() (next bool, err error) {
 	if err := w.ensureHandle(meta.Slot); err != nil {
 		return false, err
 	}
-	if err := w.writeSlot(meta.Slot, entries); err != nil {
+	if err := w.writeSlot(meta, entries); err != nil {
 		return false, err
 	}
 	if err := w.splitHandle(meta.Slot); err != nil {
@@ -193,7 +194,8 @@ func (w *Worker) splitHandle(slot uint64) (err error) {
 
 // writeSlot writes a filled Solana slot to the CAR.
 // Creates multiple IPLD blocks internally.
-func (w *Worker) writeSlot(slot uint64, entries []blockstore.Entries) error {
+func (w *Worker) writeSlot(meta *blockstore.SlotMeta, entries [][]shred.Entry) error {
+	slot := meta.Slot
 	asm := ipldgen.NewBlockAssembler(w.handle.writer, slot)
 
 	entryNum := 0
@@ -201,7 +203,7 @@ func (w *Worker) writeSlot(slot uint64, entries []blockstore.Entries) error {
 	for i, batch := range entries {
 		klog.V(6).Infof("Slot %d batch %d", slot, i)
 
-		for j, entry := range batch.Entries {
+		for j, entry := range batch {
 			pos := ipldgen.EntryPos{
 				Slot:       slot,
 				EntryIndex: entryNum,
@@ -209,10 +211,10 @@ func (w *Worker) writeSlot(slot uint64, entries []blockstore.Entries) error {
 				BatchIndex: j,
 				LastShred:  -1,
 			}
-			if j == len(batch.Entries)-1 {
+			if j == len(batch)-1 {
 				// We map "last shred of batch" to each "last entry of batch"
 				// so we can reconstruct the shred/entry-batch assignments.
-				pos.LastShred = int(batch.Shreds[len(batch.Shreds)-1].CommonHeader().Index)
+				pos.LastShred = int(meta.EntryEndIndexes[i])
 			}
 
 			if err := asm.WriteEntry(entry, pos); err != nil {

@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/linxGnu/grocksdb"
+	"go.firedancer.io/radiance/pkg/shred"
 	"k8s.io/klog/v2"
 )
 
@@ -106,9 +107,17 @@ func (m *BlockWalk) Next() (meta *SlotMeta, ok bool) {
 
 // Entries returns the entries at the current cursor.
 // Caller must have made an ok call to BlockWalk.Next before calling this.
-func (m *BlockWalk) Entries(meta *SlotMeta) ([]Entries, error) {
+func (m *BlockWalk) Entries(meta *SlotMeta) ([][]shred.Entry, error) {
 	h := m.handles[0]
-	return h.DB.GetEntries(meta)
+	mapping, err := h.DB.GetEntries(meta)
+	if err != nil {
+		return nil, err
+	}
+	batches := make([][]shred.Entry, len(mapping))
+	for i, batch := range mapping {
+		batches[i] = batch.Entries
+	}
+	return batches, nil
 }
 
 // pop closes the current open DB.

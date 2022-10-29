@@ -5,24 +5,25 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.firedancer.io/radiance/pkg/blockstore"
+	"go.firedancer.io/radiance/pkg/shred"
 )
 
 // mockBlockWalk is a mock implementation of blockstore.BlockWalkI.
 type mockBlockWalk struct {
 	queue   []*blockstore.SlotMeta
-	entries map[*blockstore.SlotMeta][]blockstore.Entries
-	staged  []blockstore.Entries
+	entries map[*blockstore.SlotMeta][][]shred.Entry
+	staged  [][]shred.Entry
 }
 
 func newMockBlockWalk() *mockBlockWalk {
 	return &mockBlockWalk{
 		queue:   nil,
-		entries: make(map[*blockstore.SlotMeta][]blockstore.Entries),
+		entries: make(map[*blockstore.SlotMeta][][]shred.Entry),
 		staged:  nil,
 	}
 }
 
-func (m *mockBlockWalk) append(meta *blockstore.SlotMeta, entries []blockstore.Entries) {
+func (m *mockBlockWalk) append(meta *blockstore.SlotMeta, entries [][]shred.Entry) {
 	m.queue = append(m.queue, meta)
 	m.entries[meta] = entries
 }
@@ -54,7 +55,7 @@ func (m *mockBlockWalk) Next() (meta *blockstore.SlotMeta, ok bool) {
 	return
 }
 
-func (m *mockBlockWalk) Entries(*blockstore.SlotMeta) ([]blockstore.Entries, error) {
+func (m *mockBlockWalk) Entries(*blockstore.SlotMeta) ([][]shred.Entry, error) {
 	return m.staged, nil
 }
 
