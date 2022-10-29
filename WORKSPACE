@@ -3,8 +3,53 @@ workspace(name = "firedancer_radiance")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 ################################################################################
+# Foreign C/C++ build system support                                           #
+################################################################################
+
+http_archive(
+    name = "rules_foreign_cc",
+    sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
+    strip_prefix = "rules_foreign_cc-0.9.0",
+    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
+)
+
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+
+rules_foreign_cc_dependencies()
+
+################################################################################
+# Dependencies                                                                 #
+################################################################################
+
+# Dep: gflags (C++)
+http_archive(
+    name = "com_github_gflags_gflags",
+    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
+    strip_prefix = "gflags-2.2.2",
+    urls = ["https://github.com/gflags/gflags/archive/v2.2.2.tar.gz"],
+)
+
+# Dep: RocksDB (C++)
+http_archive(
+    name = "com_github_facebook_rocksdb",
+    build_file = "//:third_party/rocksdb/rocksdb.bzl",
+    sha256 = "b8ac9784a342b2e314c821f6d701148912215666ac5e9bdbccd93cf3767cb611",
+    strip_prefix = "rocksdb-7.7.3",
+    urls = ["https://github.com/facebook/rocksdb/archive/v7.7.3.tar.gz"],
+)
+
+# Dep: grocksdb (Go)
+http_archive(
+    name = "com_github_linxgnu_grocksdb",
+    build_file = "//:third_party/go/grocksdb/grocksdb.bzl",
+    sha256 = "3e76617aaa74a2658ac59a03b77c632c41971ae01a5ccb6e1b8edeff59f567bf",
+    strip_prefix = "grocksdb-1.7.10",
+    urls = ["https://github.com/linxGnu/grocksdb/archive/refs/tags/v1.7.10.tar.gz"],
+)
+
+################################################################################
 # Go toolchain                                                                 #
-# Gazelle build file generator for Go modules and Protobuf                     #
+# Gazelle build file generator                                                 #
 ################################################################################
 
 http_archive(
@@ -49,7 +94,9 @@ load("//:third_party/go/repositories.bzl", "go_repositories")
 # gazelle:repository_macro third_party/go/repositories.bzl%go_repositories
 go_repositories()
 
-# Protobuf
+################################################################################
+# Protobuf                                                                     #
+################################################################################
 
 http_archive(
     name = "com_google_protobuf",
@@ -61,39 +108,3 @@ http_archive(
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
-
-################################################################################
-# Foreign C/C++ build system support                                           #
-################################################################################
-
-http_archive(
-    name = "rules_foreign_cc",
-    sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
-    strip_prefix = "rules_foreign_cc-0.9.0",
-    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
-)
-
-load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-
-rules_foreign_cc_dependencies()
-
-################################################################################
-# Dependencies                                                                 #
-################################################################################
-
-# Dep: gflags (C++)
-http_archive(
-    name = "com_github_gflags_gflags",
-    sha256 = "34af2f15cf7367513b352bdcd2493ab14ce43692d2dcd9dfc499492966c64dcf",
-    strip_prefix = "gflags-2.2.2",
-    urls = ["https://github.com/gflags/gflags/archive/v2.2.2.tar.gz"],
-)
-
-# Dep: RocksDB (C++)
-http_archive(
-    name = "com_github_facebook_rocksdb",
-    build_file = "//:third_party/rocksdb/rocksdb.bzl",
-    sha256 = "b8ac9784a342b2e314c821f6d701148912215666ac5e9bdbccd93cf3767cb611",
-    strip_prefix = "rocksdb-7.7.3",
-    urls = ["https://github.com/facebook/rocksdb/archive/v7.7.3.tar.gz"],
-)

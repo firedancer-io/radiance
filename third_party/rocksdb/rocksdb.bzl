@@ -1,24 +1,14 @@
-load("@rules_foreign_cc//foreign_cc:make.bzl", "make")
+load("@rules_foreign_cc//foreign_cc:defs.bzl", "cmake")
 
 filegroup(
     name = "srcs",
     srcs = glob(["**"]),
 )
 
-make(
-    name = "librocksdb",
-    targets = ["static_lib", "install"],
-    visibility = ["//visibility:public"],
-    lib_source = "//:srcs",
-    args = ["-j `nproc`"],
-    env = {
-        # Fix `libtool: no output file specified` on Xcode.
-        "AR": "",
-    },
-)
-
-alias(
+cmake(
     name = "rocksdb",
-    actual = ":librocksdb",
+    lib_source = "//:srcs",
+    out_static_libs = ["librocksdb.a"],
     visibility = ["//visibility:public"],
+    build_args = ["--parallel `njobs`"],
 )
