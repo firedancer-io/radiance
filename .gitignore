@@ -15,3 +15,9 @@ LOCK
 CURRENT
 MANIFEST-*
 OPTIONS-*
+
+# Bazel
+bazel-bin
+bazel-out
+bazel-radiance
+bazel-testlogs
