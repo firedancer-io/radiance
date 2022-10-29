@@ -15,7 +15,7 @@ import (
 
 var Cmd = cobra.Command{
 	Use:   "create <epoch>",
-	Short: "Create CAR archives from blockstore",
+	Short: "Create CAR files from blockstore",
 	Long: "Extracts Solana ledger data from blockstore (RocksDB) databases,\n" +
 		"and outputs IPLD CARs (content-addressable archives).\n" +
 		"\n" +
