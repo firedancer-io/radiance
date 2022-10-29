@@ -14,7 +14,7 @@ import (
 func TestReadGenesisFromArchive(t *testing.T) {
 	f := fixtures.Open(t, "genesis", "mainnet.tar.bz2")
 	defer f.Close()
-	genesis, err := ReadGenesisFromArchive(f)
+	genesis, _, err := ReadGenesisFromArchive(f)
 	require.NoError(t, err)
 
 	assert.Equal(t, time.Date(2020, time.March, 16, 14, 29, 0, 0, time.UTC), genesis.CreationTime)
