@@ -7,7 +7,6 @@ import (
 
 	bin "github.com/gagliardetto/binary"
 	"go.firedancer.io/radiance/pkg/shred"
-	"golang.org/x/exp/constraints"
 )
 
 // MakeShredKey creates the RocksDB key for CfDataShred or CfCodeShred.
@@ -47,7 +46,14 @@ func (s *SlotMeta) entryRanges() []entryRange {
 	return ranges
 }
 
-func sliceSortedByRange[T constraints.Ordered](list []T, start T, stop T) []T {
+type ordered interface {
+	int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint16 | uint32 | uint64 | uintptr |
+		float32 | float64 |
+		string
+}
+
+func sliceSortedByRange[T ordered](list []T, start T, stop T) []T {
 	for len(list) > 0 && list[0] < start {
 		list = list[1:]
 	}
