@@ -23,7 +23,7 @@ import (
 // cargen will attempt to pack CARs as large as possible but never exceed.
 //
 // Filecoin miners may append CARv2 indexes, which would exceed the total CAR size.
-const MaxCARSize = 1 << 36
+const MaxCARSize = 1 << 35
 
 // Worker extracts Solana blocks from blockstore and produces CAR files.
 //
@@ -51,7 +51,7 @@ const MaxCARSize = 1 << 36
 //
 // Each block will be parsed and turned into an IPLD graph.
 //
-// The procedure respects MaxCARSize and splits data across multiple CARs if needed.
+// The procedure respects Worker.CARSize and splits data across multiple CARs if needed.
 // This allows us to assign a slot range to each CAR for the reader's convenience, at negligible alignment cost.
 //
 // # Output
@@ -68,6 +68,8 @@ type Worker struct {
 	stop  uint64 // exclusive
 
 	handle carHandle
+
+	CARSize uint
 }
 
 // NewWorker creates a new worker to transform an epoch from blockstore.BlockWalk into CAR files in the given dir.
@@ -95,9 +97,10 @@ func NewWorker(dir string, epoch uint64, walk blockstore.BlockWalkI) (*Worker, e
 	}
 
 	w := &Worker{
-		dir:  dir,
-		walk: walk,
-		stop: stop,
+		dir:     dir,
+		walk:    walk,
+		stop:    stop,
+		CARSize: MaxCARSize,
 	}
 	return w, nil
 }
@@ -154,7 +157,7 @@ func (w *Worker) ensureHandle(slot uint64) error {
 // Internally moves blocks that exceed max CAR size from old to new file.
 func (w *Worker) splitHandle(slot uint64) (err error) {
 	size := w.handle.writer.Written()
-	if size <= MaxCARSize {
+	if size <= int64(w.CARSize) {
 		return nil
 	}
 	// CAR is too large and needs to be split.
