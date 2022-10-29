@@ -23,7 +23,7 @@ type OutStream interface {
 // However we create an IPLD link system (Merkle-DAG) on the fly in a single pass as we read the chain.
 // CARv1 is simple enough that we can roll a custom block writer, so no big deal.
 type Writer struct {
-	out CountingWriter
+	out countingWriter
 }
 
 // NewWriter creates a new CARv1 Writer and writes the header.
@@ -65,27 +65,27 @@ func (w *Writer) Written() int64 {
 	return w.out.written()
 }
 
-// CountingWriter wraps io.Writer, but counts number of written bytes.
+// countingWriter wraps io.Writer, but counts number of written bytes.
 // Not thread safe.
-type CountingWriter struct {
+type countingWriter struct {
 	io.Writer
 	n *int64
 }
 
-func newCountingWriter(w io.Writer) CountingWriter {
-	return CountingWriter{
+func newCountingWriter(w io.Writer) countingWriter {
+	return countingWriter{
 		Writer: w,
 		n:      new(int64),
 	}
 }
 
-func (c CountingWriter) Write(data []byte) (n int, err error) {
+func (c countingWriter) Write(data []byte) (n int, err error) {
 	n, err = c.Writer.Write(data)
 	*c.n += int64(n)
 	return
 }
 
 // written returns number of bytes written so far.
-func (c CountingWriter) written() int64 {
+func (c countingWriter) written() int64 {
 	return *c.n
 }
