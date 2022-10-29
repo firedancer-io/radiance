@@ -68,6 +68,7 @@ func (b Block) TotalLen() int {
 // leb128Len is like len(leb128.FromUInt64(x)).
 // But without an allocation, therefore should be preferred.
 func leb128Len(x uint64) (n int) {
+	n = 1
 	for {
 		x >>= 7
 		if x == 0 {
