@@ -32,7 +32,22 @@ go_rules_dependencies()
 
 go_register_toolchains(version = "1.19.2")
 
+################################################################################
+# Custom Go dependencies                                                       #
+################################################################################
+
+# add `go_repository` rules here to override Gazelle-generated files.
+
+################################################################################
+# go mod                                                                       #
+################################################################################
+
 gazelle_dependencies()
+
+load("//:third_party/go/repositories.bzl", "go_repositories")
+
+# gazelle:repository_macro third_party/go/repositories.bzl%go_repositories
+go_repositories()
 
 # Protobuf
 
