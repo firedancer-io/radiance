@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.firedancer.io/radiance/fixtures"
 	"go.firedancer.io/radiance/pkg/sbf"
 	"go.firedancer.io/radiance/pkg/sbf/loader"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestExecute_Memo(t *testing.T) {

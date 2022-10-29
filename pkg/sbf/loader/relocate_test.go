@@ -3,8 +3,8 @@ package loader
 import (
 	"testing"
 
-	"go.firedancer.io/radiance/pkg/sbf"
 	"github.com/stretchr/testify/assert"
+	"go.firedancer.io/radiance/pkg/sbf"
 )
 
 func TestSymbolHash_Entrypoint(t *testing.T) {

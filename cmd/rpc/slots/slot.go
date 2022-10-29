@@ -10,14 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gagliardetto/solana-go/rpc/ws"
+	"github.com/golang/protobuf/proto"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"go.firedancer.io/radiance/pkg/envfile"
 	"go.firedancer.io/radiance/pkg/kafka"
 	"go.firedancer.io/radiance/pkg/leaderschedule"
 	envv1 "go.firedancer.io/radiance/proto/env/v1"
 	networkv1 "go.firedancer.io/radiance/proto/network/v1"
-	"github.com/gagliardetto/solana-go/rpc/ws"
-	"github.com/golang/protobuf/proto"
-	"github.com/twmb/franz-go/pkg/kgo"
 	"k8s.io/klog/v2"
 )
 

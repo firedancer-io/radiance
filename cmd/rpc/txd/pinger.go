@@ -11,11 +11,11 @@ import (
 	"syscall"
 	"time"
 
-	envv1 "go.firedancer.io/radiance/proto/env/v1"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/gagliardetto/solana-go/rpc/ws"
 	"github.com/gagliardetto/solana-go/text"
+	envv1 "go.firedancer.io/radiance/proto/env/v1"
 	"k8s.io/klog/v2"
 )
 

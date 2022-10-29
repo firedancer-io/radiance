@@ -9,14 +9,14 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/rpc/ws"
 	"go.firedancer.io/radiance/pkg/blockhash"
 	"go.firedancer.io/radiance/pkg/clusternodes"
 	"go.firedancer.io/radiance/pkg/envfile"
 	"go.firedancer.io/radiance/pkg/leaderschedule"
 	envv1 "go.firedancer.io/radiance/proto/env/v1"
-	"github.com/gagliardetto/solana-go"
-	"github.com/gagliardetto/solana-go/rpc"
-	"github.com/gagliardetto/solana-go/rpc/ws"
 	"k8s.io/klog/v2"
 )
 

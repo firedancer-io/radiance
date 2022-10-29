@@ -5,9 +5,9 @@ import (
 	"net"
 	"time"
 
-	envv1 "go.firedancer.io/radiance/proto/env/v1"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl/scram"
+	envv1 "go.firedancer.io/radiance/proto/env/v1"
 )
 
 func NewClientFromEnv(env *envv1.Kafka, opts ...kgo.Opt) (*kgo.Client, error) {

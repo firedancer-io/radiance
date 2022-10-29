@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go.firedancer.io/radiance/pkg/tpu"
 	"github.com/gagliardetto/solana-go"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"go.firedancer.io/radiance/pkg/tpu"
 	"log"
 	"sort"
 )
