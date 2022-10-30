@@ -29,7 +29,7 @@ func shreds(t testing.TB, network string, slot uint64, shredType rune) [][]byte 
 	})
 	var shreds [][]byte
 	for _, entry := range entries {
-		if !entry.Type().IsRegular() {
+		if entry.Type().IsDir() {
 			continue
 		}
 		name := entry.Name()

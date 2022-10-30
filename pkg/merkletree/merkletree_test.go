@@ -14,7 +14,7 @@ func TestHashNodes(t *testing.T) {
 	}{
 		"Empty": {
 			leaves: nil,
-			root:   "0000000000000000000000000000000000000000000000000000000000000000",
+			root:   "",
 		},
 		"One": {
 			leaves: [][]byte{[]byte("test")},
@@ -38,7 +38,11 @@ func TestHashNodes(t *testing.T) {
 			for _, node := range actual.Nodes {
 				t.Log(hex.EncodeToString(node[:]))
 			}
-			assert.Equal(t, tc.root, hex.EncodeToString(actualRoot[:]))
+			if tc.root == "" {
+				assert.Nil(t, actualRoot)
+			} else {
+				assert.Equal(t, tc.root, hex.EncodeToString(actualRoot[:]))
+			}
 		})
 	}
 }
@@ -47,5 +51,5 @@ func TestHashNodes_One(t *testing.T) {
 	input := []byte("test")
 	actual := HashNodes([][]byte{input})
 	expected := HashLeaf(input)
-	assert.Equal(t, expected, actual.GetRoot())
+	assert.Equal(t, expected, *actual.GetRoot())
 }
