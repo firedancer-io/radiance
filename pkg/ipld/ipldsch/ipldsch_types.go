@@ -70,8 +70,6 @@ type _Bytes struct{ x []byte }
 // Entry matches the IPLD Schema type "Entry".  It has struct type-kind, and may be interrogated like map kind.
 type Entry = *_Entry
 type _Entry struct {
-	slot      _Int
-	idx       _Int
 	numHashes _Int
 	hash      _Hash
 	txs       _TransactionList

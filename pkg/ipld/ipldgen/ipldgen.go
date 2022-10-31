@@ -88,22 +88,6 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 
 	var nodeAsm datamodel.NodeAssembler
 
-	nodeAsm, err = entryMap.AssembleEntry("slot")
-	if err != nil {
-		return err
-	}
-	if err = nodeAsm.AssignInt(int64(pos.Slot)); err != nil {
-		return err
-	}
-
-	nodeAsm, err = entryMap.AssembleEntry("idx")
-	if err != nil {
-		return err
-	}
-	if err = nodeAsm.AssignInt(int64(pos.EntryIndex)); err != nil {
-		return err
-	}
-
 	nodeAsm, err = entryMap.AssembleEntry("numHashes")
 	if err != nil {
 		return err

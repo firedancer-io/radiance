@@ -1275,12 +1275,6 @@ var _ datamodel.Node = &_Bytes__Repr{}
 type _Bytes__ReprPrototype = _Bytes__Prototype
 type _Bytes__ReprAssembler = _Bytes__Assembler
 
-func (n _Entry) FieldSlot() Int {
-	return &n.slot
-}
-func (n _Entry) FieldIdx() Int {
-	return &n.idx
-}
 func (n _Entry) FieldNumHashes() Int {
 	return &n.numHashes
 }
@@ -1326,8 +1320,6 @@ func (m MaybeEntry) Must() Entry {
 }
 
 var (
-	fieldName__Entry_Slot      = _String{"slot"}
-	fieldName__Entry_Idx       = _String{"idx"}
 	fieldName__Entry_NumHashes = _String{"numHashes"}
 	fieldName__Entry_Hash      = _String{"hash"}
 	fieldName__Entry_Txs       = _String{"txs"}
@@ -1340,10 +1332,6 @@ func (Entry) Kind() datamodel.Kind {
 }
 func (n Entry) LookupByString(key string) (datamodel.Node, error) {
 	switch key {
-	case "slot":
-		return &n.slot, nil
-	case "idx":
-		return &n.idx, nil
 	case "numHashes":
 		return &n.numHashes, nil
 	case "hash":
@@ -1377,23 +1365,17 @@ type _Entry__MapItr struct {
 }
 
 func (itr *_Entry__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) {
-	if itr.idx >= 5 {
+	if itr.idx >= 3 {
 		return nil, nil, datamodel.ErrIteratorOverread{}
 	}
 	switch itr.idx {
 	case 0:
-		k = &fieldName__Entry_Slot
-		v = &itr.n.slot
-	case 1:
-		k = &fieldName__Entry_Idx
-		v = &itr.n.idx
-	case 2:
 		k = &fieldName__Entry_NumHashes
 		v = &itr.n.numHashes
-	case 3:
+	case 1:
 		k = &fieldName__Entry_Hash
 		v = &itr.n.hash
-	case 4:
+	case 2:
 		k = &fieldName__Entry_Txs
 		v = &itr.n.txs
 	default:
@@ -1403,14 +1385,14 @@ func (itr *_Entry__MapItr) Next() (k datamodel.Node, v datamodel.Node, _ error) 
 	return
 }
 func (itr *_Entry__MapItr) Done() bool {
-	return itr.idx >= 5
+	return itr.idx >= 3
 }
 
 func (Entry) ListIterator() datamodel.ListIterator {
 	return nil
 }
 func (Entry) Length() int64 {
-	return 5
+	return 3
 }
 func (Entry) IsAbsent() bool {
 	return false
@@ -1472,8 +1454,6 @@ type _Entry__Assembler struct {
 	f     int
 
 	cm           schema.Maybe
-	ca_slot      _Int__Assembler
-	ca_idx       _Int__Assembler
 	ca_numHashes _Int__Assembler
 	ca_hash      _Hash__Assembler
 	ca_txs       _TransactionList__Assembler
@@ -1482,20 +1462,16 @@ type _Entry__Assembler struct {
 func (na *_Entry__Assembler) reset() {
 	na.state = maState_initial
 	na.s = 0
-	na.ca_slot.reset()
-	na.ca_idx.reset()
 	na.ca_numHashes.reset()
 	na.ca_hash.reset()
 	na.ca_txs.reset()
 }
 
 var (
-	fieldBit__Entry_Slot        = 1 << 0
-	fieldBit__Entry_Idx         = 1 << 1
-	fieldBit__Entry_NumHashes   = 1 << 2
-	fieldBit__Entry_Hash        = 1 << 3
-	fieldBit__Entry_Txs         = 1 << 4
-	fieldBits__Entry_sufficient = 0 + 1<<0 + 1<<1 + 1<<2 + 1<<3 + 1<<4
+	fieldBit__Entry_NumHashes   = 1 << 0
+	fieldBit__Entry_Hash        = 1 << 1
+	fieldBit__Entry_Txs         = 1 << 2
+	fieldBits__Entry_sufficient = 0 + 1<<0 + 1<<1 + 1<<2
 )
 
 func (na *_Entry__Assembler) BeginMap(int64) (datamodel.MapAssembler, error) {
@@ -1592,7 +1568,7 @@ func (ma *_Entry__Assembler) valueFinishTidy() bool {
 	case 0:
 		switch ma.cm {
 		case schema.Maybe_Value:
-			ma.ca_slot.w = nil
+			ma.ca_numHashes.w = nil
 			ma.cm = schema.Maybe_Absent
 			ma.state = maState_initial
 			return true
@@ -1602,26 +1578,6 @@ func (ma *_Entry__Assembler) valueFinishTidy() bool {
 	case 1:
 		switch ma.cm {
 		case schema.Maybe_Value:
-			ma.ca_idx.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 2:
-		switch ma.cm {
-		case schema.Maybe_Value:
-			ma.ca_numHashes.w = nil
-			ma.cm = schema.Maybe_Absent
-			ma.state = maState_initial
-			return true
-		default:
-			return false
-		}
-	case 3:
-		switch ma.cm {
-		case schema.Maybe_Value:
 			ma.ca_hash.w = nil
 			ma.cm = schema.Maybe_Absent
 			ma.state = maState_initial
@@ -1629,7 +1585,7 @@ func (ma *_Entry__Assembler) valueFinishTidy() bool {
 		default:
 			return false
 		}
-	case 4:
+	case 2:
 		switch ma.cm {
 		case schema.Maybe_Value:
 			ma.ca_txs.w = nil
@@ -1659,33 +1615,13 @@ func (ma *_Entry__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		panic("invalid state: AssembleEntry cannot be called on an assembler that's already finished")
 	}
 	switch k {
-	case "slot":
-		if ma.s&fieldBit__Entry_Slot != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Slot}
-		}
-		ma.s += fieldBit__Entry_Slot
-		ma.state = maState_midValue
-		ma.f = 0
-		ma.ca_slot.w = &ma.w.slot
-		ma.ca_slot.m = &ma.cm
-		return &ma.ca_slot, nil
-	case "idx":
-		if ma.s&fieldBit__Entry_Idx != 0 {
-			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Idx}
-		}
-		ma.s += fieldBit__Entry_Idx
-		ma.state = maState_midValue
-		ma.f = 1
-		ma.ca_idx.w = &ma.w.idx
-		ma.ca_idx.m = &ma.cm
-		return &ma.ca_idx, nil
 	case "numHashes":
 		if ma.s&fieldBit__Entry_NumHashes != 0 {
 			return nil, datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_NumHashes}
 		}
 		ma.s += fieldBit__Entry_NumHashes
 		ma.state = maState_midValue
-		ma.f = 2
+		ma.f = 0
 		ma.ca_numHashes.w = &ma.w.numHashes
 		ma.ca_numHashes.m = &ma.cm
 		return &ma.ca_numHashes, nil
@@ -1695,7 +1631,7 @@ func (ma *_Entry__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		}
 		ma.s += fieldBit__Entry_Hash
 		ma.state = maState_midValue
-		ma.f = 3
+		ma.f = 1
 		ma.ca_hash.w = &ma.w.hash
 		ma.ca_hash.m = &ma.cm
 		return &ma.ca_hash, nil
@@ -1705,7 +1641,7 @@ func (ma *_Entry__Assembler) AssembleEntry(k string) (datamodel.NodeAssembler, e
 		}
 		ma.s += fieldBit__Entry_Txs
 		ma.state = maState_midValue
-		ma.f = 4
+		ma.f = 2
 		ma.ca_txs.w = &ma.w.txs
 		ma.ca_txs.m = &ma.cm
 		return &ma.ca_txs, nil
@@ -1746,22 +1682,14 @@ func (ma *_Entry__Assembler) AssembleValue() datamodel.NodeAssembler {
 	ma.state = maState_midValue
 	switch ma.f {
 	case 0:
-		ma.ca_slot.w = &ma.w.slot
-		ma.ca_slot.m = &ma.cm
-		return &ma.ca_slot
-	case 1:
-		ma.ca_idx.w = &ma.w.idx
-		ma.ca_idx.m = &ma.cm
-		return &ma.ca_idx
-	case 2:
 		ma.ca_numHashes.w = &ma.w.numHashes
 		ma.ca_numHashes.m = &ma.cm
 		return &ma.ca_numHashes
-	case 3:
+	case 1:
 		ma.ca_hash.w = &ma.w.hash
 		ma.ca_hash.m = &ma.cm
 		return &ma.ca_hash
-	case 4:
+	case 2:
 		ma.ca_txs.w = &ma.w.txs
 		ma.ca_txs.m = &ma.cm
 		return &ma.ca_txs
@@ -1786,12 +1714,6 @@ func (ma *_Entry__Assembler) Finish() error {
 	}
 	if ma.s&fieldBits__Entry_sufficient != fieldBits__Entry_sufficient {
 		err := schema.ErrMissingRequiredField{Missing: make([]string, 0)}
-		if ma.s&fieldBit__Entry_Slot == 0 {
-			err.Missing = append(err.Missing, "slot")
-		}
-		if ma.s&fieldBit__Entry_Idx == 0 {
-			err.Missing = append(err.Missing, "idx")
-		}
 		if ma.s&fieldBit__Entry_NumHashes == 0 {
 			err.Missing = append(err.Missing, "numHashes")
 		}
@@ -1839,29 +1761,13 @@ func (ka *_Entry__KeyAssembler) AssignString(k string) error {
 		panic("misuse: KeyAssembler held beyond its valid lifetime")
 	}
 	switch k {
-	case "slot":
-		if ka.s&fieldBit__Entry_Slot != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Slot}
-		}
-		ka.s += fieldBit__Entry_Slot
-		ka.state = maState_expectValue
-		ka.f = 0
-		return nil
-	case "idx":
-		if ka.s&fieldBit__Entry_Idx != 0 {
-			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_Idx}
-		}
-		ka.s += fieldBit__Entry_Idx
-		ka.state = maState_expectValue
-		ka.f = 1
-		return nil
 	case "numHashes":
 		if ka.s&fieldBit__Entry_NumHashes != 0 {
 			return datamodel.ErrRepeatedMapKey{Key: &fieldName__Entry_NumHashes}
 		}
 		ka.s += fieldBit__Entry_NumHashes
 		ka.state = maState_expectValue
-		ka.f = 2
+		ka.f = 0
 		return nil
 	case "hash":
 		if ka.s&fieldBit__Entry_Hash != 0 {
@@ -1869,7 +1775,7 @@ func (ka *_Entry__KeyAssembler) AssignString(k string) error {
 		}
 		ka.s += fieldBit__Entry_Hash
 		ka.state = maState_expectValue
-		ka.f = 3
+		ka.f = 1
 		return nil
 	case "txs":
 		if ka.s&fieldBit__Entry_Txs != 0 {
@@ -1877,7 +1783,7 @@ func (ka *_Entry__KeyAssembler) AssignString(k string) error {
 		}
 		ka.s += fieldBit__Entry_Txs
 		ka.state = maState_expectValue
-		ka.f = 4
+		ka.f = 2
 		return nil
 	default:
 		return schema.ErrInvalidKey{TypeName: "ipldsch.Entry", Key: &_String{k}}
@@ -1926,14 +1832,10 @@ func (n *_Entry__Repr) LookupByNode(key datamodel.Node) (datamodel.Node, error) 
 func (n *_Entry__Repr) LookupByIndex(idx int64) (datamodel.Node, error) {
 	switch idx {
 	case 0:
-		return n.slot.Representation(), nil
-	case 1:
-		return n.idx.Representation(), nil
-	case 2:
 		return n.numHashes.Representation(), nil
-	case 3:
+	case 1:
 		return n.hash.Representation(), nil
-	case 4:
+	case 2:
 		return n.txs.Representation(), nil
 	default:
 		return nil, schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(idx)}
@@ -1959,23 +1861,17 @@ type _Entry__ReprListItr struct {
 }
 
 func (itr *_Entry__ReprListItr) Next() (idx int64, v datamodel.Node, err error) {
-	if itr.idx >= 5 {
+	if itr.idx >= 3 {
 		return -1, nil, datamodel.ErrIteratorOverread{}
 	}
 	switch itr.idx {
 	case 0:
 		idx = int64(itr.idx)
-		v = itr.n.slot.Representation()
+		v = itr.n.numHashes.Representation()
 	case 1:
 		idx = int64(itr.idx)
-		v = itr.n.idx.Representation()
-	case 2:
-		idx = int64(itr.idx)
-		v = itr.n.numHashes.Representation()
-	case 3:
-		idx = int64(itr.idx)
 		v = itr.n.hash.Representation()
-	case 4:
+	case 2:
 		idx = int64(itr.idx)
 		v = itr.n.txs.Representation()
 	default:
@@ -1985,11 +1881,11 @@ func (itr *_Entry__ReprListItr) Next() (idx int64, v datamodel.Node, err error) 
 	return
 }
 func (itr *_Entry__ReprListItr) Done() bool {
-	return itr.idx >= 5
+	return itr.idx >= 3
 }
 
 func (rn *_Entry__Repr) Length() int64 {
-	l := 5
+	l := 3
 	return int64(l)
 }
 func (_Entry__Repr) IsAbsent() bool {
@@ -2051,8 +1947,6 @@ type _Entry__ReprAssembler struct {
 	f     int
 
 	cm           schema.Maybe
-	ca_slot      _Int__ReprAssembler
-	ca_idx       _Int__ReprAssembler
 	ca_numHashes _Int__ReprAssembler
 	ca_hash      _Hash__ReprAssembler
 	ca_txs       _TransactionList__ReprAssembler
@@ -2061,8 +1955,6 @@ type _Entry__ReprAssembler struct {
 func (na *_Entry__ReprAssembler) reset() {
 	na.state = laState_initial
 	na.f = 0
-	na.ca_slot.reset()
-	na.ca_idx.reset()
 	na.ca_numHashes.reset()
 	na.ca_hash.reset()
 	na.ca_txs.reset()
@@ -2185,26 +2077,6 @@ func (la *_Entry__ReprAssembler) valueFinishTidy() bool {
 		default:
 			return false
 		}
-	case 3:
-		switch la.cm {
-		case schema.Maybe_Value:
-			la.cm = schema.Maybe_Absent
-			la.state = laState_initial
-			la.f++
-			return true
-		default:
-			return false
-		}
-	case 4:
-		switch la.cm {
-		case schema.Maybe_Value:
-			la.cm = schema.Maybe_Absent
-			la.state = laState_initial
-			la.f++
-			return true
-		default:
-			return false
-		}
 	default:
 		panic("unreachable")
 	}
@@ -2220,28 +2092,20 @@ func (la *_Entry__ReprAssembler) AssembleValue() datamodel.NodeAssembler {
 	case laState_finished:
 		panic("invalid state: AssembleValue cannot be called on an assembler that's already finished")
 	}
-	if la.f >= 5 {
-		return _ErrorThunkAssembler{schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(5)}}
+	if la.f >= 3 {
+		return _ErrorThunkAssembler{schema.ErrNoSuchField{Type: nil /*TODO*/, Field: datamodel.PathSegmentOfInt(3)}}
 	}
 	la.state = laState_midValue
 	switch la.f {
 	case 0:
-		la.ca_slot.w = &la.w.slot
-		la.ca_slot.m = &la.cm
-		return &la.ca_slot
-	case 1:
-		la.ca_idx.w = &la.w.idx
-		la.ca_idx.m = &la.cm
-		return &la.ca_idx
-	case 2:
 		la.ca_numHashes.w = &la.w.numHashes
 		la.ca_numHashes.m = &la.cm
 		return &la.ca_numHashes
-	case 3:
+	case 1:
 		la.ca_hash.w = &la.w.hash
 		la.ca_hash.m = &la.cm
 		return &la.ca_hash
-	case 4:
+	case 2:
 		la.ca_txs.w = &la.w.txs
 		la.ca_txs.m = &la.cm
 		return &la.ca_txs

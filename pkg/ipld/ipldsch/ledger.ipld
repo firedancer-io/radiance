@@ -10,9 +10,6 @@ type Shredding struct {
 } representation tuple
 
 type Entry struct {
-  slot Int
-  idx  Int
-
   numHashes  Int
   hash       Hash
   txs        TransactionList
