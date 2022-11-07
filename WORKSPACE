@@ -18,6 +18,23 @@ load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_depende
 rules_foreign_cc_dependencies()
 
 ################################################################################
+# Bazel Tools                                                                  #
+################################################################################
+
+http_archive(
+    name = "com_github_bazelbuild_buildtools",
+    sha256 = "e3bb0dc8b0274ea1aca75f1f8c0c835adbe589708ea89bf698069d0790701ea3",
+    strip_prefix = "buildtools-5.1.0",
+    urls = [
+        "https://github.com/bazelbuild/buildtools/archive/5.1.0.tar.gz",
+    ]
+)
+
+load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
+
+buildifier_dependencies()
+
+################################################################################
 # Dependencies                                                                 #
 ################################################################################
 
