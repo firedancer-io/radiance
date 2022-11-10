@@ -5,7 +5,11 @@ go_library(
     srcs = [
         "compactindex.go",
         "query.go",
-    ],
+    ] + select({
+        "@platforms//os:osx": ["build.go"],
+        "@platforms//os:linux": ["build.go"],
+        "//conditions:default": [],
+    }),
     importpath = "go.firedancer.io/radiance/pkg/compactindex",
     visibility = ["//visibility:public"],
     deps = [

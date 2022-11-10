@@ -44,12 +44,12 @@ func (db *DB) GetBucket(i uint) (*Bucket, error) {
 	if i > uint(db.Header.NumBuckets) {
 		return nil, fmt.Errorf("out of bounds bucket index: %d >= %d", i, db.Header.NumBuckets)
 	}
-	headerOffset := int64(i) * bucketOffsetSize
+	headerOffset := headerSize + int64(i)*bucketOffsetSize
 
 	// Read pointer to bucket header.
 	var bucketOffsetBuf [8]byte
 	n, readErr := db.Stream.ReadAt(bucketOffsetBuf[:bucketOffsetSize], headerOffset)
-	if n < len(bucketOffsetBuf) {
+	if n < bucketOffsetSize {
 		return nil, readErr
 	}
 	bucketOffset := binary.LittleEndian.Uint64(bucketOffsetBuf[:])
@@ -59,13 +59,13 @@ func (db *DB) GetBucket(i uint) (*Bucket, error) {
 			Stride:      db.entryStride(),
 			OffsetWidth: intWidth(db.FileSize),
 		},
-		Entries: io.NewSectionReader(db.Stream, int64(bucketOffset)+bucketHeaderSize, -1),
 	}
 	// Read bucket header.
 	bucket.BucketHeader, readErr = readBucketHeader(db.Stream, int64(bucketOffset))
 	if readErr != nil {
 		return nil, readErr
 	}
+	bucket.Entries = io.NewSectionReader(db.Stream, int64(bucketOffset)+bucketHeaderSize, int64(bucket.NumEntries)*int64(bucket.Stride))
 	return bucket, nil
 }
 
@@ -110,7 +110,8 @@ func (b *Bucket) Load(batchSize int) ([]Entry, error) {
 
 	stride := int(b.Stride)
 	buf := make([]byte, batchSize*stride)
-	for off := int64(0); true; off += int64(len(buf)) {
+	off := int64(0)
+	for {
 		// Read another chunk.
 		n, err := b.Entries.ReadAt(buf, off)
 		// Decode all entries in it.
@@ -118,6 +119,7 @@ func (b *Bucket) Load(batchSize int) ([]Entry, error) {
 		for len(sub) > stride {
 			entries = append(entries, b.loadEntry(sub))
 			sub = sub[stride:]
+			off += int64(stride)
 		}
 		// Handle error.
 		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {

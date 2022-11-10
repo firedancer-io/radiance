@@ -157,6 +157,12 @@ type BucketHeader struct {
 // bucketHeaderSize is the size of the header preceding the hash table entries.
 const bucketHeaderSize = 12
 
+func (b *BucketHeader) Store(buf *[bucketHeaderSize]byte) {
+	binary.LittleEndian.PutUint32(buf[0:4], b.HashDomain)
+	binary.LittleEndian.PutUint32(buf[4:8], b.NumEntries)
+	buf[8] = b.HashLen
+}
+
 func (b *BucketHeader) Load(buf *[bucketHeaderSize]byte) {
 	b.HashDomain = binary.LittleEndian.Uint32(buf[0:4])
 	b.NumEntries = binary.LittleEndian.Uint32(buf[4:8])
