@@ -34,7 +34,7 @@ import (
 var (
 	flagDebug      = flag.Bool("debug", false, "Enable debug logging")
 	flagCount      = flag.Int("c", 1, "Number of pings to send, -1 for infinite")
-	flagDelay      = flag.Duration("i", 1*time.Second, "Delay between pings")
+	flagDelay      = flag.Duration("i", 1000*time.Millisecond, "Delay between pings")
 	flagAddr       = flag.String("addr", "", "Address to ping (<host>:<port>)")
 	flagSourcePort = flag.Int("s", 0, "Source port to use (0 for random/default)")
 	flagKey        = flag.String("k", "", "Path to private key file (default ~/.config/solana/id.json)")
@@ -46,6 +46,16 @@ type pingData struct {
 	Slot  uint64    `json:"slot"`
 	Ts    time.Time `json:"ts"`
 	Index int       `json:"index"`
+}
+
+func getDefaultRouteSourceIP() (net.IP, error) {
+	conn, err := net.Dial("udp", "44.0.0.0:0")
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+
+	return conn.LocalAddr().(*net.UDPAddr).IP, nil
 }
 
 func init() {
@@ -70,15 +80,12 @@ func init() {
 	}
 }
 
-func loadLocalSigner() (solana.PrivateKey, error) {
+func loadLocalKey() (solana.PrivateKey, error) {
 	return solana.PrivateKeyFromSolanaKeygenFile(*flagKey)
 }
 
-func generateRandomX509KeyPair() (tls.Certificate, error) {
-	_, priv, err := ed25519.GenerateKey(nil)
-	if err != nil {
-		return tls.Certificate{}, err
-	}
+func identityKeyToCert(sKey solana.PrivateKey) (tls.Certificate, error) {
+	key := ed25519.PrivateKey(sKey[:])
 
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
@@ -86,29 +93,37 @@ func generateRandomX509KeyPair() (tls.Certificate, error) {
 		log.Fatalf("Failed to generate serial number: %v", err)
 	}
 
-	notBefore := time.Now().Add(-1 * time.Hour)
-	notAfter := notBefore.Add(1 * time.Hour)
+	ip, err := getDefaultRouteSourceIP()
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf(
+			"failed to get default route source IP: %w", err)
+	}
+
+	klog.V(1).Infof("Using IP %s for certificate", ip)
+
+	notAfter := time.Now().Add(24 * time.Hour)
 
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 		Subject: pkix.Name{
-			Organization: []string{"Radiance Certificate Manufacturing Co."},
+			CommonName: "Solana node",
 		},
-		NotBefore:             notBefore,
+		NotBefore:             time.Time{},
 		NotAfter:              notAfter,
 		KeyUsage:              x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
+		IPAddresses:           []net.IP{ip},
 	}
 
-	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, priv.Public(), priv)
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, key.Public(), key)
 	if err != nil {
 		return tls.Certificate{}, err
 	}
 
 	return tls.Certificate{
 		Certificate: [][]byte{certDER},
-		PrivateKey:  priv,
+		PrivateKey:  key,
 	}, nil
 }
 
@@ -157,10 +172,23 @@ func main() {
 		})
 	}
 
-	clientCert, err := generateRandomX509KeyPair()
+	signer, err := loadLocalKey()
+	if err != nil {
+		klog.Exitf("Failed to load local signer: %v", err)
+	}
+
+	clientCert, err := identityKeyToCert(signer)
 	if err != nil {
 		panic(err)
 	}
+
+	parsed, err := x509.ParseCertificate(clientCert.Certificate[0])
+	if err != nil {
+		panic(err)
+	}
+
+	klog.Infof("Client key: %s", base58.Encode(
+		parsed.PublicKey.(ed25519.PublicKey)))
 
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
@@ -170,105 +198,102 @@ func main() {
 	}
 
 	for c := 0; c < *flagCount || *flagCount == -1; c++ {
-		c := c
-		t := time.Now()
-		minTimeout := 1 * time.Second
-		if *flagDelay > minTimeout {
-			minTimeout = *flagDelay
-		}
-		ctx, cancel := context.WithTimeout(ctx, minTimeout)
-
-		udpAddr, err := net.ResolveUDPAddr("udp", *flagAddr)
-		if err != nil {
-			klog.Exitf("Failed to resolve UDP address: %v", err)
-		}
-		udpConn, err := net.ListenUDP("udp",
-			&net.UDPAddr{IP: net.IPv4zero, Port: *flagSourcePort})
-		if err != nil {
-			klog.Exitf("Failed to listen on UDP socket: %v", err)
-		}
-
-		conn, err := quic.DialContext(ctx, udpConn, udpAddr, *flagAddr, tlsConf, &qconf)
-		if err != nil {
-			klog.Errorf("Failed to dial: %v", err)
-			time.Sleep(*flagDelay)
-			cancel()
-			continue
-		}
-		cancel()
-
-		klog.Infof("Connected to %s (in %dms, %d/%d)",
-			*flagAddr, time.Since(t).Milliseconds(),
-			c+1, *flagCount)
-
-		if klog.V(1).Enabled() {
-			for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
-				klog.Infof("Certificate: %s", cert.Subject)
-				klog.Infof("Public key: %s", base58.Encode(cert.PublicKey.(ed25519.PublicKey)))
-			}
-		}
-
-		if *flagSendTx {
-			client := rpc.New(*flagRPC)
-			// TODO: close
-
-			out, err := client.GetRecentBlockhash(context.TODO(), rpc.CommitmentFinalized)
-			if err != nil {
-				klog.Exitf("Failed to get recent blockhash: %v", err)
-			}
-
-			signer, err := loadLocalSigner()
-			if err != nil {
-				klog.Exitf("Failed to load local signer: %v", err)
-			}
-
-			tx := buildTransaction(t, c, out.Value.Blockhash, signer.PublicKey())
-			sigs, err := tx.Sign(func(key solana.PublicKey) *solana.PrivateKey {
-				if key != signer.PublicKey() {
-					panic("no private key for unknown signer " + key.String())
-				}
-				return &signer
-			})
-			if err != nil {
-				panic(err)
-			}
-
-			if klog.V(2).Enabled() {
-				tx.EncodeTree(text.NewTreeEncoder(os.Stdout, "Ping memo"))
-			}
-
-			txb, err := tx.MarshalBinary()
-			if err != nil {
-				panic(err)
-			}
-
-			klog.Infof("Sending tx %s", sigs[0].String())
-			klog.V(2).Infof("tx: %s", hex.EncodeToString(txb))
-
-			// Open a stream
-			stream, err := conn.OpenUniStream()
-			if err != nil {
-				klog.Errorf("Failed to open stream: %v", err)
-				continue
-			}
-
-			if n, err := stream.Write(txb); err != nil {
-				klog.Errorf("Failed to write to stream: %v", err)
-				continue
-			} else {
-				klog.V(2).Infof("Wrote %d bytes to stream", n)
-			}
-
-			if err := stream.Close(); err != nil {
-				klog.Errorf("Failed to close stream: %v", err)
-				continue
-			}
-		}
-
-		if err := conn.CloseWithError(0, ""); err != nil {
-			klog.Exitf("Failed to close: %v", err)
-		}
-
+		ping(ctx, c, tlsConf, qconf, signer)
 		time.Sleep(*flagDelay)
+	}
+}
+
+func ping(ctx context.Context, c int, tlsConf *tls.Config, qconf quic.Config, signer solana.PrivateKey) {
+	t := time.Now()
+	minTimeout := 300 * time.Millisecond
+	if *flagDelay > minTimeout {
+		minTimeout = *flagDelay
+	}
+	ctx, cancel := context.WithTimeout(ctx, minTimeout)
+	defer cancel()
+
+	udpAddr, err := net.ResolveUDPAddr("udp", *flagAddr)
+	if err != nil {
+		klog.Exitf("Failed to resolve UDP address: %v", err)
+	}
+	udpConn, err := net.ListenUDP("udp",
+		&net.UDPAddr{IP: net.IPv4zero, Port: *flagSourcePort})
+	if err != nil {
+		klog.Exitf("Failed to listen on UDP socket: %v", err)
+	}
+	defer udpConn.Close()
+
+	conn, err := quic.DialContext(ctx, udpConn, udpAddr, *flagAddr, tlsConf, &qconf)
+	if err != nil {
+		klog.Errorf("Failed to dial: %v", err)
+		time.Sleep(*flagDelay)
+		return
+	}
+
+	klog.Infof("Connected to %s (in %dms, %d/%d)",
+		*flagAddr, time.Since(t).Milliseconds(),
+		c+1, *flagCount)
+
+	if klog.V(1).Enabled() {
+		for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
+			klog.Infof("Certificate: %s", cert.Subject)
+			klog.Infof("Public key: %s", base58.Encode(cert.PublicKey.(ed25519.PublicKey)))
+		}
+	}
+
+	if *flagSendTx {
+		client := rpc.New(*flagRPC)
+		defer client.Close()
+
+		out, err := client.GetRecentBlockhash(context.TODO(), rpc.CommitmentFinalized)
+		if err != nil {
+			klog.Exitf("Failed to get recent blockhash: %v", err)
+		}
+
+		tx := buildTransaction(t, c, out.Value.Blockhash, signer.PublicKey())
+		sigs, err := tx.Sign(func(key solana.PublicKey) *solana.PrivateKey {
+			if key != signer.PublicKey() {
+				panic("no private key for unknown signer " + key.String())
+			}
+			return &signer
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		if klog.V(2).Enabled() {
+			tx.EncodeTree(text.NewTreeEncoder(os.Stdout, "Ping memo"))
+		}
+
+		txb, err := tx.MarshalBinary()
+		if err != nil {
+			panic(err)
+		}
+
+		klog.Infof("Sending tx %s", sigs[0].String())
+		klog.V(2).Infof("tx: %s", hex.EncodeToString(txb))
+
+		// Open a stream
+		stream, err := conn.OpenUniStreamSync(context.TODO())
+		if err != nil {
+			klog.Errorf("Failed to open stream: %v", err)
+			return
+		}
+
+		if n, err := stream.Write(txb); err != nil {
+			klog.Errorf("Failed to write to stream: %v", err)
+			return
+		} else {
+			klog.V(2).Infof("Wrote %d bytes to stream", n)
+		}
+
+		if err := stream.Close(); err != nil {
+			klog.Errorf("Failed to close stream: %v", err)
+			return
+		}
+	}
+
+	if err := conn.CloseWithError(0, ""); err != nil {
+		klog.Exitf("Failed to close: %v", err)
 	}
 }
