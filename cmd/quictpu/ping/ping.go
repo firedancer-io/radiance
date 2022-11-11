@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"os"
 	"time"
 
@@ -21,10 +22,11 @@ import (
 // QUIC_GO_LOG_LEVEL=DEBUG
 
 var (
-	flagDebug = flag.Bool("debug", false, "Enable debug logging")
-	flagCount = flag.Int("c", 1, "Number of pings to send, -1 for infinite")
-	flagDelay = flag.Duration("i", 1*time.Second, "Delay between pings")
-	flagAddr  = flag.String("addr", "", "Address to ping (<host>:<port>)")
+	flagDebug      = flag.Bool("debug", false, "Enable debug logging")
+	flagCount      = flag.Int("c", 1, "Number of pings to send, -1 for infinite")
+	flagDelay      = flag.Duration("i", 1*time.Second, "Delay between pings")
+	flagAddr       = flag.String("addr", "", "Address to ping (<host>:<port>)")
+	flagSourcePort = flag.Int("s", 0, "Source port to use (0 for random/default)")
 )
 
 func init() {
@@ -79,7 +81,18 @@ func main() {
 			minTimeout = *flagDelay
 		}
 		ctx, cancel := context.WithTimeout(ctx, minTimeout)
-		conn, err := quic.DialAddrContext(ctx, *flagAddr, tlsConf, &qconf)
+
+		udpAddr, err := net.ResolveUDPAddr("udp", *flagAddr)
+		if err != nil {
+			klog.Exitf("Failed to resolve UDP address: %v", err)
+		}
+		udpConn, err := net.ListenUDP("udp",
+			&net.UDPAddr{IP: net.IPv4zero, Port: *flagSourcePort})
+		if err != nil {
+			klog.Exitf("Failed to listen on UDP socket: %v", err)
+		}
+
+		conn, err := quic.DialContext(ctx, udpConn, udpAddr, *flagAddr, tlsConf, &qconf)
 		if err != nil {
 			klog.Errorf("Failed to dial: %v", err)
 			time.Sleep(*flagDelay)
