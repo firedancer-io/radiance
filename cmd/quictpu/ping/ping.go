@@ -67,7 +67,7 @@ func main() {
 
 	tlsConf := &tls.Config{
 		InsecureSkipVerify: true,
-		NextProtos:         nil,
+		NextProtos:         []string{"solana-tpu"},
 		KeyLogWriter:       dbg,
 	}
 
