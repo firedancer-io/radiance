@@ -87,8 +87,8 @@ func (b *Builder) Seal(ctx context.Context, f *os.File) (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to write header: %w", err)
 	}
-	// Create hole to leave space for bucket offset table.
-	bucketTableLen := int64(b.NumBuckets) * bucketOffsetSize
+	// Create hole to leave space for bucket header table.
+	bucketTableLen := int64(b.NumBuckets) * bucketHdrLen
 	err = fallocate(f, headerSize, bucketTableLen)
 	if err != nil {
 		return fmt.Errorf("failed to fallocate() bucket table: %w", err)
@@ -114,10 +114,13 @@ func (b *Builder) sealBucket(ctx context.Context, i int, f *os.File) error {
 	if err != nil {
 		return fmt.Errorf("failed to mine bucket %d: %w", i, err)
 	}
-	// Seek to end of file.
-	bucketOffset, err := f.Seek(0, io.SeekEnd)
+	// Find current file length.
+	offset, err := f.Seek(0, io.SeekEnd)
 	if err != nil {
-		return fmt.Errorf("failed to seek to index EOF: %w", err)
+		return fmt.Errorf("failed to seek to EOF: %w", err)
+	}
+	if offset < 0 {
+		panic("os.File.Seek() < 0")
 	}
 	// Write header to file.
 	desc := BucketDescriptor{
@@ -125,15 +128,13 @@ func (b *Builder) sealBucket(ctx context.Context, i int, f *os.File) error {
 			HashDomain: domain,
 			NumEntries: uint32(bucket.records),
 			HashLen:    3, // TODO remove hardcoded constant
+			FileOffset: uint64(offset),
 		},
-	}
-	wr := bufio.NewWriter(f)
-	var headerBuf [bucketHeaderSize]byte
-	desc.BucketHeader.Store(&headerBuf)
-	if _, err := wr.Write(headerBuf[:]); err != nil {
-		return fmt.Errorf("failed to write bucket header: %w", err)
+		Stride:      3 + intWidth(b.FileSize), // TODO remove hardcoded constant
+		OffsetWidth: intWidth(b.FileSize),
 	}
 	// Write entries to file.
+	wr := bufio.NewWriter(f)
 	entryBuf := make([]byte, desc.HashLen+intWidth(b.FileSize)) // TODO remove hardcoded constant
 	for _, entry := range entries {
 		desc.storeEntry(entryBuf, entry)
@@ -144,13 +145,9 @@ func (b *Builder) sealBucket(ctx context.Context, i int, f *os.File) error {
 	if err := wr.Flush(); err != nil {
 		return fmt.Errorf("failed to flush bucket to index: %w", err)
 	}
-	// Write offset to header.
-	var bucketOffsetBuf [8]byte
-	binary.LittleEndian.PutUint64(bucketOffsetBuf[:], uint64(bucketOffset))
-	pointerOffset := headerSize + (int64(i) * bucketOffsetSize)
-	_, err = f.WriteAt(bucketOffsetBuf[:bucketOffsetSize], pointerOffset)
-	if err != nil {
-		return fmt.Errorf("failed to write bucket offset to header (at %#x => %#x)", pointerOffset, bucketOffset)
+	// Write header to file.
+	if err := desc.BucketHeader.writeTo(f, uint(i)); err != nil {
+		return fmt.Errorf("failed to write bucket header %d: %w", i, err)
 	}
 	return nil
 }
@@ -233,13 +230,13 @@ func hashBucket(rd *bufio.Reader, entries []Entry, bitmap []byte, nonce uint32) 
 
 	// Scan provided reader for entries and hash along the way.
 	for i := range entries {
-		// Read next key from file
+		// Read next key from file (as defined by writeTuple)
 		var static [10]byte
 		if _, err := io.ReadFull(rd, static[:]); err != nil {
 			return err
 		}
 		keyLen := binary.LittleEndian.Uint16(static[0:2])
-		value := binary.LittleEndian.Uint64(static[0:10])
+		value := binary.LittleEndian.Uint64(static[2:10])
 		key := make([]byte, keyLen)
 		if _, err := io.ReadFull(rd, key); err != nil {
 			return err
@@ -258,8 +255,8 @@ func hashBucket(rd *bufio.Reader, entries []Entry, bitmap []byte, nonce uint32) 
 
 		// Export entry
 		entries[i] = Entry{
-			Hash:   hash,
-			Offset: value,
+			Hash:  hash,
+			Value: value,
 		}
 	}
 

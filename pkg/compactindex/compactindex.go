@@ -100,9 +100,6 @@ type Header struct {
 // headerSize is the size of the header at the beginning of the file.
 const headerSize = 32
 
-// bucketOffsetSize is the size of the offsets in the bucket header table.
-const bucketOffsetSize = 6
-
 // Load checks the Magic sequence and loads the header fields.
 func (h *Header) Load(buf *[headerSize]byte) error {
 	// Use a magic byte sequence to bail fast when user passes a corrupted/unrelated stream.
@@ -152,21 +149,25 @@ type BucketHeader struct {
 	HashDomain uint32
 	NumEntries uint32
 	HashLen    uint8
+	FileOffset uint64
 }
 
-// bucketHeaderSize is the size of the header preceding the hash table entries.
-const bucketHeaderSize = 12
+// bucketHdrLen is the size of the header preceding the hash table entries.
+const bucketHdrLen = 16
 
-func (b *BucketHeader) Store(buf *[bucketHeaderSize]byte) {
+func (b *BucketHeader) Store(buf *[bucketHdrLen]byte) {
 	binary.LittleEndian.PutUint32(buf[0:4], b.HashDomain)
 	binary.LittleEndian.PutUint32(buf[4:8], b.NumEntries)
 	buf[8] = b.HashLen
+	buf[9] = 0
+	putUintLe(buf[10:16], b.FileOffset)
 }
 
-func (b *BucketHeader) Load(buf *[bucketHeaderSize]byte) {
+func (b *BucketHeader) Load(buf *[bucketHdrLen]byte) {
 	b.HashDomain = binary.LittleEndian.Uint32(buf[0:4])
 	b.NumEntries = binary.LittleEndian.Uint32(buf[4:8])
 	b.HashLen = buf[8]
+	b.FileOffset = uintLe(buf[10:16])
 }
 
 // Hash returns the per-bucket hash of a key.
@@ -184,7 +185,7 @@ type BucketDescriptor struct {
 
 func (b *BucketDescriptor) loadEntry(buf []byte) (e Entry) {
 	e.Hash = uintLe(buf[0:b.HashLen])
-	e.Offset = uintLe(buf[b.HashLen : b.HashLen+b.OffsetWidth])
+	e.Value = uintLe(buf[b.HashLen : b.HashLen+b.OffsetWidth])
 	return
 }
 
@@ -193,14 +194,19 @@ func (b *BucketDescriptor) storeEntry(buf []byte, e Entry) {
 		panic("serializeEntry: buf too small")
 	}
 	putUintLe(buf[0:b.HashLen], e.Hash)
-	putUintLe(buf[b.HashLen:b.HashLen+b.OffsetWidth], e.Offset)
+	putUintLe(buf[b.HashLen:b.HashLen+b.OffsetWidth], e.Value)
 }
 
 // SearchSortedEntries performs an in-memory binary search for a given hash.
 func SearchSortedEntries(entries []Entry, hash uint64) *Entry {
-	i := sort.Search(len(entries), func(i int) bool {
-		return entries[i].Hash > hash
+	i, found := sort.Find(len(entries), func(i int) int {
+		other := entries[i].Hash
+		// Note: This is safe because neither side exceeds 2^24.
+		return int(hash) - int(other)
 	})
+	if !found {
+		return nil
+	}
 	if i >= len(entries) || entries[i].Hash != hash {
 		return nil
 	}
@@ -222,8 +228,8 @@ func EntryHash64(prefix uint32, key []byte) uint64 {
 
 // Entry is a single element in a hash table.
 type Entry struct {
-	Hash   uint64
-	Offset uint64
+	Hash  uint64
+	Value uint64
 }
 
 // intWidth returns the number of bytes minimally required to represent the given integer.

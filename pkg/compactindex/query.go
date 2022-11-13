@@ -1,7 +1,6 @@
 package compactindex
 
 import (
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -41,18 +40,10 @@ func (db *DB) FindBucket(key []byte) (*Bucket, error) {
 
 // GetBucket returns a handle to the bucket at the given index.
 func (db *DB) GetBucket(i uint) (*Bucket, error) {
-	if i > uint(db.Header.NumBuckets) {
+	if i >= uint(db.Header.NumBuckets) {
 		return nil, fmt.Errorf("out of bounds bucket index: %d >= %d", i, db.Header.NumBuckets)
 	}
-	headerOffset := headerSize + int64(i)*bucketOffsetSize
 
-	// Read pointer to bucket header.
-	var bucketOffsetBuf [8]byte
-	n, readErr := db.Stream.ReadAt(bucketOffsetBuf[:bucketOffsetSize], headerOffset)
-	if n < bucketOffsetSize {
-		return nil, readErr
-	}
-	bucketOffset := binary.LittleEndian.Uint64(bucketOffsetBuf[:])
 	// Fill bucket handle.
 	bucket := &Bucket{
 		BucketDescriptor: BucketDescriptor{
@@ -61,11 +52,11 @@ func (db *DB) GetBucket(i uint) (*Bucket, error) {
 		},
 	}
 	// Read bucket header.
-	bucket.BucketHeader, readErr = readBucketHeader(db.Stream, int64(bucketOffset))
+	readErr := bucket.BucketHeader.readFrom(db.Stream, i)
 	if readErr != nil {
 		return nil, readErr
 	}
-	bucket.Entries = io.NewSectionReader(db.Stream, int64(bucketOffset)+bucketHeaderSize, int64(bucket.NumEntries)*int64(bucket.Stride))
+	bucket.Entries = io.NewSectionReader(db.Stream, int64(bucket.FileOffset), int64(bucket.NumEntries)*int64(bucket.Stride))
 	return bucket, nil
 }
 
@@ -75,15 +66,25 @@ func (db *DB) entryStride() uint8 {
 	return uint8(hashSize) + offsetSize
 }
 
-func readBucketHeader(rd io.ReaderAt, at int64) (hdr BucketHeader, err error) {
-	var buf [bucketHeaderSize]byte
-	var n int
-	n, err = rd.ReadAt(buf[:], at)
-	if n >= len(buf) {
-		err = nil
+func bucketOffset(i uint) int64 {
+	return headerSize + int64(i)*bucketHdrLen
+}
+
+func (b *BucketHeader) readFrom(rd io.ReaderAt, i uint) error {
+	var buf [bucketHdrLen]byte
+	n, err := rd.ReadAt(buf[:], bucketOffset(i))
+	if n < len(buf) {
+		return err
 	}
-	hdr.Load(&buf)
-	return
+	b.Load(&buf)
+	return nil
+}
+
+func (b *BucketHeader) writeTo(wr io.WriterAt, i uint) error {
+	var buf [bucketHdrLen]byte
+	b.Store(&buf)
+	_, err := wr.WriteAt(buf[:], bucketOffset(i))
+	return err
 }
 
 // Bucket is a database handle pointing to a subset of the index.
@@ -95,6 +96,7 @@ type Bucket struct {
 // maxEntriesPerBucket is the hardcoded maximum permitted number of entries per bucket.
 const maxEntriesPerBucket = 1 << 24 // (16 * stride) MiB
 
+// targetEntriesPerBucket is the average number of records in each hashtable bucket we aim for.
 const targetEntriesPerBucket = 10000
 
 // Load retrieves all entries in the hashtable.
@@ -116,7 +118,7 @@ func (b *Bucket) Load(batchSize int) ([]Entry, error) {
 		n, err := b.Entries.ReadAt(buf, off)
 		// Decode all entries in it.
 		sub := buf[:n]
-		for len(sub) > stride {
+		for len(sub) >= stride {
 			entries = append(entries, b.loadEntry(sub))
 			sub = sub[stride:]
 			off += int64(stride)
