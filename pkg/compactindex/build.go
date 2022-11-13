@@ -137,7 +137,7 @@ func (b *Builder) sealBucket(ctx context.Context, i int, f *os.File) error {
 	wr := bufio.NewWriter(f)
 	entryBuf := make([]byte, desc.HashLen+intWidth(b.FileSize)) // TODO remove hardcoded constant
 	for _, entry := range entries {
-		desc.storeEntry(entryBuf, entry)
+		desc.marshalEntry(entryBuf, entry)
 		if _, err := wr.Write(entryBuf[:]); err != nil {
 			return fmt.Errorf("failed to write record to index: %w", err)
 		}

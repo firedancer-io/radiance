@@ -183,13 +183,13 @@ type BucketDescriptor struct {
 	OffsetWidth uint8 // with of offset field in bucket
 }
 
-func (b *BucketDescriptor) loadEntry(buf []byte) (e Entry) {
+func (b *BucketDescriptor) unmarshalEntry(buf []byte) (e Entry) {
 	e.Hash = uintLe(buf[0:b.HashLen])
 	e.Value = uintLe(buf[b.HashLen : b.HashLen+b.OffsetWidth])
 	return
 }
 
-func (b *BucketDescriptor) storeEntry(buf []byte, e Entry) {
+func (b *BucketDescriptor) marshalEntry(buf []byte, e Entry) {
 	if len(buf) < int(b.Stride) {
 		panic("serializeEntry: buf too small")
 	}

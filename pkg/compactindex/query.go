@@ -33,8 +33,19 @@ func Open(stream io.ReaderAt) (*DB, error) {
 	return db, nil
 }
 
-// FindBucket returns a handle to the bucket that might contain the given key.
-func (db *DB) FindBucket(key []byte) (*Bucket, error) {
+// Lookup queries for a key in the index and returns the value (offset), if any.
+//
+// Returns ErrNotFound if the key is unknown.
+func (db *DB) Lookup(key []byte) (uint64, error) {
+	bucket, err := db.LookupBucket(key)
+	if err != nil {
+		return 0, err
+	}
+	return bucket.Lookup(key)
+}
+
+// LookupBucket returns a handle to the bucket that might contain the given key.
+func (db *DB) LookupBucket(key []byte) (*Bucket, error) {
 	return db.GetBucket(db.Header.BucketHash(key))
 }
 
@@ -102,7 +113,7 @@ const targetEntriesPerBucket = 10000
 // Load retrieves all entries in the hashtable.
 func (b *Bucket) Load(batchSize int) ([]Entry, error) {
 	if batchSize <= 0 {
-		batchSize = 1
+		batchSize = 512 // default to reasonable batch size
 	}
 	// TODO bounds check
 	if b.NumEntries > maxEntriesPerBucket {
@@ -119,7 +130,7 @@ func (b *Bucket) Load(batchSize int) ([]Entry, error) {
 		// Decode all entries in it.
 		sub := buf[:n]
 		for len(sub) >= stride {
-			entries = append(entries, b.loadEntry(sub))
+			entries = append(entries, b.unmarshalEntry(sub))
 			sub = sub[stride:]
 			off += int64(stride)
 		}
@@ -134,4 +145,42 @@ func (b *Bucket) Load(batchSize int) ([]Entry, error) {
 	return entries, nil
 }
 
+// TODO: This binary search algo is not optimized for high-latency remotes yet.
+
+// Lookup queries for a key using binary search.
+func (b *Bucket) Lookup(key []byte) (uint64, error) {
+	return b.binarySearch(b.Hash(key))
+}
+
+func (b *Bucket) binarySearch(target uint64) (uint64, error) {
+	low := 0
+	high := int(b.NumEntries)
+	for low <= high {
+		median := (low + high) / 2
+		entry, err := b.loadEntry(median)
+		if err != nil {
+			return 0, err
+		}
+		if entry.Hash == target {
+			return entry.Value, nil
+		} else if entry.Hash < target {
+			low = median + 1
+		} else {
+			high = median - 1
+		}
+	}
+	return 0, ErrNotFound
+}
+
+func (b *Bucket) loadEntry(i int) (Entry, error) {
+	off := int64(i) * int64(b.Stride)
+	buf := make([]byte, b.Stride)
+	n, err := b.Entries.ReadAt(buf, off)
+	if n != len(buf) {
+		return Entry{}, err
+	}
+	return b.unmarshalEntry(buf), nil
+}
+
+// ErrNotFound marks a missing entry.
 var ErrNotFound = errors.New("not found")

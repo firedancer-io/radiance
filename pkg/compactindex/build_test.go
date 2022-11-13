@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 func TestBuilder(t *testing.T) {
@@ -181,7 +182,7 @@ func TestBuilder_Random(t *testing.T) {
 	const numKeys = uint(500000)
 	const keySize = uint(16)
 	const maxOffset = uint64(1000000)
-	const queries = int(1000)
+	const queries = int(10000)
 
 	// Create new builder session.
 	builder, err := NewBuilder("", numKeys, maxOffset)
@@ -221,7 +222,7 @@ func TestBuilder_Random(t *testing.T) {
 	// Print some stats.
 	targetStat, err := targetFile.Stat()
 	require.NoError(t, err)
-	t.Logf("Index size: %d", targetStat.Size())
+	t.Logf("Index size: %d (% .2f)", targetStat.Size(), decor.SizeB1000(targetStat.Size()))
 	t.Logf("Bytes per entry: %f", float64(targetStat.Size())/float64(numKeys))
 	t.Logf("Indexing speed: %f/s", float64(numKeys)/time.Since(preInsert).Seconds())
 
@@ -237,16 +238,12 @@ func TestBuilder_Random(t *testing.T) {
 		keyN := uint64(rand.Int63n(int64(numKeys)))
 		binary.LittleEndian.PutUint64(key, keyN)
 
-		bucket, err := db.FindBucket(key)
+		bucket, err := db.LookupBucket(key)
 		require.NoError(t, err)
 
-		hash := EntryHash64(bucket.HashDomain, key) & 0xFFFFFF // TODO fix mask
-		entries, err := bucket.Load(1024)
+		value, err := bucket.Lookup(key)
 		require.NoError(t, err)
-
-		// XXX use external binary search here
-		entry := SearchSortedEntries(entries, hash)
-		require.NotNil(t, entry)
+		require.True(t, value > 0)
 	}
 	t.Logf("Queried %d items", queries)
 	t.Logf("Query speed: %f/s", float64(queries)/time.Since(preQuery).Seconds())
