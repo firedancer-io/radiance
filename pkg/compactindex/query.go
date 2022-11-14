@@ -155,9 +155,10 @@ func (b *Bucket) Lookup(key []byte) (uint64, error) {
 func (b *Bucket) binarySearch(target uint64) (uint64, error) {
 	low := 0
 	high := int(b.NumEntries)
+	buf := make([]byte, b.Stride)
 	for low <= high {
 		median := (low + high) / 2
-		entry, err := b.loadEntry(median)
+		entry, err := b.loadEntry(median, buf)
 		if err != nil {
 			return 0, err
 		}
@@ -172,9 +173,8 @@ func (b *Bucket) binarySearch(target uint64) (uint64, error) {
 	return 0, ErrNotFound
 }
 
-func (b *Bucket) loadEntry(i int) (Entry, error) {
+func (b *Bucket) loadEntry(i int, buf []byte) (Entry, error) {
 	off := int64(i) * int64(b.Stride)
-	buf := make([]byte, b.Stride)
 	n, err := b.Entries.ReadAt(buf, off)
 	if n != len(buf) {
 		return Entry{}, err

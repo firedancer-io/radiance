@@ -226,6 +226,16 @@ func EntryHash64(prefix uint32, key []byte) uint64 {
 	return digest.Sum64()
 }
 
+func EntryHasher(prefix uint32) (digest xxhash.Digest) {
+	const blockSize = 32
+	var prefixBlock [blockSize]byte
+	binary.LittleEndian.PutUint32(prefixBlock[:4], prefix)
+
+	digest.Reset()
+	digest.Write(prefixBlock[:])
+	return
+}
+
 // Entry is a single element in a hash table.
 type Entry struct {
 	Hash  uint64

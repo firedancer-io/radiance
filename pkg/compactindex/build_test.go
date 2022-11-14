@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -179,7 +180,7 @@ func TestBuilder_Random(t *testing.T) {
 		t.Skip("Skipping long test")
 	}
 
-	const numKeys = uint(500000)
+	const numKeys = uint(10000000)
 	const keySize = uint(16)
 	const maxOffset = uint64(1000000)
 	const queries = int(10000)
@@ -189,6 +190,7 @@ func TestBuilder_Random(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, builder)
 	require.NotEmpty(t, builder.buckets)
+	builder.Workers = runtime.NumCPU()
 
 	// Ensure we cleaned up after ourselves.
 	defer func() {
