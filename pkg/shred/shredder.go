@@ -1,18 +1,21 @@
 package shred
 
-import (
-	"bytes"
-	"fmt"
-)
-
-func Concat(shreds []Shred) ([]byte, error) {
-	var buf bytes.Buffer
-	for _, shred := range shreds {
-		data, ok := shred.Data()
-		if !ok {
-			return nil, fmt.Errorf("invalid data shred")
+func Concat(shreds []Shred) []byte {
+	var total int
+	for i := range shreds {
+		if !shreds[i].IsData() {
+			continue
 		}
-		buf.Write(data)
+		total += len(shreds[i].Payload)
 	}
-	return buf.Bytes(), nil
+	buf := make([]byte, 0, total)
+	for i := range shreds {
+		if !shreds[i].IsData() {
+			continue
+		}
+		target := buf[len(buf) : len(buf)+len(shreds[i].Payload)]
+		copy(target, shreds[i].Payload)
+		buf = buf[:len(buf)+len(shreds[i].Payload)]
+	}
+	return buf
 }

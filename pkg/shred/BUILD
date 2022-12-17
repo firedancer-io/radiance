@@ -3,11 +3,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "shred",
     srcs = [
-        "legacy.go",
-        "merkle.go",
+        "entry.go",
         "shred.go",
         "shredder.go",
-        "version.go",
     ],
     importpath = "go.firedancer.io/radiance/pkg/shred",
     visibility = ["//visibility:public"],
