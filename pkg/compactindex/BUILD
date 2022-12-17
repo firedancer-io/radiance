@@ -34,5 +34,6 @@ go_test(
     deps = [
         "@com_github_stretchr_testify//assert",
         "@com_github_stretchr_testify//require",
+        "@com_github_vbauerster_mpb_v8//decor",
     ],
 )
