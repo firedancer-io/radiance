@@ -62,7 +62,7 @@ func run(c *cobra.Command, args []string) {
 	}
 
 	// Create new walker object
-	walker, err := blockstore.NewBlockWalk(handles)
+	walker, err := blockstore.NewBlockWalk(handles, 2 /*TODO*/)
 	if err != nil {
 		klog.Exitf("Failed to create multi-DB iterator: %s", err)
 	}

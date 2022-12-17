@@ -62,7 +62,7 @@ func run(c *cobra.Command, _ []string) {
 	}
 
 	// Open block iterator.
-	walker, err := blockstore.NewBlockWalk([]blockstore.WalkHandle{{DB: db}})
+	walker, err := blockstore.NewBlockWalk([]blockstore.WalkHandle{{DB: db}}, 2)
 	if err != nil {
 		klog.Fatal(err)
 	}

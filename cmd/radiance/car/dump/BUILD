@@ -10,6 +10,7 @@ go_library(
         "@com_github_gagliardetto_binary//:binary",
         "@com_github_gagliardetto_solana_go//:solana-go",
         "@com_github_ipld_go_car//:go-car",
+        "@com_github_multiformats_go_multicodec//:go-multicodec",
         "@com_github_spf13_cobra//:cobra",
         "@io_k8s_klog_v2//:klog",
     ],

@@ -9,8 +9,8 @@ import (
 	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 	"github.com/ipld/go-car"
+	"github.com/multiformats/go-multicodec"
 	"github.com/spf13/cobra"
-	"go.firedancer.io/radiance/pkg/ipld/ipldgen"
 	"k8s.io/klog/v2"
 )
 
@@ -42,7 +42,7 @@ func run(_ *cobra.Command, args []string) {
 		} else if err != nil {
 			klog.Exitf("Failed to read block: %s", err)
 		}
-		if block.Cid().Type() == ipldgen.SolanaTx {
+		if multicodec.Code(block.Cid().Type()) == multicodec.Raw {
 			var tx solana.Transaction
 			if err := bin.UnmarshalBin(&tx, block.RawData()); err != nil {
 				klog.Errorf("Invalid CID %s: %s", block.Cid(), err)
