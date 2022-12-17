@@ -6,6 +6,7 @@ import (
 	"github.com/gagliardetto/solana-go"
 	"github.com/ipld/go-ipld-prime/datamodel"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	"github.com/multiformats/go-multicodec"
 	"go.firedancer.io/radiance/pkg/ipld/car"
 	"go.firedancer.io/radiance/pkg/ipld/ipldsch"
 	"go.firedancer.io/radiance/pkg/shred"
@@ -13,10 +14,6 @@ import (
 
 // Multicodec IDs of Solana-related IPLD blocks.
 const (
-	// SolanaTx is canonical serialization (ledger/wire-format) of a versioned transaction.
-	// Stable and upgradable format, unlikely to change soon.
-	SolanaTx = 0xc00001
-
 	// RadianceTxList is a list of transactions.
 	// DAG-CBOR, non-standard.
 	RadianceTxList = 0xc00102
@@ -235,7 +232,7 @@ func (t *TxListAssembler) writeTx(tx solana.Transaction) error {
 	if err != nil {
 		panic("failed to marshal tx: " + err.Error())
 	}
-	leaf := car.NewBlockFromRaw(buf, SolanaTx)
+	leaf := car.NewBlockFromRaw(buf, uint64(multicodec.Raw))
 	if err := t.writer.WriteBlock(leaf); err != nil {
 		return err
 	}

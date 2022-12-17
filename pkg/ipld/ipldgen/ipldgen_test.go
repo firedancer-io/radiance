@@ -15,7 +15,7 @@ func TestCIDLen(t *testing.T) {
 	// Check whether codecs actually result in a CID sized CIDLen.
 	// This is important for our allocation strategies during merklerization.
 	codecs := []uint64{
-		SolanaTx,
+		55, /* raw */
 		RadianceTxList,
 		RadianceEntry,
 		RadianceBlock,

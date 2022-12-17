@@ -13,6 +13,7 @@ go_library(
         "@com_github_gagliardetto_solana_go//:solana-go",
         "@com_github_ipld_go_ipld_prime//datamodel",
         "@com_github_ipld_go_ipld_prime//linking/cid",
+        "@com_github_multiformats_go_multicodec//:go-multicodec",
     ],
 )
 
