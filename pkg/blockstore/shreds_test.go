@@ -450,7 +450,7 @@ func parseShreds(t testing.TB, raw [][]byte, version int) (shreds []shred.Shred)
 		shreds[i] = shred.NewShredFromSerialized(buf, version)
 		require.NotNil(t, shreds[i], "invalid shred %d", i)
 		// Forgetting this assert cost me half an hour of time
-		assert.Equal(t, shreds[i].CommonHeader().Index, uint32(i))
+		assert.Equal(t, shreds[i].Index, uint32(i))
 	}
 	return shreds
 }

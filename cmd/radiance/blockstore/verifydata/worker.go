@@ -11,7 +11,6 @@ import (
 	"github.com/linxGnu/grocksdb"
 	"github.com/vbauerster/mpb/v8"
 	"go.firedancer.io/radiance/pkg/blockstore"
-	"go.firedancer.io/radiance/pkg/shred"
 	"k8s.io/klog/v2"
 )
 
@@ -167,15 +166,10 @@ func (w *worker) readSlot() (shouldContinue bool) {
 	}
 
 	// Read data shreds.
-	shreds, err := blockstore.GetDataShredsFromIter(w.shred, metaSlot, 0, uint32(meta.Received))
+	shreds, err := blockstore.GetDataShredsFromIter(w.shred, metaSlot, 0, uint32(meta.Received), 2)
 	if err != nil {
 		klog.Warningf("slot %d: invalid data shreds: %s", metaSlot, err)
 		return
-	}
-
-	for _, s := range shreds {
-		data, _ := s.Data()
-		numBytes += shred.LegacyDataHeaderSize + uint64(len(data))
 	}
 
 	// TODO Sigverify data shreds
