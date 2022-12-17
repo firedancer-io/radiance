@@ -1,4 +1,5 @@
 load("@bazel_gazelle//:def.bzl", "gazelle")
+load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
 # gazelle:prefix go.firedancer.io/radiance
 # gazelle:build_file_name BUILD
@@ -20,8 +21,6 @@ alias(
     actual = "@go_sdk//:bin/go",
     visibility = ["//visibility:public"],
 )
-
-load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
 buildifier(
     name = "buildifier",
