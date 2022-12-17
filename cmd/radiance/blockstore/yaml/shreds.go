@@ -22,7 +22,7 @@ func makeEntryBatch(b *blockstore.Entries, withTxs bool) entryBatch {
 	}
 	shreds := make([]uint32, len(b.Shreds))
 	for i, s := range b.Shreds {
-		shreds[i] = s.CommonHeader().Index
+		shreds[i] = s.Index
 	}
 	return entryBatch{
 		Entries:     es,

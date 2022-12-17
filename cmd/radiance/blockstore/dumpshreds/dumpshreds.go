@@ -97,7 +97,7 @@ func dumpShreds(
 	defer iter.Close()
 	prefix := blockstore.MakeShredKey(slot, 0)
 	iter.Seek(prefix[:])
-	for {
+	for iter.ValidForPrefix(prefix[:8]) {
 		curSlot, curIndex, ok := blockstore.ParseShredKey(iter.Key().Data())
 		if !ok || curSlot != slot {
 			break

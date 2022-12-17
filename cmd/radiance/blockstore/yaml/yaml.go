@@ -25,11 +25,12 @@ var Cmd = cobra.Command{
 var flags = Cmd.Flags()
 
 var (
-	flagSlots   = flags.String("slots", "", "Slots to dump")
-	flagEntries = flags.Bool("entries", false, "Also dump slot entries")
-	flagShreds  = flags.Bool("shreds", false, "Also dump shreds")
-	flagTxns    = flags.Bool("txs", false, "Also dump transactions")
-	flagRoots   = flags.Bool("roots", false, "Dump roots table")
+	flagSlots         = flags.String("slots", "", "Slots to dump")
+	flagEntries       = flags.Bool("entries", false, "Also dump slot entries")
+	flagShreds        = flags.Bool("shreds", false, "Also dump shreds")
+	flagTxns          = flags.Bool("txs", false, "Also dump transactions")
+	flagRoots         = flags.Bool("roots", false, "Dump roots table")
+	flagShredRevision = flags.Int("shred-revision", 2, "Shred revision (1, 2)")
 )
 
 func init() {
@@ -40,7 +41,7 @@ func run(c *cobra.Command, args []string) {
 	go func() {
 		// No need for clean shutdown, exit quickly
 		<-c.Context().Done()
-		os.Exit(0)
+		//	os.Exit(0)
 	}()
 
 	rocksDB := args[0]
@@ -153,6 +154,7 @@ func dumpAllSlots(db *blockstore.DB) {
 		}
 		slot, ok := blockstore.ParseSlotKey(iter.Key().Data())
 		if !ok {
+			klog.Errorf("Invalid slot key: %x", iter.Key().Data())
 			continue
 		}
 		dumpSlot(db, slot)
@@ -194,7 +196,7 @@ func printSlotMeta(slotMeta *blockstore.SlotMeta) {
 }
 
 func dumpDataShreds(db *blockstore.DB, slot uint64) {
-	shreds, err := db.GetAllDataShreds(slot)
+	shreds, err := db.GetAllDataShreds(slot, *flagShredRevision)
 	if err != nil {
 		klog.Errorf("Failed to get data shreds of slot %d: %s", slot, err)
 		return
@@ -210,7 +212,7 @@ func dumpDataShreds(db *blockstore.DB, slot uint64) {
 }
 
 func dumpDataEntries(db *blockstore.DB, meta *blockstore.SlotMeta) {
-	entries, err := db.GetEntries(meta)
+	entries, err := db.GetEntries(meta, *flagShredRevision)
 	if err != nil {
 		klog.Errorf("Failed to recover entries of slot %d: %s", meta.Slot, err)
 		return

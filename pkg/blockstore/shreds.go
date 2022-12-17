@@ -73,7 +73,7 @@ func (e *Entries) Slot() uint64 {
 	if len(e.Shreds) == 0 {
 		return math.MaxUint64
 	}
-	return e.Shreds[0].CommonHeader().Slot
+	return e.Shreds[0].Slot
 }
 
 // DataShredsToEntries reassembles shreds to entries containing transactions.
@@ -81,10 +81,7 @@ func DataShredsToEntries(meta *SlotMeta, shreds []shred.Shred) (entries []Entrie
 	ranges := meta.entryRanges()
 	for _, r := range ranges {
 		parts := shreds[r.startIdx : r.endIdx+1]
-		entryBytes, err := shred.Concat(parts)
-		if err != nil {
-			return nil, err
-		}
+		entryBytes := shred.Concat(parts)
 		if len(entryBytes) == 0 {
 			continue
 		}

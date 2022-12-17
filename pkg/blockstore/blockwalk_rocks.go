@@ -13,16 +13,20 @@ import (
 
 // BlockWalk walks blocks in ascending order over multiple RocksDB databases.
 type BlockWalk struct {
-	handles []WalkHandle // sorted
+	handles       []WalkHandle // sorted
+	shredRevision int
 
 	root *grocksdb.Iterator
 }
 
-func NewBlockWalk(handles []WalkHandle) (*BlockWalk, error) {
-	if err := sortWalkHandles(handles); err != nil {
+func NewBlockWalk(handles []WalkHandle, shredRevision int) (*BlockWalk, error) {
+	if err := sortWalkHandles(handles, shredRevision); err != nil {
 		return nil, err
 	}
-	return &BlockWalk{handles: handles}, nil
+	return &BlockWalk{
+		handles:       handles,
+		shredRevision: shredRevision,
+	}, nil
 }
 
 // Seek skips ahead to a specific slot.
@@ -109,7 +113,7 @@ func (m *BlockWalk) Next() (meta *SlotMeta, ok bool) {
 // Caller must have made an ok call to BlockWalk.Next before calling this.
 func (m *BlockWalk) Entries(meta *SlotMeta) ([][]shred.Entry, error) {
 	h := m.handles[0]
-	mapping, err := h.DB.GetEntries(meta)
+	mapping, err := h.DB.GetEntries(meta, m.shredRevision)
 	if err != nil {
 		return nil, err
 	}
@@ -146,10 +150,10 @@ type WalkHandle struct {
 }
 
 // sortWalkHandles detects bounds of each DB and sorts handles.
-func sortWalkHandles(h []WalkHandle) error {
+func sortWalkHandles(h []WalkHandle, shredRevision int) error {
 	for i, db := range h {
 		// Find lowest and highest available slot in DB.
-		start, err := getLowestCompletedSlot(db.DB)
+		start, err := getLowestCompletedSlot(db.DB, shredRevision)
 		if err != nil {
 			return err
 		}
@@ -170,7 +174,7 @@ func sortWalkHandles(h []WalkHandle) error {
 }
 
 // getLowestCompleteSlot finds the lowest slot in a RocksDB from which slots are complete onwards.
-func getLowestCompletedSlot(d *DB) (uint64, error) {
+func getLowestCompletedSlot(d *DB, shredRevision int) (uint64, error) {
 	iter := d.DB.NewIteratorCF(grocksdb.NewDefaultReadOptions(), d.CfMeta)
 	defer iter.Close()
 	iter.SeekToFirst()
@@ -195,7 +199,7 @@ func getLowestCompletedSlot(d *DB) (uint64, error) {
 				"getLowestCompletedSlot(%s): choked on invalid meta for slot %d", d.DB.Name(), slot)
 		}
 
-		if _, err = d.GetEntries(meta); err == nil {
+		if _, err = d.GetEntries(meta, shredRevision); err == nil {
 			// Success!
 			return slot, nil
 		}
