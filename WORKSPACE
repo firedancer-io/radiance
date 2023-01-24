@@ -1,38 +1,7 @@
 workspace(name = "firedancer_radiance")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
-
-################################################################################
-# Foreign C/C++ build system support                                           #
-################################################################################
-
-http_archive(
-    name = "rules_foreign_cc",
-    sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
-    strip_prefix = "rules_foreign_cc-0.9.0",
-    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
-)
-
-load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
-
-rules_foreign_cc_dependencies()
-
-################################################################################
-# Bazel Tools                                                                  #
-################################################################################
-
-http_archive(
-    name = "com_github_bazelbuild_buildtools",
-    sha256 = "e3bb0dc8b0274ea1aca75f1f8c0c835adbe589708ea89bf698069d0790701ea3",
-    strip_prefix = "buildtools-5.1.0",
-    urls = [
-        "https://github.com/bazelbuild/buildtools/archive/5.1.0.tar.gz",
-    ],
-)
-
-load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
-
-buildifier_dependencies()
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 ################################################################################
 # Dependencies                                                                 #
@@ -71,10 +40,10 @@ http_archive(
 
 http_archive(
     name = "io_bazel_rules_go",
-    sha256 = "56d8c5a5c91e1af73eca71a6fab2ced959b67c86d12ba37feedb0a2dfea441a6",
+    sha256 = "19ef30b21eae581177e0028f6f4b1f54c66467017be33d211ab6fc81da01ea4d",
     urls = [
-        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.37.0/rules_go-v0.37.0.zip",
-        "https://github.com/bazelbuild/rules_go/releases/download/v0.37.0/rules_go-v0.37.0.zip",
+        "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.38.0/rules_go-v0.38.0.zip",
+        "https://github.com/bazelbuild/rules_go/releases/download/v0.38.0/rules_go-v0.38.0.zip",
     ],
 )
 
@@ -92,7 +61,7 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 go_rules_dependencies()
 
-go_register_toolchains(version = "1.19.4")
+go_register_toolchains(version = "1.19.5")
 
 ################################################################################
 # Custom Go dependencies                                                       #
@@ -129,3 +98,35 @@ load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_
 rules_proto_dependencies()
 
 rules_proto_toolchains()
+
+################################################################################
+# Foreign C/C++ build system support                                           #
+################################################################################
+
+http_archive(
+    name = "rules_foreign_cc",
+    sha256 = "2a4d07cd64b0719b39a7c12218a3e507672b82a97b98c6a89d38565894cf7c51",
+    strip_prefix = "rules_foreign_cc-0.9.0",
+    url = "https://github.com/bazelbuild/rules_foreign_cc/archive/refs/tags/0.9.0.tar.gz",
+)
+
+load("@rules_foreign_cc//foreign_cc:repositories.bzl", "rules_foreign_cc_dependencies")
+
+rules_foreign_cc_dependencies()
+
+################################################################################
+# Bazel Tools                                                                  #
+################################################################################
+
+http_archive(
+    name = "com_github_bazelbuild_buildtools",
+    sha256 = "e3bb0dc8b0274ea1aca75f1f8c0c835adbe589708ea89bf698069d0790701ea3",
+    strip_prefix = "buildtools-5.1.0",
+    urls = [
+        "https://github.com/bazelbuild/buildtools/archive/5.1.0.tar.gz",
+    ],
+)
+
+load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
+
+buildifier_dependencies()
