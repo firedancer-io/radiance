@@ -25,6 +25,9 @@ const (
 	// Similar to a block header, but not cryptographically authenticated.
 	CfMeta = "meta"
 
+	// CfErasureMeta contains erasure coding metadata
+	CfErasureMeta = "erasure_meta"
+
 	// CfRoot is a single cell specifying the current root slot number
 	CfRoot = "root"
 
@@ -37,8 +40,30 @@ const (
 	// CfCodeShred contains FEC shreds used to fix data shreds
 	CfCodeShred = "code_shred"
 
-	CfDeadSlots   = "dead_slots"
+	// CfDeadSlots contains slots that have been marked as dead
+	CfDeadSlots = "dead_slots"
+
 	CfBlockHeight = "block_height"
+
+	CfBankHash = "bank_hashes"
+
+	CfTxStatus = "transaction_status"
+
+	CfTxStatusIndex = "transaction_status_index"
+
+	CfAddressSig = "address_signatures"
+
+	CfTxMemos = "transaction_memos"
+
+	CfRewards = "rewards"
+
+	CfBlockTime = "blocktime"
+
+	CfPerfSamples = "perf_samples"
+
+	CfProgramCosts = "program_costs"
+
+	CfOptimisticSlots = "optimistic_slots"
 )
 
 var (

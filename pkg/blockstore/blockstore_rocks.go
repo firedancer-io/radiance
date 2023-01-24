@@ -18,6 +18,7 @@ type DB struct {
 	CfRoot      *grocksdb.ColumnFamilyHandle
 	CfDataShred *grocksdb.ColumnFamilyHandle
 	CfCodeShred *grocksdb.ColumnFamilyHandle
+	CfTxStatus  *grocksdb.ColumnFamilyHandle
 }
 
 // OpenReadOnly attaches to a blockstore in read-only mode.
