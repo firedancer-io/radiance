@@ -1,1 +1,4 @@
+# https://github.com/bazelbuild/rules_go/issues/3430
+build --experimental_output_directory_naming_scheme=diff_against_baseline
+
 test --test_env=GO_TEST_WRAP_TESTV=1
