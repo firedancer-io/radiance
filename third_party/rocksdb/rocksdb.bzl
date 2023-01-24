@@ -11,7 +11,7 @@ cmake(
     out_lib_dir = "lib64",
     out_static_libs = ["librocksdb.a"],
     visibility = ["//visibility:public"],
-    build_args = ["--parallel 6"],
+    build_args = ["--parallel `njobs`"],
     generate_args = ["-G Ninja"],
     linkopts = ["-lz", "-lbz2", "-lsnappy", "-lzstd"],
     cache_entries = {
