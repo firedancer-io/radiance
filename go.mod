@@ -12,7 +12,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/coreos/go-systemd/v22 v22.4.0
 	github.com/filecoin-project/go-leb128 v0.0.0-20190212224330-8d79a5489543
-	github.com/gagliardetto/binary v0.7.2
+	github.com/gagliardetto/binary v0.7.8
 	github.com/gagliardetto/solana-go v1.6.1-0.20221018174950-475b9d64e462
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/protobuf v1.5.2
@@ -134,9 +134,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/streamingfast/logging v0.0.0-20220813175024-b4fbb0e893df // indirect
 	github.com/teris-io/shortid v0.0.0-20220617161101-71ec9f2aa569 // indirect
-	github.com/tidwall/gjson v1.14.3 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/twmb/franz-go/pkg/kmsg v1.2.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20230120000152-6c51ebf552c2 // indirect
