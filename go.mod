@@ -41,7 +41,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	github.com/twmb/franz-go v1.7.1
-	github.com/vbauerster/mpb/v8 v8.0.2
+	github.com/vbauerster/mpb/v8 v8.1.4
 	golang.org/x/crypto v0.5.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.4.0
@@ -108,7 +108,7 @@ require (
 	github.com/marten-seemann/qtls-go1-18 v0.1.2 // indirect
 	github.com/marten-seemann/qtls-go1-19 v0.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mdlayher/netlink v1.6.0 // indirect
 	github.com/mdlayher/socket v0.2.3 // indirect
