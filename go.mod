@@ -30,7 +30,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multicodec v0.6.0
+	github.com/multiformats/go-multicodec v0.8.0
 	github.com/multiformats/go-multihash v0.2.1
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20220519162058-e5cd3c3b3f3a
 	github.com/pkg/profile v1.2.1
