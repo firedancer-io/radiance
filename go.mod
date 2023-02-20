@@ -41,7 +41,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	github.com/twmb/franz-go v1.12.1
-	github.com/vbauerster/mpb/v8 v8.1.6
+	github.com/vbauerster/mpb/v8 v8.2.0
 	golang.org/x/crypto v0.6.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/sys v0.5.0
