@@ -17,7 +17,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
-	github.com/google/nftables v0.0.0-20220611213346-a346d51f53b3
+	github.com/google/nftables v0.1.0
 	github.com/ipfs/go-cid v0.3.2
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ipfs-blockstore v1.2.0
