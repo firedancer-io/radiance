@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/ipld/cargen"
 	"k8s.io/klog/v2"
@@ -31,9 +30,6 @@ var flags = Cmd.Flags()
 var (
 	flagOut = flags.StringP("out", "o", "", "Output directory")
 	flagDBs = flags.StringArray("db", nil, "Path to RocksDB (can be specified multiple times)")
-
-	flagProfilePath = flags.String("profile-path", "", "Path to record profile to (empty to use temp dir)")
-	flagProfileDur  = flags.Duration("profile-duration", 0, "Record Go pprof (0 to disable)")
 )
 
 func init() {
@@ -72,15 +68,6 @@ func run(c *cobra.Command, args []string) {
 	w, err := cargen.NewWorker(outPath, epoch, walker)
 	if err != nil {
 		klog.Exitf("Failed to init cargen: %s", err)
-	}
-
-	// Invoke pprof profiler.
-	if *flagProfileDur > 0 {
-		go func() {
-			p := profile.Start(profile.ProfilePath(*flagProfilePath))
-			defer p.Stop()
-			time.Sleep(*flagProfileDur)
-		}()
 	}
 
 	ctx := c.Context()
