@@ -1,11 +1,3 @@
-## Building with Bazel
-
-Bazel manages Go and C/C++ toolchains and all dependencies.
-
-[Installation Guide](https://github.com/firedancer-io/firedancer/blob/main/bazel/README.md#installation) (Linux and macOS)
-
-    bazel build //cmd/radiance
-
 ## Building with Go
 
 Radiance commands can be built with standard Go tooling (Go >= 1.19 is required),
@@ -16,8 +8,6 @@ for example:
 By default, commands that require extra dependencies (e.g. RocksDB) are disabled.
 
 ### With RocksDB
-
-> We recommend using Bazel for Cgo builds.
 
 Radiance tools that require direct access to the blockstore (such as `blockstore` and `car`)
 require a working C toolchain and extra compiler arguments to link against rocksdb.
