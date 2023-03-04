@@ -2,9 +2,6 @@ module go.firedancer.io/radiance
 
 go 1.19
 
-// Vote instruction support
-replace github.com/gagliardetto/solana-go => github.com/ripatel-jump/solana-go v0.0.0-20221019012627-2c3d04688523
-
 require (
 	cloud.google.com/go/bigtable v1.18.1
 	github.com/LiamHaworth/go-tproxy v0.0.0-20190726054950-ef7efd7f24ed
@@ -13,7 +10,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/filecoin-project/go-leb128 v0.0.0-20190212224330-8d79a5489543
 	github.com/gagliardetto/binary v0.7.8
-	github.com/gagliardetto/solana-go v1.6.1-0.20221018174950-475b9d64e462
+	github.com/gagliardetto/solana-go v1.8.3-0.20230302093440-c6043ec381e3
 	github.com/go-logr/logr v1.2.3
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
@@ -25,7 +22,7 @@ require (
 	github.com/ipld/go-car v0.6.0
 	github.com/ipld/go-ipld-prime v0.20.0
 	github.com/klauspost/compress v1.16.0
-	github.com/linxGnu/grocksdb v1.7.15
+	github.com/linxGnu/grocksdb v1.7.16-0.20230303082518-587b6c4f0dab
 	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/mattn/go-isatty v0.0.17
 	github.com/minio/sha256-simd v1.0.0
@@ -44,7 +41,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.2.0
 	golang.org/x/crypto v0.6.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.5.0
+	golang.org/x/sys v0.6.0
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/klog/v2 v2.90.0
@@ -60,7 +57,6 @@ require (
 	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
-	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blendle/zapdriver v1.3.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
@@ -140,6 +136,7 @@ require (
 	github.com/twmb/franz-go/pkg/kmsg v1.4.0 // indirect
 	github.com/vishvananda/netns v0.0.0-20210104183010-2eb08e3e575f // indirect
 	github.com/whyrusleeping/cbor-gen v0.0.0-20230126041949-52956bd4c9aa // indirect
+	go.mongodb.org/mongo-driver v1.11.0 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.opentelemetry.io/otel v1.12.0 // indirect
 	go.opentelemetry.io/otel/trace v1.12.0 // indirect
