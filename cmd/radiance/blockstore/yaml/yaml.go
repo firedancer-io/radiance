@@ -218,11 +218,23 @@ func dumpDataEntries(db *blockstore.DB, meta *blockstore.SlotMeta) {
 		return
 	}
 
+	var numEntries, numEmptyEntries, numNonEmptyEntries int
 	yamlEntries := make([]entryBatch, len(entries))
 	for i, x := range entries {
 		yamlEntries[i] = makeEntryBatch(&x, *flagTxns)
+		numEntries += len(x.Entries)
+		for _, entry := range x.Entries {
+			if len(entry.Txns) == 0 {
+				numEmptyEntries++
+			} else {
+				numNonEmptyEntries++
+			}
+		}
 	}
 
+	fmt.Println("    num_entries:", numEntries)
+	fmt.Println("    num_empty_entries:", numEmptyEntries)
+	fmt.Println("    num_non_empty_entries:", numNonEmptyEntries)
 	fmt.Println("    entry_batches:")
 
 	enc := newYAMLPrinter(3)

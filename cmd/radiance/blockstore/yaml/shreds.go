@@ -12,6 +12,7 @@ import (
 type entryBatch struct {
 	Shreds      []uint32 `yaml:"shreds,flow"`
 	EncodedSize int      `yaml:"encoded_size,omitempty"`
+	NumEntries  int      `yaml:"num_entries"`
 	Entries     []entry  `yaml:"entries"`
 }
 
@@ -26,6 +27,7 @@ func makeEntryBatch(b *blockstore.Entries, withTxs bool) entryBatch {
 	}
 	return entryBatch{
 		Entries:     es,
+		NumEntries:  len(es),
 		Shreds:      shreds,
 		EncodedSize: len(b.Raw),
 	}

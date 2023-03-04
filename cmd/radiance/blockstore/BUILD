@@ -6,6 +6,7 @@ go_library(
     importpath = "go.firedancer.io/radiance/cmd/radiance/blockstore",
     visibility = ["//visibility:public"],
     deps = [
+        "//cmd/radiance/blockstore/dumpbatches",
         "//cmd/radiance/blockstore/dumpshreds",
         "//cmd/radiance/blockstore/verifydata",
         "//cmd/radiance/blockstore/yaml",
