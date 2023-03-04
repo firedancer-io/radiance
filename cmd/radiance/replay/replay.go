@@ -88,14 +88,13 @@ replay:
 		for i, batch := range entries {
 			for j, entry := range batch {
 				cum += entry.NumHashes
-				klog.V(7).Infof("Replay slot=%d entry=%02d/%02d hash=%s cum=%d txs=%d",
-					slot, i, j, hex.EncodeToString(entry.Hash[:]), cum, len(entry.Txns))
-				if entry.NumHashes == 0 {
-					klog.Errorf("Invalid entry: Zero PoH iterations")
-					break replay
-				}
+				klog.V(7).Infof("Replay slot=%d entry=%02d/%02d hash=%s hash_cnt=%d cum=%d txs=%d",
+					slot, i, j, hex.EncodeToString(entry.Hash[:]), entry.NumHashes, cum, len(entry.Txns))
 				if len(entry.Txns) != 0 {
-					chain.Hash(uint(entry.NumHashes - 1))
+					numHashes := entry.NumHashes
+					if numHashes > 1 {
+						chain.Hash(uint(entry.NumHashes - 1))
+					}
 
 					var txSigs [][]byte
 					for _, tx := range entry.Txns {
@@ -103,7 +102,9 @@ replay:
 							klog.Errorf("Invalid tx: Zero signatures")
 							break replay
 						}
-						txSigs = append(txSigs, tx.Signatures[0][:])
+						for i := range tx.Signatures {
+							txSigs = append(txSigs, tx.Signatures[i][:])
+						}
 					}
 
 					sigTree := merkletree.HashNodes(txSigs)
