@@ -1,12 +1,14 @@
 package sealevel
 
-import "go.firedancer.io/radiance/pkg/sbf"
+import (
+	"go.firedancer.io/radiance/pkg/sbpf"
+)
 
 var registry = Syscalls()
 
 // Syscalls creates a registry of all Sealevel syscalls.
-func Syscalls() sbf.SyscallRegistry {
-	reg := sbf.NewSyscallRegistry()
+func Syscalls() sbpf.SyscallRegistry {
+	reg := sbpf.NewSyscallRegistry()
 	reg.Register("abort", SyscallAbort)
 	reg.Register("sol_log_", SyscallLog)
 	reg.Register("sol_log_64_", SyscallLog64)
@@ -15,6 +17,6 @@ func Syscalls() sbf.SyscallRegistry {
 	return reg
 }
 
-func syscallCtx(vm sbf.VM) *Execution {
+func syscallCtx(vm sbpf.VM) *Execution {
 	return vm.VMContext().(*Execution)
 }

@@ -1,4 +1,4 @@
-package sbf
+package sbpf
 
 // Program is a loaded SBF program.
 type Program struct {

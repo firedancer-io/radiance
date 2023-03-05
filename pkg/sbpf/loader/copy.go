@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"go.firedancer.io/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbpf"
 )
 
 // The following ELF loading rules seem mostly arbitrary.
@@ -90,9 +90,9 @@ func (l *Loader) checkSectionAddrs(sh *elf.Section64) error {
 	}
 
 	// Ensure section within VM program range
-	vaddr := clampAddUint64(sbf.VaddrProgram, sh.Addr)
+	vaddr := clampAddUint64(sbpf.VaddrProgram, sh.Addr)
 	vaddrEnd := vaddr + sh.Size
-	if vaddrEnd < vaddr || vaddrEnd > sbf.VaddrStack {
+	if vaddrEnd < vaddr || vaddrEnd > sbpf.VaddrStack {
 		return fmt.Errorf("section virtual address out-of-bounds")
 	}
 

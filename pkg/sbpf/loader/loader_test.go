@@ -11,7 +11,7 @@ import (
 )
 
 func TestLoader_Noop(t *testing.T) {
-	soNoop := fixtures.Load(t, "sbf", "noop.so")
+	soNoop := fixtures.Load(t, "sbpf", "noop.so")
 
 	loader, err := NewLoaderFromBytes(soNoop)
 	require.NoError(t, err)
@@ -201,7 +201,7 @@ func isZeroBytes(b []byte) bool {
 }
 
 func TestVerifier(t *testing.T) {
-	loader, err := NewLoaderFromBytes(fixtures.Load(t, "sbf", "noop.so"))
+	loader, err := NewLoaderFromBytes(fixtures.Load(t, "sbpf", "noop.so"))
 	require.NoError(t, err)
 
 	program, err := loader.Load()

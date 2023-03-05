@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.firedancer.io/radiance/fixtures"
-	"go.firedancer.io/radiance/pkg/sbf"
-	"go.firedancer.io/radiance/pkg/sbf/loader"
+	"go.firedancer.io/radiance/pkg/sbpf"
+	"go.firedancer.io/radiance/pkg/sbpf/loader"
 )
 
 func TestExecute_Memo(t *testing.T) {
@@ -34,7 +34,7 @@ func TestExecute_Memo(t *testing.T) {
 
 	require.NoError(t, program.Verify())
 
-	interpreter := sbf.NewInterpreter(program, opts)
+	interpreter := sbpf.NewInterpreter(program, opts)
 	require.NotNil(t, interpreter)
 
 	err = interpreter.Run()
@@ -48,7 +48,7 @@ func TestExecute_Memo(t *testing.T) {
 
 func TestInterpreter_Noop(t *testing.T) {
 	// TODO simplify API?
-	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbf", "noop.so"))
+	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "noop.so"))
 	require.NoError(t, err)
 	require.NotNil(t, loader)
 
@@ -58,13 +58,13 @@ func TestInterpreter_Noop(t *testing.T) {
 
 	require.NoError(t, program.Verify())
 
-	syscalls := sbf.NewSyscallRegistry()
+	syscalls := sbpf.NewSyscallRegistry()
 	syscalls.Register("log", SyscallLog)
 	syscalls.Register("log_64", SyscallLog64)
 
 	var log LogRecorder
 
-	interpreter := sbf.NewInterpreter(program, &sbf.VMOpts{
+	interpreter := sbpf.NewInterpreter(program, &sbpf.VMOpts{
 		HeapSize: 32 * 1024,
 		Input:    nil,
 		MaxCU:    10000,
@@ -104,7 +104,7 @@ func (e *executeCase) run(t *testing.T) {
 	opts := tx.newVMOpts(&e.Params)
 	opts.Tracer = testLogger{t}
 
-	interpreter := sbf.NewInterpreter(program, opts)
+	interpreter := sbpf.NewInterpreter(program, opts)
 	require.NotNil(t, interpreter)
 
 	err = interpreter.Run()

@@ -3,12 +3,12 @@ package sealevel
 import (
 	"errors"
 
-	"go.firedancer.io/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbpf"
 )
 
-func SyscallAbortImpl(_ sbf.VM, _ int) (r0 uint64, cuOut int, err error) {
+func SyscallAbortImpl(_ sbpf.VM, _ int) (r0 uint64, cuOut int, err error) {
 	err = errors.New("aborted")
 	return
 }
 
-var SyscallAbort = sbf.SyscallFunc0(SyscallAbortImpl)
+var SyscallAbort = sbpf.SyscallFunc0(SyscallAbortImpl)

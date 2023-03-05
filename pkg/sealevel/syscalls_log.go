@@ -4,11 +4,11 @@ import (
 	"fmt"
 
 	"github.com/gagliardetto/solana-go"
-	"go.firedancer.io/radiance/pkg/sbf"
-	"go.firedancer.io/radiance/pkg/sbf/cu"
+	"go.firedancer.io/radiance/pkg/sbpf"
+	"go.firedancer.io/radiance/pkg/sbpf/cu"
 )
 
-func SyscallLogImpl(vm sbf.VM, ptr, strlen uint64, cuIn int) (r0 uint64, cuOut int, err error) {
+func SyscallLogImpl(vm sbpf.VM, ptr, strlen uint64, cuIn int) (r0 uint64, cuOut int, err error) {
 	if strlen > (1 << 30) {
 		cuOut = -1
 		return
@@ -26,9 +26,9 @@ func SyscallLogImpl(vm sbf.VM, ptr, strlen uint64, cuIn int) (r0 uint64, cuOut i
 	return
 }
 
-var SyscallLog = sbf.SyscallFunc2(SyscallLogImpl)
+var SyscallLog = sbpf.SyscallFunc2(SyscallLogImpl)
 
-func SyscallLog64Impl(vm sbf.VM, r1, r2, r3, r4, r5 uint64, cuIn int) (r0 uint64, cuOut int, err error) {
+func SyscallLog64Impl(vm sbpf.VM, r1, r2, r3, r4, r5 uint64, cuIn int) (r0 uint64, cuOut int, err error) {
 	cuOut = cuIn - CUSyscallBaseCost
 	if cuOut < 0 {
 		return
@@ -39,9 +39,9 @@ func SyscallLog64Impl(vm sbf.VM, r1, r2, r3, r4, r5 uint64, cuIn int) (r0 uint64
 	return
 }
 
-var SyscallLog64 = sbf.SyscallFunc5(SyscallLog64Impl)
+var SyscallLog64 = sbpf.SyscallFunc5(SyscallLog64Impl)
 
-func SyscallLogCUsImpl(vm sbf.VM, cuIn int) (r0 uint64, cuOut int, err error) {
+func SyscallLogCUsImpl(vm sbpf.VM, cuIn int) (r0 uint64, cuOut int, err error) {
 	cuOut = cuIn - CUSyscallBaseCost
 	if cuOut < 0 {
 		return
@@ -52,9 +52,9 @@ func SyscallLogCUsImpl(vm sbf.VM, cuIn int) (r0 uint64, cuOut int, err error) {
 	return
 }
 
-var SyscallLogCUs = sbf.SyscallFunc0(SyscallLogCUsImpl)
+var SyscallLogCUs = sbpf.SyscallFunc0(SyscallLogCUsImpl)
 
-func SyscallLogPubkeyImpl(vm sbf.VM, pubkeyAddr uint64, cuIn int) (r0 uint64, cuOut int, err error) {
+func SyscallLogPubkeyImpl(vm sbpf.VM, pubkeyAddr uint64, cuIn int) (r0 uint64, cuOut int, err error) {
 	cuOut = cuIn - CUSyscallBaseCost
 	if cuOut < 0 {
 		return
@@ -70,4 +70,4 @@ func SyscallLogPubkeyImpl(vm sbf.VM, pubkeyAddr uint64, cuIn int) (r0 uint64, cu
 	return
 }
 
-var SyscallLogPubkey = sbf.SyscallFunc1(SyscallLogPubkeyImpl)
+var SyscallLogPubkey = sbpf.SyscallFunc1(SyscallLogPubkeyImpl)

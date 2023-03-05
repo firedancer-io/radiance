@@ -1,4 +1,4 @@
-package sbf
+package sbpf
 
 import (
 	"encoding/binary"

@@ -1,5 +1,5 @@
-// Package sbf implements the Solana Bytecode Format.
-package sbf
+// Package sbpf implements the Solana Bytecode Format.
+package sbpf
 
 import "encoding/binary"
 

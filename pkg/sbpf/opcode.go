@@ -1,4 +1,4 @@
-package sbf
+package sbpf
 
 // Op classes
 const (

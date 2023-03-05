@@ -1,4 +1,4 @@
-package sbf
+package sbpf
 
 // Stack is the VM's call frame stack.
 //

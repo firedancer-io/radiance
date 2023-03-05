@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io"
 
-	"go.firedancer.io/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbpf"
 )
 
 // TODO Fuzz
@@ -81,7 +81,7 @@ func NewLoaderFromBytes(buf []byte) (*Loader, error) {
 //
 // This loader differs from rbpf in a few ways:
 // We don't support spec bugs, we relocate after loading.
-func (l *Loader) Load() (*sbf.Program, error) {
+func (l *Loader) Load() (*sbpf.Program, error) {
 	if err := l.parse(); err != nil {
 		return nil, err
 	}
@@ -94,11 +94,11 @@ func (l *Loader) Load() (*sbf.Program, error) {
 	return l.getProgram(), nil
 }
 
-func (l *Loader) getProgram() *sbf.Program {
-	return &sbf.Program{
+func (l *Loader) getProgram() *sbpf.Program {
+	return &sbpf.Program{
 		RO:         l.program,
 		Text:       l.text,
-		TextVA:     sbf.VaddrProgram + l.textRange.min,
+		TextVA:     sbpf.VaddrProgram + l.textRange.min,
 		Entrypoint: l.entrypoint,
 		Funcs:      l.funcs,
 	}

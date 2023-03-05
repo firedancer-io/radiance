@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"go.firedancer.io/radiance/pkg/sbf"
+	"go.firedancer.io/radiance/pkg/sbpf"
 )
 
 // relocate applies ELF relocations (for syscalls and position-independent code).
@@ -25,13 +25,13 @@ func (l *Loader) relocate() error {
 
 func (l *Loader) fixupRelativeCalls() error {
 	// TODO does invariant text.size%8 == 0 hold?
-	insCount := l.textRange.len() / sbf.SlotSize
+	insCount := l.textRange.len() / sbpf.SlotSize
 	buf := l.getRange(l.textRange)
 	for i := uint64(0); i < insCount; i++ {
-		off := i * sbf.SlotSize
-		slot := sbf.GetSlot(buf[off : off+sbf.SlotSize])
+		off := i * sbpf.SlotSize
+		slot := sbpf.GetSlot(buf[off : off+sbpf.SlotSize])
 
-		isCall := slot.Op() == sbf.OpCall && slot.Imm() != -1
+		isCall := slot.Op() == sbpf.OpCall && slot.Imm() != -1
 		if !isCall {
 			continue
 		}
@@ -54,7 +54,7 @@ func (l *Loader) fixupRelativeCalls() error {
 }
 
 func (l *Loader) registerFunc(target uint64) (uint32, error) {
-	hash := sbf.PCHash(target)
+	hash := sbpf.PCHash(target)
 	// TODO check for collision with syscalls
 	//if _, ok := l.funcs[hash]; ok {
 	//	return 0, fmt.Errorf("symbol hash collision for func at=%d hash=%#08x", target, hash)
@@ -95,8 +95,8 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 		relAddr := binary.LittleEndian.Uint32(l.program[rOff+4 : rOff+8])
 		addr := clampAddUint64(sym.Value, uint64(relAddr))
 
-		if addr < sbf.VaddrProgram {
-			addr += sbf.VaddrProgram
+		if addr < sbpf.VaddrProgram {
+			addr += sbpf.VaddrProgram
 		}
 
 		// Write to imm field of two slots
@@ -111,8 +111,8 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 			if addr == 0 {
 				return fmt.Errorf("invalid R_BPF_64_RELATIVE")
 			}
-			if addr < sbf.VaddrProgram {
-				addr += sbf.VaddrProgram
+			if addr < sbpf.VaddrProgram {
+				addr += sbpf.VaddrProgram
 			}
 
 			// Write to imm field of two slots
@@ -122,13 +122,13 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 			var addr uint64
 			if l.eh.Flags == EF_SBF_V2 {
 				addr = binary.LittleEndian.Uint64(l.program[rOff : rOff+8])
-				if addr < sbf.VaddrProgram {
-					addr += sbf.VaddrProgram
+				if addr < sbpf.VaddrProgram {
+					addr += sbpf.VaddrProgram
 				}
 			} else {
 				// lol
 				addr = uint64(binary.LittleEndian.Uint32(l.program[rOff+4 : rOff+8]))
-				addr = clampAddUint64(addr, sbf.VaddrProgram)
+				addr = clampAddUint64(addr, sbpf.VaddrProgram)
 			}
 			binary.LittleEndian.PutUint64(l.program[rOff:rOff+8], addr)
 		}
@@ -155,7 +155,7 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 			}
 		} else {
 			// Syscall
-			hash = sbf.SymbolHash(name)
+			hash = sbpf.SymbolHash(name)
 			// TODO check whether syscall is known
 		}
 
@@ -168,10 +168,10 @@ func (l *Loader) applyReloc(reloc *elf.Rel64) error {
 
 func (l *Loader) getEntrypoint() error {
 	offset := l.eh.Entry - l.shText.Addr
-	if offset%sbf.SlotSize != 0 {
+	if offset%sbpf.SlotSize != 0 {
 		return fmt.Errorf("invalid entrypoint")
 	}
-	l.entrypoint = offset / sbf.SlotSize
+	l.entrypoint = offset / sbpf.SlotSize
 	return nil
 }
 
