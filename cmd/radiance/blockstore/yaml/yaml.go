@@ -1,4 +1,4 @@
-//go:build rocksdb
+//go:build !lite
 
 package yaml
 
