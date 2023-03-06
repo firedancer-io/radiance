@@ -53,8 +53,7 @@ RUN mkdir build \
     go build -o build/radiance -buildvcs=false -ldflags "-extldflags '-static -lbz2'" ./cmd/radiance
 
 FROM alpine
+# Copy CA certs
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 # Copy build artifacts
 COPY --from=builder /home/user/radiance/build/radiance /usr/bin/radiance
-# Drop privileges
-RUN addgroup -g 1000 user \
- && adduser -G user -u 1000 user -D
