@@ -6,7 +6,7 @@ buildGoModule rec {
   version = "0.0.1";
   src = ./.;
 
-  vendorHash = "sha256-CdU4ppL5yfkC3uSBSm+lUvJi656qJS2FU/ptXwnVbrA=";
+  vendorHash = "sha256-qK4NJ5JCpNBtEE47JXf2fp2vLUJQLqHZNUzDC40eQMo=";
 
   buildInputs = with pkgs; [ rocksdb libpcap ];
 
