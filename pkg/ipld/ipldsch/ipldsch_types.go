@@ -54,6 +54,7 @@ type typeSlab struct {
 // Block matches the IPLD Schema type "Block".  It has struct type-kind, and may be interrogated like map kind.
 type Block = *_Block
 type _Block struct {
+	kind      _Int
 	slot      _Int
 	entries   _List__Link
 	shredding _List__Shredding
@@ -70,6 +71,7 @@ type _Bytes struct{ x []byte }
 // Entry matches the IPLD Schema type "Entry".  It has struct type-kind, and may be interrogated like map kind.
 type Entry = *_Entry
 type _Entry struct {
+	kind      _Int
 	numHashes _Int
 	hash      _Hash
 	txs       _TransactionList

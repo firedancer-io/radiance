@@ -6,32 +6,14 @@ import (
 	"github.com/gagliardetto/solana-go"
 	"github.com/ipld/go-ipld-prime/datamodel"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	"github.com/multiformats/go-multicodec"
 	"go.firedancer.io/radiance/pkg/ipld/car"
 	"go.firedancer.io/radiance/pkg/ipld/ipldsch"
 	"go.firedancer.io/radiance/pkg/shred"
 )
 
-// Multicodec IDs of Solana-related IPLD blocks.
-const (
-	// SolanaTx is canonical serialization (ledger/wire-format) of a versioned transaction.
-	// Stable and upgradable format, unlikely to change soon.
-	SolanaTx = 0xc00001
-
-	// RadianceTxList is a list of transactions.
-	// DAG-CBOR, non-standard.
-	RadianceTxList = 0xc00102
-
-	// RadianceEntry is a representation of a Solana entry, with extra data.
-	// DAG-CBOR, non-standard.
-	RadianceEntry = 0xc00103
-
-	// RadianceBlock describes a slot and points to entries.
-	// DAG-CBOR, non-standard.
-	RadianceBlock = 0xc00104
-)
-
-// CIDLen is the serialized size in bytes of a Solana/Radiance CID.
-const CIDLen = 39
+// CIDLen is the serialized size in bytes of a Raw/DagCbor CIDv1
+const CIDLen = 36
 
 // TargetBlockSize is the target size of variable-length IPLD blocks (e.g. link lists).
 // Don't set this to the IPFS max block size, as we might overrun by a few kB.
@@ -39,6 +21,13 @@ const TargetBlockSize = 1 << 19
 
 // lengthPrefixSize is the max practical size of an array length prefix.
 const lengthPrefixSize = 4
+
+// IPLD node identifier
+const (
+	KindTx = iota
+	KindEntry
+	KindBlock
+)
 
 type BlockAssembler struct {
 	writer    car.OutStream
@@ -74,7 +63,7 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 		return err
 	}
 	builder := ipldsch.Type.Entry.NewBuilder()
-	entryMap, err := builder.BeginMap(8)
+	entryMap, err := builder.BeginMap(9)
 	if err != nil {
 		return err
 	}
@@ -87,6 +76,14 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 	}
 
 	var nodeAsm datamodel.NodeAssembler
+
+	nodeAsm, err = entryMap.AssembleEntry("kind")
+	if err != nil {
+		return err
+	}
+	if err = nodeAsm.AssignInt(int64(KindEntry)); err != nil {
+		return err
+	}
 
 	nodeAsm, err = entryMap.AssembleEntry("numHashes")
 	if err != nil {
@@ -115,8 +112,8 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 	if err = entryMap.Finish(); err != nil {
 		return err
 	}
-	node := builder.Build()
-	block, err := car.NewBlockFromCBOR(node, RadianceEntry)
+	node := builder.Build().(ipldsch.Entry).Representation()
+	block, err := car.NewBlockFromCBOR(node, uint64(multicodec.DagCbor))
 	if err != nil {
 		return err
 	}
@@ -127,12 +124,20 @@ func (b *BlockAssembler) WriteEntry(entry shred.Entry, pos EntryPos) error {
 // Finish appends block metadata to the CAR and returns the root CID.
 func (b *BlockAssembler) Finish() (link cidlink.Link, err error) {
 	builder := ipldsch.Type.Block.NewBuilder()
-	entryMap, err := builder.BeginMap(2)
+	entryMap, err := builder.BeginMap(4)
 	if err != nil {
 		return link, err
 	}
 
 	var nodeAsm datamodel.NodeAssembler
+
+	nodeAsm, err = entryMap.AssembleEntry("kind")
+	if err != nil {
+		return link, err
+	}
+	if err = nodeAsm.AssignInt(int64(KindBlock)); err != nil {
+		return link, err
+	}
 
 	nodeAsm, err = entryMap.AssembleEntry("slot")
 	if err != nil {
@@ -197,8 +202,8 @@ func (b *BlockAssembler) Finish() (link cidlink.Link, err error) {
 	if err = entryMap.Finish(); err != nil {
 		return link, err
 	}
-	node := builder.Build()
-	block, err := car.NewBlockFromCBOR(node, RadianceBlock)
+	node := builder.Build().(ipldsch.Block).Representation()
+	block, err := car.NewBlockFromCBOR(node, uint64(multicodec.DagCbor))
 	if err != nil {
 		return link, err
 	}
@@ -235,7 +240,7 @@ func (t *TxListAssembler) writeTx(tx solana.Transaction) error {
 	if err != nil {
 		panic("failed to marshal tx: " + err.Error())
 	}
-	leaf := car.NewBlockFromRaw(buf, SolanaTx)
+	leaf := car.NewBlockFromRaw(buf, uint64(multicodec.Raw))
 	if err := t.writer.WriteBlock(leaf); err != nil {
 		return err
 	}
@@ -255,7 +260,7 @@ func (t *TxListAssembler) finish() (datamodel.Node, error) {
 	}
 
 	// Create left link.
-	block, err := car.NewBlockFromCBOR(node, RadianceTxList)
+	block, err := car.NewBlockFromCBOR(node, uint64(multicodec.DagCbor))
 	if err != nil {
 		return nil, err
 	}
@@ -270,7 +275,7 @@ func (t *TxListAssembler) finish() (datamodel.Node, error) {
 		if err != nil {
 			return nil, err
 		}
-		block, err = car.NewBlockFromCBOR(node, RadianceTxList)
+		block, err = car.NewBlockFromCBOR(node, uint64(multicodec.DagCbor))
 		if err != nil {
 			return nil, err
 		}

@@ -1,6 +1,7 @@
 package cargen
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -10,10 +11,14 @@ import (
 	"strings"
 	"testing"
 
+	bin "github.com/gagliardetto/binary"
 	"github.com/gagliardetto/solana-go"
 	"github.com/go-logr/logr/testr"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-car"
+	"github.com/ipld/go-ipld-prime/codec/dagcbor"
+	"github.com/ipld/go-ipld-prime/node/basicnode"
+	"github.com/multiformats/go-multicodec"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.firedancer.io/radiance/pkg/blockstore"
@@ -190,21 +195,21 @@ func TestGen_Split(t *testing.T) {
 		cids []string
 	}{
 		"ledger-e1-s432000.car": {
-			size: 605,
+			size: 534,
 			cids: []string{
-				"bagaybaagciqew4qedn3qv2c6vgo7mm3pctryrnaqrgdlpf3vgcvozwlaeynkx6a", // SolanaTx
-				"bagbyfaagciqfasc3dklwgwcy5t3bfzjnlm2rbfjh4kepi6ryikkgiuvwzhw2vla", // RadianceEntry
-				"bagcifaagciqdg7fsz6k3mtflh5lkqyjgb5zahh4ybs47dwzuqiizdaivwhhr5sy", // RadianceBlock
+				"bafkreicloicbw5yk5bpkthpwgnxrjy4iwqiitbvxs52tbkxm3fqcmgvl7a", // KindTx
+				"bafyreiawzny3vxq6bir23qjai6fcujyiciqz7iftnibrfzbuvtoy7fvqtq", // KindEntry
+				"bafyreiaihhxk2rfo5lgilus3wp3mqglv2do3zgtfqpp5zfygrpzdbez3am", // KindBlock
 			},
 		},
 		"ledger-e1-s432002.car": {
-			size: 923,
+			size: 782,
 			cids: []string{
-				"bagaybaagciqomiykzi7uqzqxlhq7vmtwlqyaudpuclqrvcxtppbzplxqemyfwga", // SolanaTx
-				"bagbyfaagciqivs25rllteacdl5o5e34sa4sdofy34wfh4s3g4ghx26pf4iv4hdy", // RadianceEntry
-				"bagaybaagciqomiykzi7uqzqxlhq7vmtwlqyaudpuclqrvcxtppbzplxqemyfwga", // SolanaTx
-				"bagbyfaagciqlfc6ptacofkvbenvtiz7axbavxkeiyp5ow7idtsslu4hceakwtca", // RadianceEntry
-				"bagcifaagciqcotpbhzzfjddrtnxco7gy3qkw4ufba4ib7zvtbjl7sastj5murby", // RadianceBlock
+				"bafkreihgemfmup2imylvtyp2wj3fymakbx2bfyi2rlzxxq4xv3ycgmc3da", // KindTx
+				"bafyreih5wmt3ly25phouneamyxg5fs4uu3ma6kdvgwfregnmjsibkuipeq", // KindEntry
+				"bafkreihgemfmup2imylvtyp2wj3fymakbx2bfyi2rlzxxq4xv3ycgmc3da", // KindTx
+				"bafyreih5wmt3ly25phouneamyxg5fs4uu3ma6kdvgwfregnmjsibkuipeq", // KindEntry
+				"bafyreibqnqnmnhunzwcopnc7srlvq5p5bbgex2xspb6ayzf265rcwtaiie", // KindBlock
 			},
 		},
 	}
@@ -232,8 +237,26 @@ func TestGen_Split(t *testing.T) {
 					break
 				}
 				require.NoError(t, err)
-				t.Logf("CID=%s Multicodec=%#x", block.Cid(), block.Cid().Type())
-				cids = append(cids, block.Cid())
+				cid := block.Cid()
+				cidType := cid.Type()
+				t.Logf("CID=%s Multicodec=%#x", cid, cidType)
+				switch multicodec.Code(cidType) {
+				case multicodec.Raw:
+					var tx solana.Transaction
+					require.NoError(t, bin.UnmarshalBin(&tx, block.RawData()))
+					t.Logf("  Txn: %s", &tx)
+				case multicodec.DagCbor:
+					decodeOpt := dagcbor.DecodeOptions{
+						AllowLinks: true,
+					}
+					builder := basicnode.Prototype.Any.NewBuilder()
+					require.NoError(t, decodeOpt.Decode(builder, bytes.NewReader(block.RawData())))
+					node := builder.Build()
+					t.Logf("  Entry: %s", node.Kind())
+				default:
+					panic("Unexpected entry")
+				}
+				cids = append(cids, cid)
 			}
 
 			// match CIDs

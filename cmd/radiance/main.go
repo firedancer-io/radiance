@@ -15,6 +15,7 @@ import (
 	"k8s.io/klog/v2"
 
 	// Load in instruction pretty-printing
+	_ "github.com/gagliardetto/solana-go/programs/system"
 	_ "github.com/gagliardetto/solana-go/programs/vote"
 )
 
