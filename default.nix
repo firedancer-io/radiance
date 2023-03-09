@@ -1,5 +1,6 @@
-{ pkgs ? import <nixpkgs> { }, lib ? pkgs.lib
-, buildGoModule ? pkgs.buildGoModule, }:
+{ pkgs ? import (fetchTarball
+  "https://github.com/NixOS/nixpkgs/archive/4e9efd3432a9a1f50e81d70e13b38a330428bcca.tar.gz")
+  { }, lib ? pkgs.lib, buildGoModule ? pkgs.buildGoModule, }:
 
 buildGoModule rec {
   pname = "radiance";
