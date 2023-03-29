@@ -8,20 +8,20 @@ build_rocksdb:
 	cd ./rocksdb ; \
 	mkdir -p build && cd build ; \
 	cmake .. \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DROCKSDB_BUILD_SHARED=OFF \
-      -DWITH_GFLAGS=OFF \
-      -DWITH_BZ2=ON \
-      -DWITH_SNAPPY=OFF \
-      -DWITH_ZLIB=ON \
-      -DWITH_ZSTD=ON \
-      -DWITH_ALL_TESTS=OFF \
-      -DWITH_BENCHMARK_TOOLS=OFF \
-      -DWITH_CORE_TOOLS=OFF \
-      -DWITH_RUNTIME_DEBUG=OFF \
-      -DWITH_TESTS=OFF \
-      -DWITH_TOOLS=OFF \
-      -DWITH_TRACE_TOOLS=OFF ; \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DROCKSDB_BUILD_SHARED=OFF \
+		-DWITH_GFLAGS=OFF \
+		-DWITH_BZ2=ON \
+		-DWITH_SNAPPY=OFF \
+		-DWITH_ZLIB=ON \
+		-DWITH_ZSTD=ON \
+		-DWITH_ALL_TESTS=OFF \
+		-DWITH_BENCHMARK_TOOLS=OFF \
+		-DWITH_CORE_TOOLS=OFF \
+		-DWITH_RUNTIME_DEBUG=OFF \
+		-DWITH_TESTS=OFF \
+		-DWITH_TOOLS=OFF \
+		-DWITH_TRACE_TOOLS=OFF ; \
 	make -j
 lite: install_compatible_golang_version
 	go1.19.7 build -tags=lite ./cmd/radiance
