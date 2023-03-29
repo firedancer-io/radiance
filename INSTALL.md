@@ -46,7 +46,6 @@ by [grocksdb](https://github.com/linxGnu/grocksdb#prerequisite) and
 
 To build RocksDB from source, run the following commands:
 
-    mkdir -p $GOPATH/src/github.com/facebook && cd $GOPATH/src/github.com/facebook
     git clone https://github.com/facebook/rocksdb --branch v7.10.2 --depth 1
     cd rocksdb
     mkdir -p build && cd build
@@ -68,9 +67,9 @@ To build RocksDB from source, run the following commands:
     make -j
     cd ../..
 
-Finally, rebuild radiance with the appropriate Cgo flags.
+Finally, rebuild Radiance with the appropriate Cgo flags.
 
-    export CGO_CFLAGS="-I$GOPATH/src/github.com/facebook/rocksdb/include"
-    export CGO_LDFLAGS="-L$GOPATH/src/github.com/facebook/rocksdb/build -lbz2"
+    export CGO_CFLAGS="-I$(pwd)/rocksdb/include"
+    export CGO_LDFLAGS="-L$(pwd)/rocksdb/build -lbz2"
 
     go run ./cmd/radiance

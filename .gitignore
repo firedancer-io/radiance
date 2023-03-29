@@ -6,6 +6,7 @@ _bin
 /radiance
 /cmd/radiance/radiance
 /vendor
+/facebook
 
 # Data
 *.car
