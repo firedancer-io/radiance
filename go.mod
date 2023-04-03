@@ -21,7 +21,7 @@ require (
 	github.com/ipfs/go-ipld-cbor v0.0.6
 	github.com/ipld/go-car v0.6.0
 	github.com/ipld/go-ipld-prime v0.20.0
-	github.com/klauspost/compress v1.16.0
+	github.com/klauspost/compress v1.16.3
 	github.com/linxGnu/grocksdb v1.7.16-0.20230303082518-587b6c4f0dab
 	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/mattn/go-isatty v0.0.17
@@ -36,7 +36,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.2
-	github.com/twmb/franz-go v1.12.1
+	github.com/twmb/franz-go v1.13.2
 	github.com/vbauerster/mpb/v8 v8.2.1
 	golang.org/x/crypto v0.7.0
 	golang.org/x/sync v0.1.0
@@ -122,7 +122,7 @@ require (
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.15.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.15 // indirect
+	github.com/pierrec/lz4/v4 v4.1.17 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polydawn/refmt v0.89.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
