@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 set -e
 
-(
-  cd third_party/tools
-  ./build.sh
-)
+if command -v protoc &> /dev/null
+then
+  (
+    cd third_party/tools
+    ./build.sh
+  )
 
-third_party/tools/bin/buf generate --path third_party
+  PATH="$PATH:$(pwd)/third_party/tools/bin" protoc \
+    --proto_path=. \
+    --go_out=. \
+    --go_opt=paths=source_relative \
+    ./third_party/solana_proto/confirmed_block/confirmed_block.proto
+fi
 
 # cargo install serde-generate
 if command -v serdegen &> /dev/null
