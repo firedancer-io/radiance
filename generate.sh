@@ -6,7 +6,7 @@ set -e
   ./build.sh
 )
 
-third_party/tools/bin/buf generate
+third_party/tools/bin/buf generate --path third_party
 
 # cargo install serde-generate
 if command -v serdegen &> /dev/null
