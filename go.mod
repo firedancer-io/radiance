@@ -13,7 +13,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
-	github.com/ipfs/go-cid v0.3.2
+	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ipfs-blockstore v1.3.0
 	github.com/ipfs/go-ipld-cbor v0.0.6
