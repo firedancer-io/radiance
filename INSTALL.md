@@ -21,9 +21,9 @@ Radiance requires further requires Go 1.19. Using Go 1.18 or Go 1.20 will not wo
 Here's a trick to download another Go version in case you have the wrong one.
 (See [Managing Go versions](https://golang.org/doc/manage-install))
 
-    go get golang.org/dl/go1.19.8
-    go1.19.8 download
-    alias go=go1.19.8
+    go install golang.org/dl/go1.19.8@latest
+    "$(go env GOPATH)/bin/go1.19.8" download
+    alias go="$(go env GOPATH)/bin/go1.19.8"
 
 Once your Go toolchain and build dependencies are installed, you can build Radiance as usual:
 

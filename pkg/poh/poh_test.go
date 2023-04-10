@@ -62,7 +62,8 @@ func TestState(t *testing.T) {
 			},
 		},
 	}
-	for name, tc := range cases {
+	for name, tc_ := range cases {
+		tc := tc_
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			state := State(mustHashFromHex(tc.pre))
