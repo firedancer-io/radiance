@@ -22,7 +22,7 @@ require (
 	github.com/klauspost/compress v1.16.4
 	github.com/linxGnu/grocksdb v1.7.16-0.20230303082518-587b6c4f0dab
 	github.com/lucas-clemente/quic-go v0.29.1
-	github.com/mattn/go-isatty v0.0.17
+	github.com/mattn/go-isatty v0.0.18
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multicodec v0.8.1
