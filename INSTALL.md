@@ -1,18 +1,69 @@
+# Building Radiance
+
+Radiance depends on many external dependencies including optional C libraries.
+This makes the build procedure slightly more complicated than a pure Go project.
+
+For installing C deps, the following options are available, each with their own tradeoffs:
+- [Setup Script](#building-with-depssh) **(recommended)**
+  - Stable, one-time ~3 minute installation
+  - Supported on Debian, Ubuntu 20.04+, Fedora, RHEL 8+, Alpine 3, and macOS
+- [Nixpkgs](#building-with-nix)
+  - Somewhat stable, one-time 60 second installation
+  - Supported on any platform with a pre-existing installation of Nix (Linux, macOS)
+- [Without Cgo](#without-cgo)
+  - Plain old pure Go build
+  - Missing a lot of functionality (no Solana Labs compatibility layer)
+- Manual Installation: If you know what you're doing, feel free to install C deps manually.
+  - Good luck. Plan in 30 minutes of debugging time
+
+Radiance requires further requires Go 1.19. Using Go 1.18 or Go 1.20 will not work.
+
+Here's a trick to download another Go version in case you have the wrong one.
+(See [Managing Go versions](https://golang.org/doc/manage-install))
+
+    go get golang.org/dl/go1.19.8
+    go1.19.8 download
+    alias go=go1.19.8
+
+Once your Go toolchain and build dependencies are installed, you can build Radiance as usual:
+
+    go mod download
+    go run ./cmd/radiance
+
+## Building with deps.sh
+
+`deps.sh` fetches deps using Git, compiles them, and installs them into the `opt` dir of your Radiance checkout.
+
+To complete the one-time installation of deps, run
+
+    ./deps.sh
+
+You may get prompted to install basic system packages like `pkg-config` or `cmake` if they are missing.
+
+To add the installed deps to your shell env (and Go build tools), each time you open a new shell, run:
+
+    source activate-opt
+
+To clean up, simply run `./deps.sh nuke` or `rm -rf opt`
+
+### How deps.sh works
+
+Managing C deps is only as complicated as you want it to be.
+
+`deps.sh` is a ~500 line long handwritten shell script. It just calls `git clone`, `make`, and `make install` or their
+respective equivalents for each dependency. And yet it is more reliable than any tool that tries to be smart.
+
+It will not pollute your system -- The C deps are not installed globally.
+
 ## Building with Nix
 
-The recommended and most stable way to build Radiance is with [Nix](https://nixos.org/).
-This requires an existing Nix installation on your machine.
+Radiance provides a [Nix](https://nixos.org/) package.
 
     nix-build
     ./result/bin/radiance --help
 
-However, note that the resulting binary will only run under the same Nix environment.
-
-## Building with Go
-
-Radiance commands can be built with standard Go 1.19 tooling.
-
-    go run ./cmd/radiance
+Note that the resulting binary is not freestanding.
+It is linked against libraries provided by Nix and will not run on non-Nix hosts.
 
 ### Without Cgo
 
@@ -20,56 +71,3 @@ The full set of functionality requires C dependencies via Cgo.
 To create a pure-Go build use the `lite` tag.
 
     go build -tags=lite ./cmd/radiance
-
-### With Cgo dependencies
-
-Radiance tools that require direct access to the blockstore (such as `blockstore` and `car`)
-require a working C toolchain and extra compiler arguments to link against rocksdb.
-
-You'll need a working C compiler toolchain as well as prerequisites listed
-by [grocksdb](https://github.com/linxGnu/grocksdb#prerequisite) and
-[RocksDB itself](https://github.com/linxGnu/grocksdb#prerequisite).
-
-**RHEL/Centos/Fedora**
-
-    dnf -y install "@Development Tools" cmake zlib zlib-devel bzip2 bzip2-devel lz4-devel libzstd-devel
-
-**Debian**
-
-    # With package manager RocksDB
-    apt install -y librocksdb-dev
-
-    # With RocksDB from source
-    apt install -y build-essential cmake zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
-
-**Building RocksDB**
-
-To build RocksDB from source, run the following commands:
-
-    git clone https://github.com/facebook/rocksdb --branch v7.10.2 --depth 1
-    cd rocksdb
-    mkdir -p build && cd build
-    cmake .. \
-      -DCMAKE_BUILD_TYPE=Release \
-      -DROCKSDB_BUILD_SHARED=OFF \
-      -DWITH_GFLAGS=OFF \
-      -DWITH_BZ2=ON \
-      -DWITH_SNAPPY=OFF \
-      -DWITH_ZLIB=ON \
-      -DWITH_ZSTD=ON \
-      -DWITH_ALL_TESTS=OFF \
-      -DWITH_BENCHMARK_TOOLS=OFF \
-      -DWITH_CORE_TOOLS=OFF \
-      -DWITH_RUNTIME_DEBUG=OFF \
-      -DWITH_TESTS=OFF \
-      -DWITH_TOOLS=OFF \
-      -DWITH_TRACE_TOOLS=OFF
-    make -j
-    cd ../..
-
-Finally, rebuild RocksDB with the appropriate Cgo flags.
-
-    export CGO_CFLAGS="-I$(pwd)/rocksdb/include"
-    export CGO_LDFLAGS="-L$(pwd)/rocksdb/build"
-
-    go run ./cmd/radiance
