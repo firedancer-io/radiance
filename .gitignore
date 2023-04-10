@@ -19,6 +19,9 @@ OPTIONS-*
 # Nix
 /result
 
+# deps.sh
+opt/
+
 # Editor junk files
 # Please just use a global gitignore conf, I'm tired of this
 .idea
