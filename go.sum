@@ -452,8 +452,8 @@ github.com/libp2p/go-libp2p-testing v0.12.0 h1:EPvBb4kKMWO29qP4mZGyhVzUyR25dvfUI
 github.com/libp2p/go-msgio v0.3.0 h1:mf3Z8B1xcFN314sWX+2vOTShIE0Mmn2TXn3YCUQGNj0=
 github.com/libp2p/go-nat v0.1.0 h1:MfVsH6DLcpa04Xr+p8hmVRG4juse0s3J8HyNWYHffXg=
 github.com/libp2p/go-netroute v0.2.1 h1:V8kVrpD8GK0Riv15/7VN6RbUQ3URNZVosw7H2v9tksU=
-github.com/linxGnu/grocksdb v1.7.16-0.20230303082518-587b6c4f0dab h1:aTVNLqaxBD1ue7MqBEU5rkeVd8LyBJxzpf3EtkDEGiI=
-github.com/linxGnu/grocksdb v1.7.16-0.20230303082518-587b6c4f0dab/go.mod h1:pY55D0o+r8yUYLq70QmhdudxYvoDb9F+9puf4m3/W+U=
+github.com/linxGnu/grocksdb v1.7.16 h1:Q2co1xrpdkr5Hx3Fp+f+f7fRGhQFQhvi/+226dtLmA8=
+github.com/linxGnu/grocksdb v1.7.16/go.mod h1:JkS7pl5qWpGpuVb3bPqTz8nC12X3YtPZT+Xq7+QfQo4=
 github.com/logrusorgru/aurora v2.0.3+incompatible h1:tOpm7WcpBTn4fjmVfgpQq0EfczGlG91VSDkswnjF5A8=
 github.com/logrusorgru/aurora v2.0.3+incompatible/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/lucas-clemente/quic-go v0.29.1 h1:Z+WMJ++qMLhvpFkRZA+jl3BTxUjm415YBmWanXB8zP0=
