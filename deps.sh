@@ -14,13 +14,12 @@ source activate-opt
 
 # Load OS information
 OS="$(uname -s)"
+MAKE=( make -j )
 case "$OS" in
   Darwin)
-    MAKE=( make -j )
     ID=macos
     ;;
   Linux)
-    MAKE=( make -j --output-target=sync )
     # Load distro information
     if [[ -f /etc/os-release ]]; then
       source /etc/os-release
@@ -301,6 +300,7 @@ install_rocksdb () {
     -DCMAKE_BUILD_TYPE=Release \
     -DROCKSDB_BUILD_SHARED=OFF \
     -DWITH_GFLAGS=OFF \
+    -DWITH_LIBURING=OFF \
     -DWITH_BZ2=OFF \
     -DWITH_SNAPPY=OFF \
     -DWITH_ZLIB=ON \
@@ -311,8 +311,14 @@ install_rocksdb () {
     -DWITH_RUNTIME_DEBUG=OFF \
     -DWITH_TESTS=OFF \
     -DWITH_TOOLS=OFF \
-    -DWITH_TRACE_TOOLS=OFF
-  make -j
+    -DWITH_TRACE_TOOLS=OFF \
+    -DZLIB_ROOT="$PREFIX" \
+    -Dzstd_ROOT_DIR="$PREFIX"
+
+  local NJOBS
+  NJOBS=$(( $(nproc) / 2 ))
+  NJOBS=$((NJOBS>0 ? NJOBS : 1))
+  make -j $NJOBS
   make install DESTDIR="$PREFIX"
 }
 
