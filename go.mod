@@ -10,19 +10,19 @@ require (
 	github.com/filecoin-project/go-leb128 v0.0.0-20190212224330-8d79a5489543
 	github.com/gagliardetto/binary v0.7.8
 	github.com/gagliardetto/solana-go v1.8.3-0.20230302093440-c6043ec381e3
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
-	github.com/ipfs/go-cid v0.3.2
+	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ipfs-blockstore v1.3.0
 	github.com/ipfs/go-ipld-cbor v0.0.6
 	github.com/ipld/go-car v0.6.0
 	github.com/ipld/go-ipld-prime v0.20.0
 	github.com/klauspost/compress v1.16.4
-	github.com/linxGnu/grocksdb v1.7.16-0.20230303082518-587b6c4f0dab
+	github.com/linxGnu/grocksdb v1.7.16
 	github.com/lucas-clemente/quic-go v0.29.1
-	github.com/mattn/go-isatty v0.0.17
+	github.com/mattn/go-isatty v0.0.18
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multicodec v0.8.1
@@ -35,7 +35,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/vbauerster/mpb/v8 v8.3.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/sys v0.6.0
+	golang.org/x/sys v0.7.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/klog/v2 v2.90.1
