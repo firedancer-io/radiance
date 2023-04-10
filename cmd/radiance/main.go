@@ -1,9 +1,11 @@
-// Gossip interacts with Solana gossip networks
 package main
 
 import (
 	"context"
 	"flag"
+	"go.firedancer.io/radiance/cmd/radiance/bigtable"
+	"go.firedancer.io/radiance/cmd/radiance/tpu_quic"
+	"go.firedancer.io/radiance/cmd/radiance/tpu_udp"
 	"os"
 	"os/signal"
 
@@ -30,10 +32,13 @@ func init() {
 	cmd.PersistentFlags().AddGoFlagSet(klogFlags)
 
 	cmd.AddCommand(
+		&bigtable.Cmd,
 		&blockstore.Cmd,
 		&car.Cmd,
 		&gossip.Cmd,
 		&replay.Cmd,
+		&tpu_udp.Cmd,
+		&tpu_quic.Cmd,
 	)
 }
 

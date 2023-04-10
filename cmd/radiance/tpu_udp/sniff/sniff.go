@@ -1,12 +1,12 @@
-package main
+package sniff
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/endpoints"
 	"go.firedancer.io/radiance/pkg/netlink"
 	"go.firedancer.io/radiance/pkg/tpu"
@@ -15,6 +15,24 @@ import (
 	"strconv"
 	"strings"
 )
+
+var Cmd = cobra.Command{
+	Use:  "sniff",
+	Args: cobra.NoArgs,
+	Run:  run,
+}
+
+var (
+	flagIface string
+	flagPorts string
+)
+
+var flags = Cmd.Flags()
+
+func init() {
+	flags.StringVar(&flagIface, "iface", "", "interface to read packets from")
+	flags.StringVar(&flagPorts, "ports", "", "destination ports to sniff (comma-separated), asks local RPC if empty")
+}
 
 type packet struct {
 	data []byte
@@ -61,27 +79,21 @@ func readPacketsFromInterface(iface string, ports []uint16, dst net.IP) (chan pa
 	return packets, nil
 }
 
-var (
-	flagIface = flag.String("iface", "", "interface to read packets from")
-	flagPorts = flag.String("ports", "", "destination ports to sniff (comma-separated), asks local RPC if empty")
-)
-
-func main() {
-	flag.Parse()
-	if *flagIface == "" {
+func run(_ *cobra.Command, _ []string) {
+	if flagIface == "" {
 		klog.Exit("-iface is required")
 	}
 
-	dst, err := netlink.GetInterfaceIP(*flagIface)
+	dst, err := netlink.GetInterfaceIP(flagIface)
 	if err != nil {
 		klog.Exit("failed to get IP: ", err)
 	}
 
-	klog.Infof("interface %s has primary IP %s", *flagIface, dst)
+	klog.Infof("interface %s has primary IP %s", flagIface, dst)
 
 	ports := make([]uint16, 0)
 
-	if *flagPorts == "" {
+	if flagPorts == "" {
 		klog.Infof("no ports specified, asking local RPC for ports")
 		ports, err = endpoints.GetNodeTPUPorts(context.Background(), endpoints.RPCLocalhost, dst)
 		if err != nil {
@@ -89,7 +101,7 @@ func main() {
 		}
 		klog.Infof("found ports: %v", ports)
 	} else {
-		for _, port := range strings.Split(*flagPorts, ",") {
+		for _, port := range strings.Split(flagPorts, ",") {
 			p, err := strconv.ParseUint(port, 10, 16)
 			if err != nil {
 				klog.Exit("failed to parse port: ", err)
@@ -98,7 +110,7 @@ func main() {
 		}
 	}
 
-	packets, err := readPacketsFromInterface(*flagIface, ports, dst)
+	packets, err := readPacketsFromInterface(flagIface, ports, dst)
 	if err != nil {
 		klog.Exit("error reading packets: ", err)
 	}

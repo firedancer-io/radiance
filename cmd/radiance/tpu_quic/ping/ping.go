@@ -1,4 +1,4 @@
-package main
+package ping
 
 import (
 	"context"
@@ -9,11 +9,11 @@ import (
 	"crypto/x509/pkix"
 	"encoding/hex"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/gagliardetto/solana-go/text"
+	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"math/big"
@@ -31,16 +31,34 @@ import (
 
 // QUIC_GO_LOG_LEVEL=DEBUG
 
+var Cmd = cobra.Command{
+	Use: "ping",
+	Run: run,
+}
+
+var flags = Cmd.Flags()
+
 var (
-	flagDebug      = flag.Bool("debug", false, "Enable debug logging")
-	flagCount      = flag.Int("c", 1, "Number of pings to send, -1 for infinite")
-	flagDelay      = flag.Duration("i", 1000*time.Millisecond, "Delay between pings")
-	flagAddr       = flag.String("addr", "", "Address to ping (<host>:<port>)")
-	flagSourcePort = flag.Int("s", 0, "Source port to use (0 for random/default)")
-	flagKey        = flag.String("k", "", "Path to private key file (default ~/.config/solana/id.json)")
-	flagSendTx     = flag.Bool("send-tx", false, "Send a transaction")
-	flagRPC        = flag.String("u", "", "RPC URL to use for getting blockhash")
+	flagDebug      bool
+	flagCount      int
+	flagDelay      time.Duration
+	flagAddr       string
+	flagSourcePort int
+	flagKey        string
+	flagSendTx     bool
+	flagRPC        string
 )
+
+func init() {
+	flags.BoolVar(&flagDebug, "debug", false, "Enable debug logging")
+	flags.IntVar(&flagCount, "c", 1, "Number of pings to send, -1 for infinite")
+	flags.DurationVar(&flagDelay, "i", 1000*time.Millisecond, "Delay between pings")
+	flags.StringVar(&flagAddr, "addr", "", "Address to ping (<host>:<port>)")
+	flags.IntVar(&flagSourcePort, "s", 0, "Source port to use (0 for random/default)")
+	flags.StringVar(&flagKey, "k", "", "Path to private key file (default ~/.config/solana/id.json)")
+	flags.BoolVar(&flagSendTx, "send-tx", false, "Send a transaction")
+	flags.StringVar(&flagRPC, "u", "", "RPC URL to use for getting blockhash")
+}
 
 type pingData struct {
 	Slot  uint64    `json:"slot"`
@@ -60,17 +78,16 @@ func getDefaultRouteSourceIP() (net.IP, error) {
 
 func init() {
 	klog.InitFlags(nil)
-	flag.Parse()
 
-	if *flagKey == "" {
+	if flagKey == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			panic(err)
 		}
-		*flagKey = path.Join(home, ".config/solana/id.json")
+		flagKey = path.Join(home, ".config/solana/id.json")
 	}
 
-	if *flagSendTx && *flagRPC == "" {
+	if flagSendTx && flagRPC == "" {
 		klog.Exitf("RPC URL must be specified when sending transactions")
 	}
 
@@ -81,7 +98,7 @@ func init() {
 }
 
 func loadLocalKey() (solana.PrivateKey, error) {
-	return solana.PrivateKeyFromSolanaKeygenFile(*flagKey)
+	return solana.PrivateKeyFromSolanaKeygenFile(flagKey)
 }
 
 func identityKeyToCert(sKey solana.PrivateKey) (tls.Certificate, error) {
@@ -144,10 +161,10 @@ func buildTransaction(now time.Time, i int, blockhash solana.Hash, feePayer sola
 	return tx
 }
 
-func main() {
+func run(_ *cobra.Command, _ []string) {
 	ctx := context.Background()
 
-	if *flagAddr == "" {
+	if flagAddr == "" {
 		klog.Exit("No address to ping specified")
 	}
 
@@ -156,7 +173,7 @@ func main() {
 		dbg   io.Writer
 		err   error
 	)
-	if *flagDebug {
+	if flagDebug {
 		dbg, err = os.OpenFile("keylog.txt", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
 		if err != nil {
 			klog.Exitf("Failed to open keylog file: %v", err)
@@ -197,42 +214,42 @@ func main() {
 		Certificates:       []tls.Certificate{clientCert},
 	}
 
-	for c := 0; c < *flagCount || *flagCount == -1; c++ {
+	for c := 0; c < flagCount || flagCount == -1; c++ {
 		ping(ctx, c, tlsConf, qconf, signer)
-		time.Sleep(*flagDelay)
+		time.Sleep(flagDelay)
 	}
 }
 
 func ping(ctx context.Context, c int, tlsConf *tls.Config, qconf quic.Config, signer solana.PrivateKey) {
 	t := time.Now()
 	minTimeout := 300 * time.Millisecond
-	if *flagDelay > minTimeout {
-		minTimeout = *flagDelay
+	if flagDelay > minTimeout {
+		minTimeout = flagDelay
 	}
 	ctx, cancel := context.WithTimeout(ctx, minTimeout)
 	defer cancel()
 
-	udpAddr, err := net.ResolveUDPAddr("udp", *flagAddr)
+	udpAddr, err := net.ResolveUDPAddr("udp", flagAddr)
 	if err != nil {
 		klog.Exitf("Failed to resolve UDP address: %v", err)
 	}
 	udpConn, err := net.ListenUDP("udp",
-		&net.UDPAddr{IP: net.IPv4zero, Port: *flagSourcePort})
+		&net.UDPAddr{IP: net.IPv4zero, Port: flagSourcePort})
 	if err != nil {
 		klog.Exitf("Failed to listen on UDP socket: %v", err)
 	}
 	defer udpConn.Close()
 
-	conn, err := quic.DialContext(ctx, udpConn, udpAddr, *flagAddr, tlsConf, &qconf)
+	conn, err := quic.DialContext(ctx, udpConn, udpAddr, flagAddr, tlsConf, &qconf)
 	if err != nil {
 		klog.Errorf("Failed to dial: %v", err)
-		time.Sleep(*flagDelay)
+		time.Sleep(flagDelay)
 		return
 	}
 
 	klog.Infof("Connected to %s (in %dms, %d/%d)",
-		*flagAddr, time.Since(t).Milliseconds(),
-		c+1, *flagCount)
+		flagAddr, time.Since(t).Milliseconds(),
+		c+1, flagCount)
 
 	if klog.V(1).Enabled() {
 		for _, cert := range conn.ConnectionState().TLS.PeerCertificates {
@@ -241,8 +258,8 @@ func ping(ctx context.Context, c int, tlsConf *tls.Config, qconf quic.Config, si
 		}
 	}
 
-	if *flagSendTx {
-		client := rpc.New(*flagRPC)
+	if flagSendTx {
+		client := rpc.New(flagRPC)
 		defer client.Close()
 
 		out, err := client.GetRecentBlockhash(context.TODO(), rpc.CommitmentFinalized)

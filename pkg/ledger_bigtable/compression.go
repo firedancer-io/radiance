@@ -5,10 +5,8 @@ import (
 	"compress/bzip2"
 	"compress/gzip"
 	"fmt"
-	"io"
-	"io/ioutil"
-
 	"github.com/klauspost/compress/zstd"
+	"io"
 )
 
 type bigtableCompression uint
@@ -54,5 +52,5 @@ func (c bigtableCompression) Uncompress(b []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	return ioutil.ReadAll(o)
+	return io.ReadAll(o)
 }

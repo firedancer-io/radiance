@@ -1,20 +1,33 @@
-package main
+package pcap
 
 import (
-	"flag"
 	"fmt"
 	"github.com/gagliardetto/solana-go"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/tpu"
 	"log"
 	"sort"
 )
 
+var Cmd = cobra.Command{
+	Use:   "pcap <file>",
+	Short: "Analyze TPU/UDP packet capture",
+	Args:  cobra.ExactArgs(1),
+	Run:   run,
+}
+
+var flags = Cmd.Flags()
+
 var (
-	flagSigverify = flag.Bool("sigverify", false, "Verify signatures")
+	flagSigverify bool
 )
+
+func init() {
+	flags.BoolVar(&flagSigverify, "sigverify", false, "Verify signatures")
+}
 
 // pkcon install libpcap-devel
 
@@ -40,13 +53,8 @@ func readPCAP(file string) chan []byte {
 	return packets
 }
 
-func main() {
-	flag.Parse()
-	if flag.NArg() > 1 || flag.NArg() == 0 {
-		fmt.Println("Usage: pcap [file]")
-		return
-	}
-	packets := readPCAP(flag.Arg(0))
+func run(_ *cobra.Command, args []string) {
+	packets := readPCAP(args[0])
 
 	signerCount := make(map[solana.PublicKey]uint)
 
@@ -72,7 +80,7 @@ func main() {
 			continue
 		}
 
-		if *flagSigverify {
+		if flagSigverify {
 			ok := tpu.VerifyTxSig(tx)
 			if !ok {
 				fmt.Printf("bad signature on %s\n", tx.Signatures[0])

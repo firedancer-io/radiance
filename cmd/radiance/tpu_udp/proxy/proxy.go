@@ -1,15 +1,15 @@
 //go:build linux
 
-package main
+package proxy
 
 import (
 	"bytes"
 	"context"
-	"flag"
 	"github.com/LiamHaworth/go-tproxy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/pkg/endpoints"
 	"go.firedancer.io/radiance/pkg/netlink"
 	"go.firedancer.io/radiance/pkg/nftables"
@@ -26,11 +26,28 @@ import (
 	"time"
 )
 
-var (
-	flagDebugAddr = flag.String("debug-addr", ":6060", "Metrics and pprof listen address")
-	flagIface     = flag.String("iface", "", "External interface to receive packets from")
-	flagPorts     = flag.String("ports", "", "Destination ports to proxy (comma-separated), asks local RPC if empty")
+var Cmd = cobra.Command{
+	Use:   "proxy",
+	Short: "Proxy TPU/UDP interface on local node",
+	Args:  cobra.NoArgs,
+	Run:   run,
+}
 
+var flags = Cmd.Flags()
+
+var (
+	flagDebugAddr string
+	flagIface     string
+	flagPorts     string
+)
+
+func init() {
+	flags.StringVar(&flagDebugAddr, "debug-addr", ":6060", "Metrics and pprof listen address")
+	flags.StringVar(&flagIface, "iface", "", "External interface to receive packets from")
+	flags.StringVar(&flagPorts, "ports", "", "Destination ports to proxy (comma-separated), asks local RPC if empty")
+}
+
+var (
 	metricPacketsCount = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "tproxy_packets_count",
 		Help: "Number of packets received by the proxy",
@@ -41,23 +58,21 @@ var (
 	}, []string{"port"})
 )
 
-func main() {
-	flag.Parse()
-
-	if *flagIface == "lo" {
+func run(_ cobra.Command, _ []string) {
+	if flagIface == "lo" {
 		klog.Exitf("proxying lo would lead to a loopback packet loop")
 	}
 
-	if *flagIface == "" {
+	if flagIface == "" {
 		klog.Exitf("no interface specified, use -iface to specify one")
 	}
 
-	dst, err := netlink.GetInterfaceIP(*flagIface)
+	dst, err := netlink.GetInterfaceIP(flagIface)
 	if err != nil {
 		klog.Exit("failed to get IP: ", err)
 	}
 
-	klog.Infof("interface %s has primary IP %s", *flagIface, dst)
+	klog.Infof("interface %s has primary IP %s", flagIface, dst)
 
 	ports := make([]uint16, 0)
 
@@ -69,7 +84,7 @@ func main() {
 		}
 		klog.Infof("found ports: %v", ports)
 	} else {
-		for _, port := range strings.Split(*flagPorts, ",") {
+		for _, port := range strings.Split(flagPorts, ",") {
 			p, err := strconv.ParseUint(port, 10, 16)
 			if err != nil {
 				klog.Exit("failed to parse port: ", err)
@@ -80,8 +95,8 @@ func main() {
 
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
-		klog.Infof("Starting pprof and Prometheus server on %s", *flagDebugAddr)
-		klog.Fatal(http.ListenAndServe(*flagDebugAddr, nil))
+		klog.Infof("Starting pprof and Prometheus server on %s", flagDebugAddr)
+		klog.Fatal(http.ListenAndServe(flagDebugAddr, nil))
 	}()
 
 	// Get hostname
@@ -114,7 +129,7 @@ func main() {
 		klog.Exitf("Failed to ensure kernel modules: %v", err)
 	}
 
-	if err := nftables.InsertProxyChain(ports, localPort, *flagIface); err != nil {
+	if err := nftables.InsertProxyChain(ports, localPort, flagIface); err != nil {
 		klog.Exitf("Failed to insert nft tproxy chain: %v", err)
 	}
 	defer func() {

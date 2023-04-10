@@ -1,8 +1,8 @@
-package main
+package dumpblock
 
 import (
 	"context"
-	"flag"
+	"github.com/spf13/cobra"
 	"log"
 	"os"
 
@@ -11,20 +11,29 @@ import (
 	"go.firedancer.io/radiance/pkg/ledger_bigtable"
 )
 
-var (
-	flagBlock = flag.Uint64("block", 0, "Block number to dump")
-	flagDump  = flag.Bool("dump", true, "Dump the block to stdout as prototxt")
-)
-
-func init() {
-	flag.Parse()
-
-	if *flagBlock == 0 {
-		log.Fatal("Must specify block number")
-	}
+var Cmd = cobra.Command{
+	Use:   "dumpblock",
+	Short: "Dump a block from bigtable in Protobuf text format",
+	Run:   run,
 }
 
-func main() {
+var (
+	flagBlock uint64
+	flagDump  bool
+)
+
+var flags = Cmd.Flags()
+
+func init() {
+	flags.Uint64Var(&flagBlock, "block", 0, "Block number to dump")
+	flags.BoolVar(&flagDump, "dump", true, "Dump the block to stdout as prototxt")
+}
+
+func run(_ *cobra.Command, _ []string) {
+	if flagBlock == 0 {
+		log.Fatal("Must specify block number")
+	}
+
 	ctx := context.Background()
 
 	btClient, err := ledger_bigtable.MainnetClient(ctx)
@@ -33,7 +42,7 @@ func main() {
 	}
 
 	table := btClient.Open(ledger_bigtable.BlocksTable)
-	rowKey := ledger_bigtable.SlotKey(*flagBlock)
+	rowKey := ledger_bigtable.SlotKey(flagBlock)
 
 	row, err := table.ReadRow(ctx, rowKey)
 	if err != nil {
@@ -57,9 +66,9 @@ func main() {
 		log.Fatalf("Could not marshal block: %v", err)
 	}
 
-	log.Printf("Fetched block %v with %d txs", *flagBlock, len(block.Transactions))
+	log.Printf("Fetched block %v with %d txs", flagBlock, len(block.Transactions))
 
-	if *flagDump {
+	if flagDump {
 		if _, err := os.Stdout.Write(b); err != nil {
 			panic(err)
 		}
