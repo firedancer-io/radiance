@@ -10,7 +10,7 @@ require (
 	github.com/filecoin-project/go-leb128 v0.0.0-20190212224330-8d79a5489543
 	github.com/gagliardetto/binary v0.7.8
 	github.com/gagliardetto/solana-go v1.8.3-0.20230302093440-c6043ec381e3
-	github.com/go-logr/logr v1.2.3
+	github.com/go-logr/logr v1.2.4
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
 	github.com/ipfs/go-cid v0.3.2
