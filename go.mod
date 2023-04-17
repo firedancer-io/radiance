@@ -19,7 +19,7 @@ require (
 	github.com/ipfs/go-ipld-cbor v0.0.6
 	github.com/ipld/go-car v0.6.0
 	github.com/ipld/go-ipld-prime v0.20.0
-	github.com/klauspost/compress v1.16.4
+	github.com/klauspost/compress v1.16.5
 	github.com/linxGnu/grocksdb v1.7.16
 	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/mattn/go-isatty v0.0.18
