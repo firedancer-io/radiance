@@ -25,7 +25,7 @@ require (
 	github.com/mattn/go-isatty v0.0.18
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mr-tron/base58 v1.2.0
-	github.com/multiformats/go-multicodec v0.8.1
+	github.com/multiformats/go-multicodec v0.9.0
 	github.com/multiformats/go-multihash v0.2.1
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20220519162058-e5cd3c3b3f3a
 	github.com/prometheus/client_golang v1.15.0
