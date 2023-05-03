@@ -28,7 +28,7 @@ require (
 	github.com/multiformats/go-multicodec v0.9.0
 	github.com/multiformats/go-multihash v0.2.1
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20220519162058-e5cd3c3b3f3a
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/segmentio/textio v1.2.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.7.0
