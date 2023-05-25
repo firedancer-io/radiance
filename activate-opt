@@ -4,4 +4,4 @@
 export PKG_CONFIG_LIBDIR=""
 export PKG_CONFIG_PATH="$(pwd)/opt/lib/pkgconfig:$(pwd)/opt/lib64/pkgconfig"
 export CGO_CFLAGS="-I$(pwd)/opt/include"
-export CGO_LDFLAGS="-L$(pwd)/opt/lib"
+export CGO_LDFLAGS="-L$(pwd)/opt/lib -L$(pwd)/opt/lib64"
