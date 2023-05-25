@@ -5,6 +5,16 @@ package proxy
 import (
 	"bytes"
 	"context"
+	"net"
+	"net/http"
+	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"sync/atomic"
+	"time"
+
 	"github.com/LiamHaworth/go-tproxy"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -15,15 +25,6 @@ import (
 	"go.firedancer.io/radiance/pkg/nftables"
 	"golang.org/x/sys/unix"
 	"k8s.io/klog/v2"
-	"net"
-	"net/http"
-	_ "net/http/pprof"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"sync/atomic"
-	"time"
 )
 
 var Cmd = cobra.Command{
@@ -58,7 +59,7 @@ var (
 	}, []string{"port"})
 )
 
-func run(_ cobra.Command, _ []string) {
+func run(_ *cobra.Command, _ []string) {
 	if flagIface == "lo" {
 		klog.Exitf("proxying lo would lead to a loopback packet loop")
 	}
@@ -76,7 +77,7 @@ func run(_ cobra.Command, _ []string) {
 
 	ports := make([]uint16, 0)
 
-	if *flagPorts == "" {
+	if flagPorts == "" {
 		klog.Infof("no ports specified, asking local RPC for ports")
 		ports, err = endpoints.GetNodeTPUPorts(context.Background(), endpoints.RPCLocalhost, dst)
 		if err != nil {
