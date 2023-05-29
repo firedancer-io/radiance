@@ -32,7 +32,7 @@ require (
 	github.com/segmentio/textio v1.2.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.7.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.3
 	github.com/vbauerster/mpb/v8 v8.3.0
 	golang.org/x/sync v0.2.0
 	golang.org/x/sys v0.8.0
