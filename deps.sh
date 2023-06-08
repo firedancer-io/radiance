@@ -116,7 +116,7 @@ fetch () {
 }
 
 check_fedora_pkgs () {
-  local REQUIRED_RPMS=( cmake pkgconf make gcc gcc-c++ )
+  local REQUIRED_RPMS=( cmake pkgconf make gcc gcc-c++ flex bison )
 
   echo "[~] Checking for required RPM packages"
 
