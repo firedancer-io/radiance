@@ -107,9 +107,12 @@ checkout_repo () {
 fetch () {
   mkdir -pv ./opt/git
 
-  checkout_repo zlib    https://github.com/madler/zlib      "v1.2.13"
-  checkout_repo zstd    https://github.com/facebook/zstd    "v1.5.4"
-  checkout_repo rocksdb https://github.com/facebook/rocksdb "v7.10.2"
+  checkout_repo zlib    https://github.com/madler/zlib               "v1.2.13"
+  checkout_repo zstd    https://github.com/facebook/zstd             "v1.5.4"
+  checkout_repo snappy  https://github.com/google/snappy             "1.1.10"
+  checkout_repo lz4     https://github.com/lz4/lz4                   "v1.9.4"
+  checkout_repo rocksdb https://github.com/facebook/rocksdb          "v7.10.2"
+  checkout_repo libpcap https://github.com/the-tcpdump-group/libpcap "libpcap-1.10.4"
 }
 
 check_fedora_pkgs () {
@@ -290,8 +293,43 @@ install_zstd () {
   echo "[+] Successfully installed zstd"
 }
 
+install_snappy () {
+  cd ./opt/git/snappy
+
+  echo "[+] Configuring snappy"
+  mkdir -p build
+  cd build
+  cmake .. \
+    -G"Unix Makefiles" \
+    -DCMAKE_INSTALL_PREFIX:PATH="" \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DSNAPPY_BUILD_TESTS=OFF \
+    -DSNAPPY_BUILD_BENCHMARKS=OFF
+  echo "[+] Configured snappy"
+
+  echo "[+] Building snappy"
+  make -j
+  echo "[+] Successfully built snappy"
+
+  echo "[+] Installing snappy to $PREFIX"
+  make install DESTDIR="$PREFIX"
+  echo "[+] Successfully installed snappy"
+}
+
+install_lz4 () {
+  cd ./opt/git/lz4/lib
+
+  echo "[+] Installing lz4 to $PREFIX"
+  "${MAKE[@]}" PREFIX="$PREFIX" install
+  echo "[+] Successfully installed lz4"
+}
+
 install_rocksdb () {
   cd ./opt/git/rocksdb
+
+  echo "[+] Configuring RocksDB"
   mkdir -p build
   cd build
   cmake .. \
@@ -302,7 +340,7 @@ install_rocksdb () {
     -DWITH_GFLAGS=OFF \
     -DWITH_LIBURING=OFF \
     -DWITH_BZ2=OFF \
-    -DWITH_SNAPPY=OFF \
+    -DWITH_SNAPPY=ON \
     -DWITH_ZLIB=ON \
     -DWITH_ZSTD=ON \
     -DWITH_ALL_TESTS=OFF \
@@ -313,13 +351,39 @@ install_rocksdb () {
     -DWITH_TOOLS=OFF \
     -DWITH_TRACE_TOOLS=OFF \
     -DZLIB_ROOT="$PREFIX" \
-    -Dzstd_ROOT_DIR="$PREFIX"
+    -Dzstd_ROOT_DIR="$PREFIX" \
+    -DSnappy_LIBRARIES="$PREFIX/lib" \
+    -DSnappy_INCLUDE_DIRS="$PREFIX/include"
+  echo "[+] Configured RocksDB"
 
+  echo "[+] Building RocksDB"
   local NJOBS
   NJOBS=$(( $(nproc) / 2 ))
   NJOBS=$((NJOBS>0 ? NJOBS : 1))
   make -j $NJOBS
+  echo "[+] Successfully built RocksDB"
+
+  echo "[+] Installing RocksDB to $PREFIX"
   make install DESTDIR="$PREFIX"
+  echo "[+] Successfully installed RocksDB"
+}
+
+install_libpcap () {
+  cd ./opt/git/libpcap
+
+  echo "[+] Configuring libpcap"
+  ./configure \
+    --prefix="$PREFIX" \
+    --disable-shared
+  echo "[+] Configured libpcap"
+
+  echo "[+] Building libpcap"
+  "${MAKE[@]}" libpcap.a
+  echo "[+] Successfully built libpcap"
+
+  echo "[+] Installing libpcap to $PREFIX"
+  make install -j
+  echo "[+] Successfully installed libpcap"
 }
 
 install () {
@@ -332,10 +396,14 @@ install () {
   # the Solana protocol.
   ( install_zlib    )
   ( install_zstd    )
+  ( install_snappy  )
+  ( install_lz4     )
 
   # RocksDB (imported by grocksdb)
   # See https://github.com/linxGnu/grocksdb#prerequisite
   ( install_rocksdb )
+
+  ( install_libpcap )
 
   echo "[~] Done! To wire up $(pwd)/opt with Go, run:"
   echo "    source activate-opt"
