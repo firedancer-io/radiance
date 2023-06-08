@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/dumpbatches"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/dumpshreds"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore/statdatarate"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/statentries"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/verifydata"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/yaml"
@@ -20,6 +21,7 @@ func init() {
 	Cmd.AddCommand(
 		&dumpshreds.Cmd,
 		&dumpbatches.Cmd,
+		&statdatarate.Cmd,
 		&statentries.Cmd,
 		&verifydata.Cmd,
 		&yaml.Cmd,
