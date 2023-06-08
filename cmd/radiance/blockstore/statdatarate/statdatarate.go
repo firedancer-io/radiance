@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/util"
 	"go.firedancer.io/radiance/pkg/blockstore"
@@ -37,7 +38,7 @@ func run(_ *cobra.Command, args []string) {
 
 	wr := csv.NewWriter(os.Stdout)
 	defer wr.Flush()
-	wr.Write([]string{"slot", "ts", "block_raw_bytes"})
+	wr.Write([]string{"slot", "ts", "block_raw_bytes", "block_compressed_bytes"})
 
 	slots.Iter(func(slot uint64) bool {
 		err := dumpSlot(db, wr, slot)
@@ -60,16 +61,36 @@ func dumpSlot(db *blockstore.DB, wr *csv.Writer, slot uint64) error {
 		return err
 	}
 
+	var compressedSize countWriter
+	compressor, err := zstd.NewWriter(&compressedSize)
+	if err != nil {
+		panic(err.Error())
+	}
 	var blockRawBytes uint64
 	for _, batch := range entries {
 		blockRawBytes += uint64(len(batch.Raw))
+		_, err := compressor.Write(batch.Raw)
+		if err != nil {
+			return err
+		}
 	}
+	_ = compressor.Flush()
 
 	wr.Write([]string{
 		slotDecimal,
 		strconv.FormatUint(meta.FirstShredTimestamp, 10),
 		strconv.FormatUint(uint64(blockRawBytes), 10),
+		strconv.FormatUint(compressedSize.n, 10),
 	})
 
 	return nil
+}
+
+type countWriter struct {
+	n uint64
+}
+
+func (c *countWriter) Write(p []byte) (int, error) {
+	c.n += uint64(len(p))
+	return len(p), nil
 }
