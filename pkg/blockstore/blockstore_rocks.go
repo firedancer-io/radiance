@@ -21,12 +21,16 @@ type DB struct {
 	CfTxStatus  *grocksdb.ColumnFamilyHandle
 }
 
+func OpenReadWrite(path string) (*DB, error) {
+	return open(path, "", true)
+}
+
 // OpenReadOnly attaches to a blockstore in read-only mode.
 //
 // Attaching to running validators is supported.
 // The DB handle will be a point-in-time view at the time of attaching.
 func OpenReadOnly(path string) (*DB, error) {
-	return open(path, "")
+	return open(path, "", false)
 }
 
 // OpenSecondary attaches to a blockstore in secondary mode.
@@ -36,10 +40,10 @@ func OpenReadOnly(path string) (*DB, error) {
 //
 // `secondaryPath` points to a directory where the secondary instance stores its info log.
 func OpenSecondary(path string, secondaryPath string) (*DB, error) {
-	return open(path, secondaryPath)
+	return open(path, secondaryPath, false)
 }
 
-func open(path string, secondaryPath string) (*DB, error) {
+func open(path string, secondaryPath string, write bool) (*DB, error) {
 	// List all available column families
 	dbOpts := grocksdb.NewDefaultOptions()
 	allCfNames, err := grocksdb.ListColumnFamilies(dbOpts, path)
@@ -64,7 +68,16 @@ func open(path string, secondaryPath string) (*DB, error) {
 	}
 
 	var openFn func() (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle, error)
-	if secondaryPath != "" {
+	if write {
+		openFn = func() (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle, error) {
+			return grocksdb.OpenDbColumnFamilies(
+				dbOpts,
+				path,
+				cfNames,
+				cfOptList,
+			)
+		}
+	} else if secondaryPath != "" {
 		openFn = func() (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle, error) {
 			return grocksdb.OpenDbAsSecondaryColumnFamilies(
 				dbOpts,
@@ -118,6 +131,7 @@ func open(path string, secondaryPath string) (*DB, error) {
 }
 
 func getCfOpts(db *DB, name string) (**grocksdb.ColumnFamilyHandle, *grocksdb.Options) {
+	var handle *grocksdb.ColumnFamilyHandle
 	switch name {
 	case CfDefault:
 		return &db.CfDefault, grocksdb.NewDefaultOptions()
@@ -130,7 +144,7 @@ func getCfOpts(db *DB, name string) (**grocksdb.ColumnFamilyHandle, *grocksdb.Op
 	case CfCodeShred:
 		return &db.CfCodeShred, grocksdb.NewDefaultOptions()
 	default:
-		return nil, nil
+		return &handle, grocksdb.NewDefaultOptions()
 	}
 }
 
