@@ -16,14 +16,14 @@ For installing C deps, the following options are available, each with their own 
 - Manual Installation: If you know what you're doing, feel free to install C deps manually.
   - Good luck. Plan in 30 minutes of debugging time
 
-Radiance requires further requires Go 1.19. Using Go 1.18 or Go 1.20 will not work.
+Radiance requires further requires Go 1.20. Other Go versions are not supported.
 
 Here's a trick to download another Go version in case you have the wrong one.
 (See [Managing Go versions](https://golang.org/doc/manage-install))
 
-    go install golang.org/dl/go1.19.8@latest
-    "$(go env GOPATH)/bin/go1.19.8" download
-    alias go="$(go env GOPATH)/bin/go1.19.8"
+    go install golang.org/dl/go1.20.5@latest
+    "$(go env GOPATH)/bin/go1.20.5" download
+    alias go="$(go env GOPATH)/bin/go1.20.5"
 
 Once your Go toolchain and build dependencies are installed, you can build Radiance as usual:
 

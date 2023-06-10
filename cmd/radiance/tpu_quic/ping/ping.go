@@ -10,10 +10,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gagliardetto/solana-go"
-	"github.com/gagliardetto/solana-go/rpc"
-	"github.com/gagliardetto/solana-go/text"
-	"github.com/spf13/cobra"
 	"io"
 	"log"
 	"math/big"
@@ -22,10 +18,13 @@ import (
 	"path"
 	"time"
 
-	"github.com/lucas-clemente/quic-go"
-	"github.com/lucas-clemente/quic-go/logging"
-	"github.com/lucas-clemente/quic-go/qlog"
+	"github.com/gagliardetto/solana-go"
+	"github.com/gagliardetto/solana-go/rpc"
+	"github.com/gagliardetto/solana-go/text"
+	"github.com/spf13/cobra"
+
 	"github.com/mr-tron/base58"
+	"github.com/quic-go/quic-go"
 	"k8s.io/klog/v2"
 )
 
@@ -178,15 +177,6 @@ func run(_ *cobra.Command, _ []string) {
 		if err != nil {
 			klog.Exitf("Failed to open keylog file: %v", err)
 		}
-		qconf.Tracer = qlog.NewTracer(func(_ logging.Perspective, connID []byte) io.WriteCloser {
-			filename := fmt.Sprintf("client_%x.qlog", connID)
-			f, err := os.Create(filename)
-			if err != nil {
-				klog.Fatal(err)
-			}
-			log.Printf("Creating qlog file %s.\n", filename)
-			return f
-		})
 	}
 
 	signer, err := loadLocalKey()
@@ -240,7 +230,7 @@ func ping(ctx context.Context, c int, tlsConf *tls.Config, qconf quic.Config, si
 	}
 	defer udpConn.Close()
 
-	conn, err := quic.DialContext(ctx, udpConn, udpAddr, flagAddr, tlsConf, &qconf)
+	conn, err := quic.Dial(ctx, udpConn, udpAddr, tlsConf, &qconf)
 	if err != nil {
 		klog.Errorf("Failed to dial: %v", err)
 		time.Sleep(flagDelay)
