@@ -21,6 +21,7 @@ OPTIONS-*
 
 # deps.sh
 opt/
+deps-bundle.tar.zst
 
 # Editor junk files
 # Please just use a global gitignore conf, I'm tired of this
