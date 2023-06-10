@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 
-	"go.firedancer.io/radiance/cmd/radiance/bigtable"
 	"go.firedancer.io/radiance/cmd/radiance/tpu_quic"
 	"go.firedancer.io/radiance/cmd/radiance/tpu_udp"
 
@@ -32,7 +31,6 @@ func init() {
 	cmd.PersistentFlags().AddGoFlagSet(klogFlags)
 
 	cmd.AddCommand(
-		&bigtable.Cmd,
 		&blockstore.Cmd,
 		&gossip.Cmd,
 		&replay.Cmd,
