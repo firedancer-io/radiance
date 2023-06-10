@@ -4,6 +4,7 @@ package blockstore
 
 import (
 	"github.com/spf13/cobra"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore/compact"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/dumpbatches"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/dumpshreds"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/statdatarate"
@@ -19,6 +20,7 @@ var Cmd = cobra.Command{
 
 func init() {
 	Cmd.AddCommand(
+		&compact.Cmd,
 		&dumpshreds.Cmd,
 		&dumpbatches.Cmd,
 		&statdatarate.Cmd,
