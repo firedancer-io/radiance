@@ -12,7 +12,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
 	github.com/klauspost/compress v1.16.5
-	github.com/linxGnu/grocksdb v1.7.16
+	github.com/linxGnu/grocksdb v1.8.0
 	github.com/lucas-clemente/quic-go v0.29.1
 	github.com/mattn/go-isatty v0.0.18
 	github.com/minio/sha256-simd v1.0.0
