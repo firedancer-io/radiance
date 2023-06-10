@@ -3,15 +3,15 @@ package main
 import (
 	"context"
 	"flag"
-	"go.firedancer.io/radiance/cmd/radiance/bigtable"
-	"go.firedancer.io/radiance/cmd/radiance/tpu_quic"
-	"go.firedancer.io/radiance/cmd/radiance/tpu_udp"
 	"os"
 	"os/signal"
 
+	"go.firedancer.io/radiance/cmd/radiance/bigtable"
+	"go.firedancer.io/radiance/cmd/radiance/tpu_quic"
+	"go.firedancer.io/radiance/cmd/radiance/tpu_udp"
+
 	"github.com/spf13/cobra"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore"
-	"go.firedancer.io/radiance/cmd/radiance/car"
 	"go.firedancer.io/radiance/cmd/radiance/gossip"
 	"go.firedancer.io/radiance/cmd/radiance/replay"
 	"k8s.io/klog/v2"
@@ -34,7 +34,6 @@ func init() {
 	cmd.AddCommand(
 		&bigtable.Cmd,
 		&blockstore.Cmd,
-		&car.Cmd,
 		&gossip.Cmd,
 		&replay.Cmd,
 		&tpu_udp.Cmd,
