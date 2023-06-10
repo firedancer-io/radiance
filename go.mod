@@ -12,23 +12,23 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
 	github.com/klauspost/compress v1.16.5
-	github.com/linxGnu/grocksdb v1.7.16
+	github.com/linxGnu/grocksdb v1.8.0
 	github.com/lucas-clemente/quic-go v0.29.1
-	github.com/mattn/go-isatty v0.0.18
+	github.com/mattn/go-isatty v0.0.19
 	github.com/minio/sha256-simd v1.0.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20220519162058-e5cd3c3b3f3a
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/segmentio/textio v1.2.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vbauerster/mpb/v8 v8.3.0
+	github.com/vbauerster/mpb/v8 v8.4.0
 	golang.org/x/sync v0.2.0
 	golang.org/x/sys v0.8.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/klog/v2 v2.90.1
+	k8s.io/klog/v2 v2.100.1
 )
 
 require (

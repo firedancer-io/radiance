@@ -111,7 +111,7 @@ fetch () {
   checkout_repo zstd    https://github.com/facebook/zstd             "v1.5.4"
   checkout_repo snappy  https://github.com/google/snappy             "1.1.10"
   checkout_repo lz4     https://github.com/lz4/lz4                   "v1.9.4"
-  checkout_repo rocksdb https://github.com/facebook/rocksdb          "v7.10.2"
+  checkout_repo rocksdb https://github.com/facebook/rocksdb          "v8.1.1"
   checkout_repo libpcap https://github.com/the-tcpdump-group/libpcap "libpcap-1.10.4"
 }
 
