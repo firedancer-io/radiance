@@ -12,7 +12,7 @@ require (
 	github.com/google/nftables v0.1.0
 	github.com/linxGnu/grocksdb v1.8.0
 	github.com/mattn/go-isatty v0.0.19
-	github.com/minio/sha256-simd v1.0.0
+	github.com/minio/sha256-simd v1.0.1
 	github.com/mr-tron/base58 v1.2.0
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20220519162058-e5cd3c3b3f3a
 	github.com/prometheus/client_golang v1.16.0
