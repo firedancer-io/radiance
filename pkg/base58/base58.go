@@ -10,7 +10,10 @@ package base58
 
 import (
 	"encoding/binary"
+	"errors"
 )
+
+var ErrEncode = errors.New("base58 encoding error")
 
 // alphabet maps [0, 58) to the base58 character.
 const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
@@ -269,4 +272,15 @@ func Decode32(out *[32]byte, encoded []byte) (ok bool) {
 	}
 
 	return true
+}
+
+func Encode(buf []byte) string {
+	switch len(buf) {
+	case 32:
+		var out [44]byte
+		outLen := Encode32(&out, *(*[32]byte)(buf))
+		return string(out[:outLen])
+	default:
+		panic("unsupported base58 length")
+	}
 }
