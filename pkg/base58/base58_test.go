@@ -45,3 +45,18 @@ func TestEncode32(t *testing.T) {
 		}
 	}
 }
+
+func TestDecode32(t *testing.T) {
+	for _, test := range testVector32 {
+		var out [32]byte
+		if !Decode32(&out, []byte(test.b58)) {
+			t.Errorf("Decode32(%s) failed", test.b58)
+			continue
+		}
+
+		outStr := hex.EncodeToString(out[:])
+		if outStr != test.hex {
+			t.Errorf("Decode32(%s) = %s, want %s", test.b58, outStr, test.hex)
+		}
+	}
+}
