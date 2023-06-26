@@ -6,6 +6,14 @@ type Hash [32]byte
 type Address [32]byte
 type Signature [64]byte
 
+func MustAddress(s string) Address {
+	var a Address
+	if err := a.UnmarshalText([]byte(s)); err != nil {
+		panic(err)
+	}
+	return a
+}
+
 func (p *Hash) String() string {
 	return base58.Encode(p[:])
 }
