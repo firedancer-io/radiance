@@ -7,7 +7,7 @@ require (
 	github.com/VividCortex/ewma v1.2.0
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/gagliardetto/binary v0.7.8
-	github.com/gagliardetto/solana-go v1.8.3-0.20230302093440-c6043ec381e3
+	github.com/gagliardetto/solana-go v1.8.3
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
 	github.com/linxGnu/grocksdb v1.8.0

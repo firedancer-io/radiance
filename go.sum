@@ -105,8 +105,8 @@ github.com/gagliardetto/binary v0.7.8 h1:hbIUIP8BWhPm/BIdODxY2Lnv4NlJwNdbtsi1xkh
 github.com/gagliardetto/binary v0.7.8/go.mod h1:Cn70Gnvyk1OWkNJXwVh3oYqSYhKLHJN+C/Wguw3fc3U=
 github.com/gagliardetto/gofuzz v1.2.2 h1:XL/8qDMzcgvR4+CyRQW9UGdwPRPMHVJfqQ/uMvSUuQw=
 github.com/gagliardetto/gofuzz v1.2.2/go.mod h1:bkH/3hYLZrMLbfYWA0pWzXmi5TTRZnu4pMGZBkqMKvY=
-github.com/gagliardetto/solana-go v1.8.3-0.20230302093440-c6043ec381e3 h1:PtvmSQDTpZ1mwN1t7UlCrUhTyEozJhF3ixuO1m0+9q0=
-github.com/gagliardetto/solana-go v1.8.3-0.20230302093440-c6043ec381e3/go.mod h1:i+7aAyNDTHG0jK8GZIBSI4OVvDqkt2Qx+LklYclRNG8=
+github.com/gagliardetto/solana-go v1.8.3 h1:YHcxw2nLNdjyy5iR+ZUcpljSrjZrWRr8OusuCTr70p4=
+github.com/gagliardetto/solana-go v1.8.3/go.mod h1:i+7aAyNDTHG0jK8GZIBSI4OVvDqkt2Qx+LklYclRNG8=
 github.com/gagliardetto/treeout v0.1.4 h1:ozeYerrLCmCubo1TcIjFiOWTTGteOOHND1twdFpgwaw=
 github.com/gagliardetto/treeout v0.1.4/go.mod h1:loUefvXTrlRG5rYmJmExNryyBRh8f89VZhmMOyCyqok=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
