@@ -12,8 +12,9 @@ import (
 type Feature uint
 
 type featureInfo struct {
-	name string
-	gate solana.Address
+	handle Feature
+	name   string
+	gate   solana.Address
 }
 
 // seq is the sequence number of allocating feature flag IDs.
@@ -24,18 +25,20 @@ var seq Feature
 var featureMap = make(map[Feature]featureInfo)
 
 // Register creates a new application-wide feature flag for the given
-// feature gate address. Returns an opaque handle number. Panics on
-// duplicate gate address. Not thread-safe -- should be only called
-// from the init/main goroutine.
+// feature gate address. Returns an opaque handle number. Idempotent,
+// such that the same gate address can be registered twice, returning
+// the same handle. (Useful when a feature affects two separate modules)
+// Not thread-safe -- should be only called from the init/main goroutine.
 func Register(gate solana.Address, name string) Feature {
 	seq++
 	s := seq
-	if _, ok := featureMap[s]; ok {
-		panic("duplicate feature flag handle")
+	if info, ok := featureMap[s]; ok {
+		return info.handle
 	}
 	featureMap[s] = featureInfo{
-		name: name,
-		gate: gate,
+		handle: s,
+		name:   name,
+		gate:   gate,
 	}
 	return s
 }
