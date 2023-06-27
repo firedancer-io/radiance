@@ -109,7 +109,7 @@ fetch () {
 
   checkout_repo zlib    https://github.com/madler/zlib               "v1.2.13"
   checkout_repo zstd    https://github.com/facebook/zstd             "v1.5.4"
-  checkout_repo snappy  https://github.com/google/snappy             "1.1.10"
+  checkout_repo snappy  https://github.com/google/snappy             c9f9edf6d75bb065fa47468bf035e051a57bec7c
   checkout_repo lz4     https://github.com/lz4/lz4                   "v1.9.4"
   checkout_repo rocksdb https://github.com/facebook/rocksdb          "v8.1.1"
   checkout_repo libpcap https://github.com/the-tcpdump-group/libpcap "libpcap-1.10.4"
@@ -220,8 +220,9 @@ check_macos_pkgs () {
   echo "[~] Checking for required brew formulae"
 
   local MISSING_FORMULAE=( )
+  BREW_PREFIX="$(brew --prefix)"
   for formula in "${REQUIRED_FORMULAE[@]}"; do
-    if [[ ! -d "/usr/local/Cellar/$formula" ]]; then
+    if [[ ! -d "$BREW_PREFIX/Cellar/$formula" ]]; then
       MISSING_FORMULAE+=( "$formula" )
     fi
   done
@@ -358,8 +359,14 @@ install_rocksdb () {
 
   echo "[+] Building RocksDB"
   local NJOBS
-  NJOBS=$(( $(nproc) / 2 ))
-  NJOBS=$((NJOBS>0 ? NJOBS : 1))
+  if [[ "$OS" == linux ]]; then
+    NJOBS=$(( $(nproc) / 2 ))
+    NJOBS=$((NJOBS>0 ? NJOBS : 1))
+  elif [[ "$OS" == darwin ]]; then
+    NJOBS=$(sysctl -n hw.physicalcpu)
+  else
+    NJOBS=2
+  fi
   make -j $NJOBS
   echo "[+] Successfully built RocksDB"
 
