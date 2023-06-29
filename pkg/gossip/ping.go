@@ -39,7 +39,10 @@ func (p *Ping) Verify() bool {
 
 // HashPingToken returns the pong token given a ping token.
 func HashPingToken(token [32]byte) [32]byte {
-	return sha256.Sum256(token[:])
+	h := sha256.New()
+	h.Write([]byte("SOLANA_PING_PONG"))
+	h.Write(token[:])
+	return *(*[32]byte)(h.Sum(nil))
 }
 
 // PingClient implements the stateful client (initiator) side of the gossip ping protocol.
