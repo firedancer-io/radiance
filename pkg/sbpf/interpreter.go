@@ -442,7 +442,7 @@ func (ip *Interpreter) VMContext() any {
 	return ip.vmContext
 }
 
-func (ip *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.Pointer, error) {
+func (ip *Interpreter) translateInternal(addr uint64, size uint32, write bool) (unsafe.Pointer, error) {
 	// TODO exhaustive testing against rbpf
 	// TODO review generated asm for performance
 
@@ -477,8 +477,18 @@ func (ip *Interpreter) Translate(addr uint64, size uint32, write bool) (unsafe.P
 	}
 }
 
+func (ip *Interpreter) Translate(addr uint64, size uint32, write bool) ([]byte, error) {
+	ptr, err := ip.translateInternal(addr, size, write)
+	if err != nil {
+		return nil, err
+	}
+
+	mem := unsafe.Slice((*uint8)(ptr), size)
+	return mem, nil
+}
+
 func (ip *Interpreter) Read(addr uint64, p []byte) error {
-	ptr, err := ip.Translate(addr, uint32(len(p)), false)
+	ptr, err := ip.translateInternal(addr, uint32(len(p)), false)
 	if err != nil {
 		return err
 	}
@@ -488,7 +498,7 @@ func (ip *Interpreter) Read(addr uint64, p []byte) error {
 }
 
 func (ip *Interpreter) Read8(addr uint64) (uint8, error) {
-	ptr, err := ip.Translate(addr, 1, false)
+	ptr, err := ip.translateInternal(addr, 1, false)
 	if err != nil {
 		return 0, err
 	}
@@ -498,7 +508,7 @@ func (ip *Interpreter) Read8(addr uint64) (uint8, error) {
 // TODO is it safe and portable to deref unaligned integer types?
 
 func (ip *Interpreter) Read16(addr uint64) (uint16, error) {
-	ptr, err := ip.Translate(addr, 2, false)
+	ptr, err := ip.translateInternal(addr, 2, false)
 	if err != nil {
 		return 0, err
 	}
@@ -506,7 +516,7 @@ func (ip *Interpreter) Read16(addr uint64) (uint16, error) {
 }
 
 func (ip *Interpreter) Read32(addr uint64) (uint32, error) {
-	ptr, err := ip.Translate(addr, 4, false)
+	ptr, err := ip.translateInternal(addr, 4, false)
 	if err != nil {
 		return 0, err
 	}
@@ -514,7 +524,7 @@ func (ip *Interpreter) Read32(addr uint64) (uint32, error) {
 }
 
 func (ip *Interpreter) Read64(addr uint64) (uint64, error) {
-	ptr, err := ip.Translate(addr, 8, false)
+	ptr, err := ip.translateInternal(addr, 8, false)
 	if err != nil {
 		return 0, err
 	}
@@ -522,7 +532,7 @@ func (ip *Interpreter) Read64(addr uint64) (uint64, error) {
 }
 
 func (ip *Interpreter) Write(addr uint64, p []byte) error {
-	ptr, err := ip.Translate(addr, uint32(len(p)), true)
+	ptr, err := ip.translateInternal(addr, uint32(len(p)), true)
 	if err != nil {
 		return err
 	}
@@ -532,7 +542,7 @@ func (ip *Interpreter) Write(addr uint64, p []byte) error {
 }
 
 func (ip *Interpreter) Write8(addr uint64, x uint8) error {
-	ptr, err := ip.Translate(addr, 1, true)
+	ptr, err := ip.translateInternal(addr, 1, true)
 	if err != nil {
 		return err
 	}
@@ -541,7 +551,7 @@ func (ip *Interpreter) Write8(addr uint64, x uint8) error {
 }
 
 func (ip *Interpreter) Write16(addr uint64, x uint16) error {
-	ptr, err := ip.Translate(addr, 2, true)
+	ptr, err := ip.translateInternal(addr, 2, true)
 	if err != nil {
 		return err
 	}
@@ -550,7 +560,7 @@ func (ip *Interpreter) Write16(addr uint64, x uint16) error {
 }
 
 func (ip *Interpreter) Write32(addr uint64, x uint32) error {
-	ptr, err := ip.Translate(addr, 4, true)
+	ptr, err := ip.translateInternal(addr, 4, true)
 	if err != nil {
 		return err
 	}
@@ -559,7 +569,7 @@ func (ip *Interpreter) Write32(addr uint64, x uint32) error {
 }
 
 func (ip *Interpreter) Write64(addr uint64, x uint64) error {
-	ptr, err := ip.Translate(addr, 8, false)
+	ptr, err := ip.translateInternal(addr, 8, false)
 	if err != nil {
 		return err
 	}

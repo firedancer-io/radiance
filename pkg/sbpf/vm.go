@@ -9,6 +9,8 @@ import (
 type VM interface {
 	VMContext() any
 
+	Translate(addr uint64, size uint32, write bool) ([]byte, error)
+
 	Read(addr uint64, p []byte) error
 	Read8(addr uint64) (uint8, error)
 	Read16(addr uint64) (uint16, error)
