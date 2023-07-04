@@ -65,3 +65,34 @@ func SyscallMemmoveImpl(vm sbpf.VM, dst, src, n uint64, cuIn int) (r0 uint64, cu
 }
 
 var SyscallMemmove = sbpf.SyscallFunc3(SyscallMemmoveImpl)
+
+// SyscallMemcmpImpl is the implementation for the memcmp (sol_memcmp_) syscall.
+func SyscallMemcmpImpl(vm sbpf.VM, addr1, addr2, n, resultAddr uint64, cuIn int) (r0 uint64, cuOut int, err error) {
+	cuOut = MemOpConsume(cuIn, n)
+	if cuOut < 0 {
+		return
+	}
+
+	slice1, err := vm.Translate(addr1, uint32(n), false)
+	if err != nil {
+		return
+	}
+	slice2, err := vm.Translate(addr2, uint32(n), false)
+	if err != nil {
+		return
+	}
+
+	cmpResult := int32(0)
+	for count := uint64(0); count < n; count++ {
+		b1 := slice1[count]
+		b2 := slice2[count]
+		if b1 != b2 {
+			cmpResult = int32(b1 - b2)
+			break
+		}
+	}
+	err = vm.Write32(resultAddr, uint32(cmpResult))
+	return
+}
+
+var SyscallMemcmp = sbpf.SyscallFunc4(SyscallMemcmpImpl)
