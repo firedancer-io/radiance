@@ -82,6 +82,197 @@ func TestInterpreter_Noop(t *testing.T) {
 	})
 }
 
+// The TestInterpreter_Memcpy_Strings_Match tests that memcpy works as expected
+// by running an SBPF program that uses the memcpy syscall to copy a string
+// literal to a stack buffer, before testing for equality using memcmp.
+// The expected result is that the two match.
+func TestInterpreter_Memcpy_Strings_Match(t *testing.T) {
+	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "memcpy_and_memmove_test_matched.so"))
+	require.NoError(t, err)
+	require.NotNil(t, loader)
+
+	program, err := loader.Load()
+	require.NoError(t, err)
+	require.NotNil(t, program)
+
+	require.NoError(t, program.Verify())
+
+	syscalls := sbpf.NewSyscallRegistry()
+	syscalls.Register("sol_log_", SyscallLog)
+	syscalls.Register("log_64", SyscallLog64)
+	syscalls.Register("my_copy", SyscallMemcpy)
+
+	var log LogRecorder
+
+	interpreter := sbpf.NewInterpreter(program, &sbpf.VMOpts{
+		HeapSize: 32 * 1024,
+		Input:    nil,
+		MaxCU:    10000,
+		Syscalls: syscalls,
+		Context:  &Execution{Log: &log},
+	})
+	require.NotNil(t, interpreter)
+
+	err = interpreter.Run()
+	assert.Equal(t, log.Logs, []string{
+		"Program log: Strings matched after copy.",
+	})
+	require.NoError(t, err)
+}
+
+// The TestInterpreter_Memcpy_Do_Not_Match tests that memcpy works as expected
+// by running an SBPF program that uses the memcpy syscall to copy a string
+// literal to a stack buffer, with the destination then modified before testing
+// for equality using memcmp. The expected result  is that the two do NOT match,
+// because of the modification before comparison.
+func TestInterpreter_Memcpy_Do_Not_Match(t *testing.T) {
+	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "memcpy_and_memmove_test_not_matched.so"))
+	require.NoError(t, err)
+	require.NotNil(t, loader)
+
+	program, err := loader.Load()
+	require.NoError(t, err)
+	require.NotNil(t, program)
+
+	require.NoError(t, program.Verify())
+
+	syscalls := sbpf.NewSyscallRegistry()
+	syscalls.Register("sol_log_", SyscallLog)
+	syscalls.Register("log_64", SyscallLog64)
+	syscalls.Register("my_copy", SyscallMemcpy)
+
+	var log LogRecorder
+
+	interpreter := sbpf.NewInterpreter(program, &sbpf.VMOpts{
+		HeapSize: 32 * 1024,
+		Input:    nil,
+		MaxCU:    10000,
+		Syscalls: syscalls,
+		Context:  &Execution{Log: &log},
+	})
+	require.NotNil(t, interpreter)
+
+	err = interpreter.Run()
+	assert.Equal(t, log.Logs, []string{
+		"Program log: Strings did not match after copy.",
+	})
+	require.NoError(t, err)
+}
+
+// The TestInterpreter_Memmove_Strings_Match tests that memove works as expected
+// by running an SBPF program that uses the memcpy syscall to copy a string
+// literal to a stack buffer, before testing for equality using memcmp.
+// The expected result is that the two match.
+func TestInterpreter_Memmove_Strings_Match(t *testing.T) {
+	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "memcpy_and_memmove_test_matched.so"))
+	require.NoError(t, err)
+	require.NotNil(t, loader)
+
+	program, err := loader.Load()
+	require.NoError(t, err)
+	require.NotNil(t, program)
+
+	require.NoError(t, program.Verify())
+
+	syscalls := sbpf.NewSyscallRegistry()
+	syscalls.Register("sol_log_", SyscallLog)
+	syscalls.Register("log_64", SyscallLog64)
+	syscalls.Register("my_copy", SyscallMemmove)
+
+	var log LogRecorder
+
+	interpreter := sbpf.NewInterpreter(program, &sbpf.VMOpts{
+		HeapSize: 32 * 1024,
+		Input:    nil,
+		MaxCU:    10000,
+		Syscalls: syscalls,
+		Context:  &Execution{Log: &log},
+	})
+	require.NotNil(t, interpreter)
+
+	err = interpreter.Run()
+	assert.Equal(t, log.Logs, []string{
+		"Program log: Strings matched after copy.",
+	})
+	require.NoError(t, err)
+}
+
+// The TestInterpreter_Memmove_Do_Not_Match function tests that memmove works
+// as expected by running an SBPF program that uses the memcpy syscall to
+// copy a string literal to a stack buffer, with the destination then
+// modified before testing for equality using memcmp. The expected result is
+// that the two do NOT match, because of the modification before comparison.
+func TestInterpreter_Memmove_Do_Not_Match(t *testing.T) {
+	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "memcpy_and_memmove_test_not_matched.so"))
+	require.NoError(t, err)
+	require.NotNil(t, loader)
+
+	program, err := loader.Load()
+	require.NoError(t, err)
+	require.NotNil(t, program)
+
+	require.NoError(t, program.Verify())
+
+	syscalls := sbpf.NewSyscallRegistry()
+	syscalls.Register("sol_log_", SyscallLog)
+	syscalls.Register("log_64", SyscallLog64)
+	syscalls.Register("my_copy", SyscallMemmove)
+
+	var log LogRecorder
+
+	interpreter := sbpf.NewInterpreter(program, &sbpf.VMOpts{
+		HeapSize: 32 * 1024,
+		Input:    nil,
+		MaxCU:    10000,
+		Syscalls: syscalls,
+		Context:  &Execution{Log: &log},
+	})
+	require.NotNil(t, interpreter)
+
+	err = interpreter.Run()
+	assert.Equal(t, log.Logs, []string{
+		"Program log: Strings did not match after copy.",
+	})
+	require.NoError(t, err)
+}
+
+// The TestInterpreter_Memcpy_Overlapping function tests that memcpy works
+// as expected by attempting to do a copy involving two overlapping buffers.
+// The expected result is an "Overlapping copy" error being returned.
+func TestInterpreter_Memcpy_Overlapping(t *testing.T) {
+	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "memcpy_overlapping.so"))
+	require.NoError(t, err)
+	require.NotNil(t, loader)
+
+	program, err := loader.Load()
+	require.NoError(t, err)
+	require.NotNil(t, program)
+
+	require.NoError(t, program.Verify())
+
+	syscalls := sbpf.NewSyscallRegistry()
+	syscalls.Register("sol_log_", SyscallLog)
+	syscalls.Register("log_64", SyscallLog64)
+	syscalls.Register("my_copy", SyscallMemcpy)
+
+	var log LogRecorder
+
+	interpreter := sbpf.NewInterpreter(program, &sbpf.VMOpts{
+		HeapSize: 32 * 1024,
+		Input:    nil,
+		MaxCU:    10000,
+		Syscalls: syscalls,
+		Context:  &Execution{Log: &log},
+	})
+	require.NotNil(t, interpreter)
+
+	err = interpreter.Run()
+
+	// expecting an error here because the src and dst are overlapping in the
+	// program being run.
+	require.Error(t, err)
+}
+
 type executeCase struct {
 	Name    string
 	Program string
