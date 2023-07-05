@@ -87,7 +87,7 @@ func SyscallMemcmpImpl(vm sbpf.VM, addr1, addr2, n, resultAddr uint64, cuIn int)
 		b1 := slice1[count]
 		b2 := slice2[count]
 		if b1 != b2 {
-			cmpResult = int32(b1 - b2)
+			cmpResult = int32(b1) - int32(b2)
 			break
 		}
 	}

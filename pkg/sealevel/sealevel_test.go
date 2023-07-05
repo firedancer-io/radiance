@@ -313,10 +313,10 @@ func TestInterpreter_Memcmp_Matches(t *testing.T) {
 }
 
 // The TestInterpreter_Memcmp_Does_Not_Match function tests that the memcmp
-// syscall works as expected by comparing the string literals "abcdabcd1234"
-// and "BLAHabcd1234"
+// syscall works as expected by comparing the string literals "Bbcdabcd1234"
+// and "aLAHabcd1234"
 // The expected result is that the two strings do not match and the difference
-// between the first non-matching characters (0x61 - 0x42 = 0x1f) is returned,
+// between the first non-matching characters (0x42 - 0x61 = -0x1f) is returned,
 // and the program checks these and returns messages accordingly.
 func TestInterpreter_Memcmp_Does_Not_Match(t *testing.T) {
 	loader, err := loader.NewLoaderFromBytes(fixtures.Load(t, "sbpf", "memcmp_not_matched.so"))
