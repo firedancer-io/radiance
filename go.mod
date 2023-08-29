@@ -10,7 +10,7 @@ require (
 	github.com/gagliardetto/solana-go v1.8.3
 	github.com/google/gopacket v1.1.19
 	github.com/google/nftables v0.1.0
-	github.com/linxGnu/grocksdb v1.8.0
+	github.com/linxGnu/grocksdb v1.8.1
 	github.com/mattn/go-isatty v0.0.19
 	github.com/minio/sha256-simd v1.0.1
 	github.com/mr-tron/base58 v1.2.0
