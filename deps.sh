@@ -106,7 +106,7 @@ checkout_repo () {
   (
     cd ./opt/git/"$1"
     git fetch origin "$BRANCH_OR_CHECKOUT_TARGET" --depth=1
-    git -c advice.detachedHead=false checkout "$BRANCH_OR_CHECKOUT_TARGET" 
+    git -c advice.detachedHead=false checkout "$BRANCH_OR_CHECKOUT_TARGET"
   )
   echo
 }
@@ -115,10 +115,10 @@ fetch () {
   mkdir -pv ./opt/git
 
   checkout_repo zlib    https://github.com/madler/zlib               "v1.2.13"
-  checkout_repo zstd    https://github.com/facebook/zstd             "v1.5.4"
+  checkout_repo zstd    https://github.com/facebook/zstd             "v1.5.5"
   checkout_repo snappy  https://github.com/google/snappy             "hash:c9f9edf6d75bb065fa47468bf035e051a57bec7c"
   checkout_repo lz4     https://github.com/lz4/lz4                   "v1.9.4"
-  checkout_repo rocksdb https://github.com/facebook/rocksdb          "v8.1.1"
+  checkout_repo rocksdb https://github.com/facebook/rocksdb          "v8.10.0"
   checkout_repo libpcap https://github.com/the-tcpdump-group/libpcap "libpcap-1.10.4"
 }
 
