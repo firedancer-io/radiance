@@ -9,6 +9,7 @@ import (
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/dumpshreds"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/statdatarate"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/statentries"
+	"go.firedancer.io/radiance/cmd/radiance/blockstore/tarblocks"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/verifydata"
 	"go.firedancer.io/radiance/cmd/radiance/blockstore/yaml"
 )
@@ -25,6 +26,7 @@ func init() {
 		&dumpbatches.Cmd,
 		&statdatarate.Cmd,
 		&statentries.Cmd,
+		&tarblocks.Cmd,
 		&verifydata.Cmd,
 		&yaml.Cmd,
 	)

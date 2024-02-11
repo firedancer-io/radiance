@@ -109,6 +109,13 @@ func (m *BlockWalk) Next() (meta *SlotMeta, ok bool) {
 	return meta, true
 }
 
+func (m *BlockWalk) Current() *DB {
+	if len(m.handles) == 0 {
+		return nil
+	}
+	return m.handles[0].DB
+}
+
 // Entries returns the entries at the current cursor.
 // Caller must have made an ok call to BlockWalk.Next before calling this.
 func (m *BlockWalk) Entries(meta *SlotMeta) ([][]shred.Entry, error) {
