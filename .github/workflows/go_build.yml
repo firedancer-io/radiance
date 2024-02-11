@@ -8,18 +8,14 @@ jobs:
   go-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - uses: ./.github/actions/deps
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.20.5
-
-      - name: Fetch deps
-        run: |
-          # Hosted with Git LFS.  See ./contrib/deps-bundle.sh
-          wget -q https://github.com/firedancer-io/radiance/raw/deps/deps-bundle.tar.zst
-          tar -I zstd -xf deps-bundle.tar.zst
+          go-version: 1.22.0
 
       - name: Vet
         run: source activate-opt && go vet ./...

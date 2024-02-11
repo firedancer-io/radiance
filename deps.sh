@@ -297,7 +297,7 @@ install_zstd () {
   cd ./opt/git/zstd/lib
 
   echo "[+] Installing zstd to $PREFIX"
-  "${MAKE[@]}" DESTDIR="$PREFIX" PREFIX="" install-pc install-static install-includes
+  "${MAKE[@]}" DESTDIR="$PREFIX" PREFIX="" MOREFLAGS="-fPIC" install-pc install-static install-includes
   echo "[+] Successfully installed zstd"
 }
 
@@ -336,13 +336,12 @@ install_lz4 () {
 
 install_rocksdb () {
   cd ./opt/git/rocksdb
-
-  echo "[+] Configuring RocksDB"
   mkdir -p build
   cd build
   cmake .. \
     -G"Unix Makefiles" \
-    -DCMAKE_INSTALL_PREFIX:PATH="" \
+    -DCMAKE_INSTALL_PREFIX:PATH="$PREFIX" \
+    -DCMAKE_INSTALL_LIBDIR="lib" \
     -DCMAKE_BUILD_TYPE=Release \
     -DROCKSDB_BUILD_SHARED=OFF \
     -DWITH_GFLAGS=OFF \
@@ -364,21 +363,13 @@ install_rocksdb () {
     -DSnappy_INCLUDE_DIRS="$PREFIX/include"
   echo "[+] Configured RocksDB"
 
-  echo "[+] Building RocksDB"
   local NJOBS
-  if [[ "$OS" == linux ]]; then
-    NJOBS=$(( $(nproc) / 2 ))
-    NJOBS=$((NJOBS>0 ? NJOBS : 1))
-  elif [[ "$OS" == darwin ]]; then
-    NJOBS=$(sysctl -n hw.physicalcpu)
-  else
-    NJOBS=2
-  fi
+  NJOBS=$(( $(nproc) / 2 ))
+  NJOBS=$((NJOBS>0 ? NJOBS : 1))
   make -j $NJOBS
   echo "[+] Successfully built RocksDB"
-
   echo "[+] Installing RocksDB to $PREFIX"
-  make install DESTDIR="$PREFIX"
+  make install
   echo "[+] Successfully installed RocksDB"
 }
 
