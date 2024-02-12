@@ -21,7 +21,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vbauerster/mpb/v8 v8.6.1
+	github.com/vbauerster/mpb/v8 v8.7.2
 	golang.org/x/sync v0.6.0
 	golang.org/x/sys v0.17.0
 	gopkg.in/yaml.v3 v3.0.1
