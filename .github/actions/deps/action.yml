@@ -39,7 +39,7 @@ runs:
 
     - name: Install system level dependencies
       shell: bash
-      run: '${{ inputs.deps-script-path }}' check
+      run: ${{ inputs.deps-script-path }} check
 
     - name: Install dependencies from cache
       shell: bash
